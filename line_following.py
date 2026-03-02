@@ -33,6 +33,7 @@ time.sleep(2)
 last_error = 0
 total_error = 0
 flag = False
+flag2 = False
 #kp = 0.8
 #ki = 0
 #kd = 0
@@ -107,8 +108,16 @@ while True:
         movement.move(clamped_left_pwm, clamped_right_pwm)
     
     else:
-        movement.move(0, 0)
-        break
+        #movement.move(0, 0)
+        #break
+        pid = last_error * 1000
+        left_pwm = base_speed + pid
+        right_pwm = base_speed - pid
+
+        clamped_left_pwm = clamp(left_pwm, -1, 1)
+        clamped_right_pwm = clamp(right_pwm, -1, 1)
+
+        movement.move(clamped_left_pwm, clamped_right_pwm)
 
     cv2.imshow("contours", im2)
 

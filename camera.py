@@ -26,7 +26,7 @@ while True:
     # descending sorting using contourArea function
     sorted_contours = sorted(contours, key=cv2.contourArea, reverse=True)
 
-    cv2.drawContours(im2, sorted_contours[0], -1, (0, 255, 0), thickness=cv2.FILLED)
+    cv2.drawContours(im2, [sorted_contours[0]], -1, (0, 255, 0), thickness=cv2.FILLED)
     cv2.drawContours(im2, sorted_contours[1:], -1, (255, 255, 255), thickness=cv2.FILLED)
     cv2.imshow("contours", im2)
     

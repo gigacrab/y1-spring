@@ -24,7 +24,7 @@ while True:
 
     # hierarchy -> [next, previous, first_child, parent]
     contours, hierarchy = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-    im2 = np.zeros((480, 720, 3), dtype=np.uint8)
+    im2 = np.zeros((120, 720, 3), dtype=np.uint8)
     
     if len(contours) > 0:
            
@@ -44,7 +44,7 @@ while True:
         cx = int(M['m10']/M['m00'])
         cy = int(M['m01']/M['m00'])
 
-        cv2.line(im2, (cx, 360), (cx, 480), (0, 255, 255), 3)
+        cv2.line(im2, (cx, 0), (cx, 120), (0, 255, 255), 3)
             
     cv2.imshow("contours", im2)
     if cv2.waitKey(1) == 27:

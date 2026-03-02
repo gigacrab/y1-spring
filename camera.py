@@ -42,9 +42,11 @@ while True:
         M = cv2.moments(cnt)
 
         cx = int(M['m10']/M['m00'])
-        cy = int(M['m01']/M['m00'])
+        #cy = int(M['m01']/M['m00'])
 
         cv2.line(im2, (cx, 0), (cx, 120), (0, 255, 255), 3)
+
+        error = 360 - cx
             
     cv2.imshow("contours", im2)
     if cv2.waitKey(1) == 27:

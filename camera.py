@@ -13,7 +13,7 @@ im = picam2.capture_array()
 
 cv.imshow("raw", im)
 imgray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
-cv.imshow("grey")
+cv.imshow("gray", imgray)
 ret, thresh = cv.threshold(imgray, 0, 127, 0)
 cv.imshow("thresh", thresh)
 

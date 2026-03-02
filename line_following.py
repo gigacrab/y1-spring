@@ -32,6 +32,7 @@ time.sleep(2)
 # PID
 last_error = 0
 total_error = 0
+flag = False
 #kp = 0.8
 #ki = 0
 #kd = 0
@@ -83,11 +84,15 @@ while True:
             elapsed_time = 0.0001
         
         # error is normalized
-        error = (320 - cx) / 320
+        error = (320 - cx) / 320    
         total_error += error * elapsed_time
         diff_error = (error - last_error) / elapsed_time
 
+        if not flag:
+            diff_error = 0
+            flag = True
         pid = kp * error + ki * total_error + kd * diff_error
+        
         last_error = error
 
         #left_pwm = 0.8 + pid

@@ -110,7 +110,7 @@ while True:
     else:
         #movement.move(0, 0)
         #break
-        pid = last_error * 1000
+        pid = error * 1000
         left_pwm = base_speed + pid
         right_pwm = base_speed - pid
 

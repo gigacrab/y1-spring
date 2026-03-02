@@ -42,7 +42,7 @@ while True:
 
     # hierarchy -> [next, previous, first_child, parent]
     contours, hierarchy = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-    im2 = np.zeros((120, 680, 3), dtype=np.uint8)
+    im2 = np.zeros((120, 640, 3), dtype=np.uint8)
     
     if len(contours) > 0:
            
@@ -59,6 +59,8 @@ while True:
             
         M = cv2.moments(cnt)
 
+        if M['m00'] == 0:
+            continue
         cx = int(M['m10']/M['m00'])
         #cy = int(M['m01']/M['m00'])
 
@@ -75,6 +77,7 @@ while True:
         diff_error = (error - last_error) / elapsed_time
 
         pid = kp * error + ki * total_error + kd * diff_error
+        last_error = error
 
         left_pwm = 0.8 + pid
         right_pwm = 0.78 - pid

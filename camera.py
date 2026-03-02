@@ -14,12 +14,13 @@ im = picam2.capture_array()
 cv.imshow("raw", im)
 imgray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
 cv.imshow("gray", imgray)
-ret, thresh = cv.threshold(imgray, 0, 127, 0)
+# 127 - values above this, assigned 255
+ret, thresh = cv.threshold(imgray, 127, 255, 0)
 cv.imshow("thresh", thresh)
 
 # hierarchy -> [next, previous, first_child, parent]
 contours, hierarchy = cv.findContours(thresh, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)
-im2 = np.zeros((1280, 720, 3), dtype=np.uint8)
+im2 = np.zeros((720, 1280, 3), dtype=np.uint8)
 cv.drawContours(im2, contours, -1, (255, 255, 255), 1)
 cv.imshow("contours", im2)
 while cv.waitKey(1) != 27:

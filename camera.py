@@ -11,12 +11,12 @@ time.sleep(2)
 
 im = picam2.capture_array()
 
-cv2.imshow("raw", im)
+#cv2.imshow("raw", im)
 imgray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
-cv2.imshow("gray", imgray)
+#cv2.imshow("gray", imgray)
 # 127 - values above this, assigned 255
 ret, thresh = cv2.threshold(imgray, 127, 255, cv2.THRESH_BINARY_INV)
-cv2.imshow("thresh", thresh)
+#cv2.imshow("thresh", thresh)
 
 # hierarchy -> [next, previous, first_child, parent]
 contours, hierarchy = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)

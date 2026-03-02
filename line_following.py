@@ -3,6 +3,7 @@ from picamera2 import Picamera2
 import time
 import numpy as np
 import movement
+import sys
 
 def clamp(value, min, max):
     if value > max:
@@ -10,6 +11,16 @@ def clamp(value, min, max):
     elif value < min:
         return min
     return value
+
+# __main__ is the script that was passed to execute
+if __name__ == "__main__":
+    if len(sys.argv) == 5:
+        base_speed = float(sys.argv[1])
+        kp = float(sys.argv[2])
+        ki = float(sys.argv[3])
+        kd = float(sys.argv[4])
+    else:
+        raise Exception("Didn't input appropriate variables")
 
 # Picamera2 init
 picam2 = Picamera2()
@@ -21,9 +32,9 @@ time.sleep(2)
 # PID
 last_error = 0
 total_error = 0
-kp = 0.8
-ki = 0
-kd = 0
+#kp = 0.8
+#ki = 0
+#kd = 0
 
 while True: 
     time_marker = time.perf_counter()

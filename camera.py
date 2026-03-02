@@ -36,7 +36,7 @@ while True:
             cv2.drawContours(im2, sorted_contours[1:], -1, (255, 255, 255), thickness=cv2.FILLED)
             
         else:
-            cnt = contours
+            cnt = contours[0]
             cv2.drawContours(im2, [cnt], -1, (0, 255, 0), thickness=cv2.FILLED)
             
         M = cv2.moments(cnt)
@@ -44,7 +44,7 @@ while True:
         cx = int(M['m10']/M['m00'])
         cy = int(M['m01']/M['m00'])
 
-        cv2.line(im2, (cx, 360), (cx, 480), (255, 0, 0), 1)
+        cv2.line(im2, (cx, 360), (cx, 480), (255, 255, 0), 1)
             
     cv2.imshow("contours", im2)
     if cv2.waitKey(1) == 27:

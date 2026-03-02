@@ -41,7 +41,7 @@ while True:
 
     frame = picam2.capture_array()
 
-    roi = frame[360:480, :]
+    roi = frame[240:480, :]
 
     #cv2.imshow("raw", im)
     imgray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
@@ -53,7 +53,7 @@ while True:
 
     # hierarchy -> [next, previous, first_child, parent]
     contours, hierarchy = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-    im2 = np.zeros((120, 640, 3), dtype=np.uint8)
+    im2 = np.zeros((240, 640, 3), dtype=np.uint8)
     
     if len(contours) > 0:
            
@@ -75,7 +75,7 @@ while True:
         cx = int(M['m10']/M['m00'])
         #cy = int(M['m01']/M['m00'])
 
-        cv2.line(im2, (cx, 0), (cx, 120), (0, 255, 255), 3)
+        cv2.line(im2, (cx, 0), (cx, 240), (0, 255, 255), 3)
 
         # pwm - 80 for left, 78 for right 
         elapsed_time = time.perf_counter() - time_marker

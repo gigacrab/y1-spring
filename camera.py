@@ -15,7 +15,7 @@ while True:
     roi = im[360:480, :]
 
     #cv2.imshow("raw", im)
-    imgray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+    imgray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
     #cv2.imshow("gray", imgray)
     # 0 - values above this, assigned 255, the Otsu method adjusts according to lighting 
     # also idc about the ret
@@ -24,7 +24,7 @@ while True:
 
     # hierarchy -> [next, previous, first_child, parent]
     contours, hierarchy = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-    im2 = np.zeros((720, 1280, 3), dtype=np.uint8)
+    im2 = np.zeros((480, 720, 3), dtype=np.uint8)
     
     if len(contours) > 0:
            

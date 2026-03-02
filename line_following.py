@@ -98,7 +98,7 @@ while True:
         clamped_left_pwm = clamp(left_pwm, -1, 1)
         clamped_right_pwm = clamp(right_pwm, -1, 1)
 
-        movement.move(clamped_right_pwm, clamped_left_pwm)
+        movement.move(clamped_left_pwm, clamped_right_pwm)
     
     else:
         movement.move(0, 0)

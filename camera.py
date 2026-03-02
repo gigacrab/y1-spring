@@ -8,9 +8,13 @@ picam2.configure(camera_config)
 picam2.start()
 time.sleep(2)
 
-img = picam2.capture_array()
+im = picam2.capture_array()
 
-cv2.imshow("output", img)
+#cv2.imshow("output", img)
+imgray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
+ret, thresh = cv.threshold(imgray, 127, 255, 0)
+im2, contours, hierarchy = cv.findContours(thresh, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+cv2.imshow(im2)
 cv2.waitKey(0)
 
 picam2.stop()

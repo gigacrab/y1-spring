@@ -1,4 +1,4 @@
-import cv2
+import cv2 as cv
 from picamera2 import Picamera2
 import time
 
@@ -14,8 +14,8 @@ im = picam2.capture_array()
 imgray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
 ret, thresh = cv.threshold(imgray, 127, 255, 0)
 im2, contours, hierarchy = cv.findContours(thresh, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-cv2.imshow(im2)
-cv2.waitKey(0)
+cv.imshow(im2)
+cv.waitKey(0)
 
 picam2.stop()
 picam2.close()

@@ -90,8 +90,10 @@ while True:
         pid = kp * error + ki * total_error + kd * diff_error
         last_error = error
 
-        left_pwm = 0.8 + pid
-        right_pwm = 0.78 - pid
+        #left_pwm = 0.8 + pid
+        #right_pwm = 0.78 - pid
+        left_pwm = base_speed + pid
+        right_pwm = base_speed - pid
 
         clamped_left_pwm = clamp(left_pwm, -1, 1)
         clamped_right_pwm = clamp(right_pwm, -1, 1)

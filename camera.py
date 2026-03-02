@@ -1,4 +1,4 @@
-import cv2 as cv
+import cv2
 from picamera2 import Picamera2
 import time
 import numpy as np
@@ -11,19 +11,19 @@ time.sleep(2)
 
 im = picam2.capture_array()
 
-cv.imshow("raw", im)
-imgray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
-cv.imshow("gray", imgray)
+cv2.imshow("raw", im)
+imgray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+cv2.imshow("gray", imgray)
 # 127 - values above this, assigned 255
-ret, thresh = cv.threshold(imgray, 127, 255, 0)
-cv.imshow("thresh", thresh)
+ret, thresh = cv2.threshold(imgray, 127, 255, cv2.THRESH_BINARY_INV)
+cv2.imshow("thresh", thresh)
 
 # hierarchy -> [next, previous, first_child, parent]
-contours, hierarchy = cv.findContours(thresh, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)
+contours, hierarchy = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 im2 = np.zeros((720, 1280, 3), dtype=np.uint8)
-cv.drawContours(im2, contours, -1, (255, 255, 255), 1)
-cv.imshow("contours", im2)
-while cv.waitKey(1) != 27:
+cv2.drawContours(im2, contours, -1, (255, 255, 255), 1)
+cv2.imshow("contours", im2)
+while cv2.waitKey(1) != 27:
     pass
 
 picam2.stop()

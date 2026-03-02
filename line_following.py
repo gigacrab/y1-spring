@@ -49,7 +49,8 @@ while True:
     #cv2.imshow("gray", imgray)
     # 0 - values above this, assigned 255, the Otsu method adjusts according to lighting 
     # also idc about the ret
-    _, thresh = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    #_, thresh = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    _, thresh = cv2.threshold(imgray, 127, 255, cv2.THRESH_BINARY_INV)
     #cv2.imshow("thresh", thresh)
 
     # hierarchy -> [next, previous, first_child, parent]

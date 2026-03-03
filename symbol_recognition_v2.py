@@ -12,7 +12,7 @@ os.environ["OPENCV_LOG_LEVEL"] = "ERROR"
 # ==========================================
 # 1. LOAD ORB TEMPLATES (For Art/Textures)
 # ==========================================
-img_path = '/home/jaydenbryan/Project/Symbols_img/'
+img_path = '/home/jaydenbryan/Project/Symbols_png/'
 template_files = {
     "Danger": "symbol_danger.png",
     "Fingerprint": "symbol_fingerprint.png",

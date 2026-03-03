@@ -17,7 +17,7 @@ template_files = {
     "Danger": "danger.npy",
     "Fingerprint": "fingerprint.npy",
     "Kite": "kite.npy",
-    "Octagonal": "ortogonal.npy", # Fixed spelling
+    "Octagon": "octagon.npy",
     "Plus": "plus.npy",
     "Press Button": "pressbutton.npy",
     "QR Code": "qrcode.npy",

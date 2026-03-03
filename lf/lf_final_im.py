@@ -62,7 +62,7 @@ while True:
         # however the Otsu method wasn't that good because it'd always find a region of threshold
         # also idc about the ret
         ret, thresh = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-        print(ret)
+        print(f"return value: {ret}")
         #_, thresh = cv2.threshold(imgray, 127, 255, cv2.THRESH_BINARY_INV)
         #cv2.imshow("thresh", thresh)
 

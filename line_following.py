@@ -131,8 +131,9 @@ while True:
     except (KeyboardInterrupt, Exception) as e:
         print(f"Error has occured - {e}")
         break
-        
+
+movement.move(0, 0)
 movement.pi.stop()
 picam2.stop()
 picam2.close()
-cv2.destroyAllWindows()
+#cv2.destroyAllWindows()

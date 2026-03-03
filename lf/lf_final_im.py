@@ -124,7 +124,7 @@ while True:
 
             else:
                 print(f"we cannot find contours {getSign(last_error)}")
-                pid = getSign(last_error)
+                pid = getSign(last_error) * 10
 
             left_pwm = base_speed + pid
             right_pwm = base_speed - pid

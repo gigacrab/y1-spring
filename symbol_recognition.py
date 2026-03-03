@@ -64,8 +64,8 @@ try:
 
         # --- 5. SHAPE DETECTION (For everything else) ---
         _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-        #kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
-        #thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
+        thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
         cnts, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         for c in cnts:
@@ -74,7 +74,7 @@ try:
                 
                 best_match = None
                 # Note: Log-scale differences are naturally larger numbers, so we start at 0.5
-                lowest_diff = 0.5 
+                lowest_diff = 15.0 
 
                 for name, master_dna in templates.items():
                     # --- THE PRO MATH: Logarithmic Scale ---

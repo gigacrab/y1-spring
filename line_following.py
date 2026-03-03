@@ -128,7 +128,7 @@ while True:
             movement.move(0, 0)
             break
         '''
-    except Exception as e:
+    except (KeyboardInterrupt, Exception) as e:
         print(f"Error has occured - {e}")
         break
         

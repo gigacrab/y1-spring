@@ -71,8 +71,15 @@ while True:
                 # descending sorting using contourArea function
                 sorted_contours = sorted(contours, key=cv2.contourArea, reverse=True)
                 cnt = sorted_contours[0]
+                count = 0
                 for cont in sorted_contours:
-                    print(cv2.contourArea(cont))
+                    area = cv2.contourArea(cont)
+                    if (area == 0):
+                        count += 1
+                    elif (area > 20):
+                        print(cv2.contourArea(cont))
+                if count != 0:
+                    print(f'0 count - {count}')
                 cv2.drawContours(im2, [cnt], -1, (0, 255, 0), thickness=cv2.FILLED)
                 cv2.drawContours(im2, sorted_contours[1:], -1, (255, 255, 255), thickness=cv2.FILLED)
                 

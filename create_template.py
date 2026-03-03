@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-image_path = r"C:\Users\WINDOWS 11\Documents\Documents\UNM\Year_1\Applied Electrical and Electronic Engineering\y1-spring\Symbols_png\symbol_trapezium.png"
+image_path = r"C:\Users\WINDOWS 11\Documents\Documents\UNM\Year_1\Applied Electrical and Electronic Engineering\y1-spring\Symbols_png\symbol_fingerprint1.png"
 image = cv2.imread(image_path)
 
 if image is None:
@@ -26,7 +26,7 @@ if len(cnts) > 0:
     moments = cv2.HuMoments(cv2.moments(c)).flatten()
     
     # Save it permanently
-    np.save(r"C:\Users\WINDOWS 11\Documents\Documents\UNM\Year_1\Applied Electrical and Electronic Engineering\y1-spring\Symbols_npy\trapezium.npy", moments)
+    np.save(r"C:\Users\WINDOWS 11\Documents\Documents\UNM\Year_1\Applied Electrical and Electronic Engineering\y1-spring\Symbols_npy\fingerprint.npy", moments)
     
     print("SUCCESS! Master Template DNA Saved:")
     print(moments)

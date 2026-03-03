@@ -76,7 +76,7 @@ while True:
 
             # areas between 7500 to 40000 are accepted
             for i, cnt_a in enumerate(contour_areas):
-                if cnt_a >= 7500 and cnt_a <= 40000:
+                if cnt_a >= 8500 and cnt_a <= 40000:
                     filtered_contours.append(contours[i])
                     filtered_contour_areas.append(contour_areas[i])
             
@@ -123,8 +123,8 @@ while True:
                 last_error = error
 
             else:
-                print("we cannot find contours")
-                pid = getSign(last_error)
+                print(f"we cannot find contours {getSign(last_error)}")
+                pid = getSign(last_error) * 1.4
 
             left_pwm = base_speed + pid
             right_pwm = base_speed - pid

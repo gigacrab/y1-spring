@@ -64,8 +64,8 @@ try:
 
         # --- 5. SHAPE DETECTION (For everything else) ---
         _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
-        thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+        #kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
+        #thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
         cnts, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         for c in cnts:

@@ -9,7 +9,18 @@ os.environ["QT_QPA_PLATFORM"] = "offscreen" # Change to "xcb" if you want to see
 
 try:
     arrow_dna = np.load(r'/home/jaydenbryan/Project/Symbols_npy/arrow.npy')
-    circle_dna = np.load(r'/home/jaydenbryan/Project/Symbols_npy/circle34.npy')
+    circle34_dna = np.load(r'/home/jaydenbryan/Project/Symbols_npy/circle34.npy')
+    circlemajorsegment_dna = np.load(r'/home/jaydenbryan/Project/Symbols_npy/circlemajorsegment.npy')
+    danger_dna = np.load(r'/home/jaydenbryan/Project/Symbols_npy/danger.npy')
+    fingerprint_dna = np.load(r'/home/jaydenbryan/Project/Symbols_npy/fingerprint.npy')
+    kite_dna = np.load(r'/home/jaydenbryan/Project/Symbols_npy/kite.npy')
+    ortogonal_dna = np.load(r'/home/jaydenbryan/Project/Symbols_npy/ortogonal.npy')
+    plus_dna = np.load(r'/home/jaydenbryan/Project/Symbols_npy/plus.npy')
+    pressbutton_dna = np.load(r'/home/jaydenbryan/Project/Symbols_npy/pressbutton.npy')
+    qrcode_dna = np.load(r'/home/jaydenbryan/Project/Symbols_npy/qrcode.npy')
+    recycle_dna = np.load(r'/home/jaydenbryan/Project/Symbols_npy/recycle.npy')
+    star_dna = np.load(r'/home/jaydenbryan/Project/Symbols_npy/star.npy')
+    trapezium_dna = np.load(r'/home/jaydenbryan/Project/Symbols_npy/trapezium.npy')
 except FileNotFoundError:
     print("Error: Could not find the .npy files.")
     exit()

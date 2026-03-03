@@ -123,7 +123,7 @@ while True:
                 last_error = error
 
             else:
-                print("we cannot find contours")
+                print(f"we cannot find contours {getSign(last_error)}")
                 pid = getSign(last_error)
 
             left_pwm = base_speed + pid

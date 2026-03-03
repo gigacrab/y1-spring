@@ -12,7 +12,12 @@ def clamp(value, min, max):
         return min
     return value
 
+# returns 1 if positive, -1 if negative
+def getSign(n):
+    return (n > 0) - (n < 0)
+
 # __main__ is the script that was passed to execute
+# config from day 1 - 0.4 1.4 0.01 0.2
 if __name__ == "__main__":
     if len(sys.argv) == 5:
         base_speed = float(sys.argv[1])
@@ -30,13 +35,13 @@ picam2.start()
 time.sleep(2)
 
 # PID
-last_error = 0
+# error and diff_error are assigned
+last_error = -2
 total_error = 0
-flag = False
-flag2 = False
-#kp = 0.8
-#ki = 0
-#kd = 0
+first = True
+#kp = 1.4
+#ki = 0.01
+#kd = 0.2
 
 while True: 
     try: 
@@ -49,7 +54,8 @@ while True:
         #cv2.imshow("raw", im)
         imgray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
         #cv2.imshow("gray", imgray)
-        # 0 - values above this, assigned 255, the Otsu method adjusts according to lighting 
+        # 0 - values above this, assigned 255, the Otsu method adjusts according to lighting
+        # however the Otsu method wasn't that good because it'd always find a region of threshold
         # also idc about the ret
         #_, thresh = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
         _, thresh = cv2.threshold(imgray, 127, 255, cv2.THRESH_BINARY_INV)
@@ -89,41 +95,33 @@ while True:
             # error is normalized
             error = (320 - cx) / 320    
             total_error += error * elapsed_time
-            diff_error = (error - last_error) / elapsed_time
-
-            if not flag:
-                diff_error = 0
-                flag = True
+            if first:
+                diff_error = (error - last_error) / elapsed_time
+                first = False
+                
             pid = kp * error + ki * total_error + kd * diff_error
             
             last_error = error
 
             #left_pwm = 0.8 + pid
             #right_pwm = 0.78 - pid
-            left_pwm = base_speed + pid
-            right_pwm = base_speed - pid
-
-            clamped_left_pwm = clamp(left_pwm, -1, 1)
-            clamped_right_pwm = clamp(right_pwm, -1, 1)
-
-            movement.move(clamped_left_pwm, clamped_right_pwm)
-        
         else:
-            #movement.move(0, 0)
-            #break
-            pid = error * 1000
-            left_pwm = base_speed + pid
-            right_pwm = base_speed - pid
+            # in this case we want maximum error!
+            # follow the previous error's sign
             print("we cannot find contours")
+            pid = getSign(last_error)
 
-            clamped_left_pwm = clamp(left_pwm, -1, 1)
-            clamped_right_pwm = clamp(right_pwm, -1, 1)
+        left_pwm = base_speed + pid
+        right_pwm = base_speed - pid
 
-            movement.move(clamped_left_pwm, clamped_right_pwm)
+        clamped_left_pwm = clamp(left_pwm, -1, 1)
+        clamped_right_pwm = clamp(right_pwm, -1, 1)
 
-        #cv2.imshow("contours", im2)
+        movement.move(clamped_left_pwm, clamped_right_pwm)
 
         '''
+        cv2.imshow("contours", im2)
+        
         if cv2.waitKey(1) == 27:
             movement.move(0, 0)
             break

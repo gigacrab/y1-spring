@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from picamera2 import Picamera2
+import math
 import time
 import os
 
@@ -9,155 +10,136 @@ os.environ["QT_QPA_PLATFORM"] = "xcb"
 os.environ["OPENCV_LOG_LEVEL"] = "ERROR"
 
 # ==========================================
-# 1. TIER 1: TEXTURES (ORB Scanner)
+# 1. LOAD ORB TEMPLATES (For Art/Textures)
 # ==========================================
 img_path = '/home/jaydenbryan/Project/Symbols_img/'
-orb_files = {
-    "Danger": "symbol_danger.png", 
-    "Fingerprint": "symbol_fingerprint.png"
+template_files = {
+    "Danger": "symbol_danger.png",
+    "Fingerprint": "symbol_fingerprint.png",
+    "Press Button": "symbol_pressbutton.png",
+    "Recycle": "symbol_recycle.png",
+    "QR Code": "symbol_qrcode.png"
 }
 
-orb = cv2.ORB_create(nfeatures=500)
-bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-orb_templates = {}
+# Senior's ORB + FLANN Setup
+orb = cv2.ORB_create(nfeatures=1000)
+FLANN_INDEX_LSH = 6
+index_params = dict(algorithm=FLANN_INDEX_LSH, table_number=6, key_size=12, multi_probe_level=1)
+search_params = dict(checks=50)
+flann = cv2.FlannBasedMatcher(index_params, search_params)
 
-for name, f in orb_files.items():
-    img = cv2.imread(os.path.join(img_path, f), 0)
+template_features = {}
+for label, filename in template_files.items():
+    img = cv2.imread(os.path.join(img_path, filename), 0)
     if img is not None:
         kp, des = orb.detectAndCompute(img, None)
         if des is not None:
-            orb_templates[name] = des
+            template_features[label] = (kp, des)
+    else:
+        print(f"Warning: Could not load {filename}")
 
 # ==========================================
-# 2. TIER 2 & 3: GEOMETRY (Hu Moments DNA)
+# 2. SHAPE DETECTOR (For Geometry)
 # ==========================================
-npy_path = '/home/jaydenbryan/Project/Symbols_npy/'
+def get_shape_name(contour):
+    perimeter = cv2.arcLength(contour, True)
+    # The multiplier determines how strict the corner counting is
+    approx = cv2.approxPolyDP(contour, 0.02 * perimeter, True)
+    num_sides = len(approx)
+    area = cv2.contourArea(contour)
+    
+    if perimeter == 0: 
+        return "Unknown"
+        
+    circularity = (4 * math.pi * area) / (perimeter * perimeter)
+    
+    # Recognize your specific geometric symbols based on corner counts
+    if num_sides == 4:
+        return "Kite / Trapezium"
+    elif num_sides == 7:
+        return "Arrow"
+    elif num_sides == 8:
+        return "Octagon"
+    elif num_sides == 10:
+        return "Star"
+    elif num_sides == 12:
+        return "Plus"
+    elif circularity > 0.75 and area > 300:
+        return "Circle"
+    elif 0.5 < circularity <= 0.75:
+        return "Major Segment"
+        
+    return "Unknown"
 
-# TIER 2: Solid Shapes (Needs Sharp Edges)
-sharp_files = {
-    "Arrow": "arrow.npy", "3/4 Circle": "circle34.npy",
-    "Major Segment": "circlemajorsegment.npy", "Kite": "kite.npy",
-    "Octagon": "octagon.npy", "Plus": "plus.npy",
-    "Star": "star.npy", "Trapezium": "trapezium.npy"
-}
-
-# TIER 3: Fragmented Shapes (Needs the "Glue")
-glued_files = {
-    "Press Button": "pressbutton.npy", 
-    "Recycle": "recycle.npy",
-    "QR Code": "qrcode.npy" 
-}
-
-hu_sharp_templates = {}
-for name, f in sharp_files.items():
-    try: hu_sharp_templates[name] = np.load(os.path.join(npy_path, f))
-    except: pass
-
-hu_glued_templates = {}
-for name, f in glued_files.items():
-    try: hu_glued_templates[name] = np.load(os.path.join(npy_path, f))
-    except: pass
-
-# --- START CAMERA ---
+# ==========================================
+# 3. CAMERA & MAIN LOOP
+# ==========================================
 picam2 = Picamera2()
 picam2.configure(picam2.create_video_configuration(main={"size": (640, 480)}))
 picam2.start()
 time.sleep(2)
-print("Three-Tier System Ready!")
+print("Senior's Vision Logic Ready! Waiting for symbols...")
 
 try:
     while True:
         frame = picam2.capture_array()
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        
         blurred = cv2.GaussianBlur(gray, (5, 5), 0)
         
-        # FIX 1: Raised block size to 151 to stop "hollowing out" the Star and Plus!
-        thresh_sharp = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                                             cv2.THRESH_BINARY_INV, 151, 2)
+        symbol_detected = False
         
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (25, 25))
-        thresh_glued = cv2.morphologyEx(thresh_sharp, cv2.MORPH_CLOSE, kernel)
+        # --- TOOL A: ORB TEXTURE SCANNER ---
+        gray_processed = cv2.equalizeHist(blurred)
+        kp_frame, des_frame = orb.detectAndCompute(gray_processed, None)
+        
+        best_label = None
+        max_good_matches = 0
+        
+        if des_frame is not None and len(des_frame) > 1:
+            for label, (kp_template, des_template) in template_features.items():
+                if des_template is not None:
+                    matches = flann.knnMatch(des_template, des_frame, k=2)
+                    # Lowe's ratio test to filter out bad matches
+                    good_matches = [m for m in matches if len(m) == 2 and m[0].distance < 0.7 * m[1].distance]
+                    
+                    if len(good_matches) > 10 and len(good_matches) > max_good_matches:
+                        max_good_matches = len(good_matches)
+                        best_label = label
+                        symbol_detected = True
 
-        detected_label = None
-        box_coords = None
-
-        # --- PROCESS 1: CHECK THE SHARP IMAGE ---
-        cnts_sharp, _ = cv2.findContours(thresh_sharp, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        for c in cnts_sharp:
-            if detected_label: break
-            area = cv2.contourArea(c)
+        if symbol_detected:
+            cv2.putText(frame, f"ORB: {best_label}", (10, 50), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 255), 3)
+        
+        # --- TOOL B: CANNY EDGE CORNER COUNTER ---
+        else:
+            # If ORB didn't find art, look for sharp geometric edges
+            edges = cv2.Canny(blurred, 50, 150)
+            shape_contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             
-            if 1000 < area < 60000:
-                x, y, w, h = cv2.boundingRect(c)
-                if 0.3 <= (w/h) <= 3.0: 
+            # Sort the contours so it only analyzes the biggest shapes in the room
+            shape_contours = sorted(shape_contours, key=cv2.contourArea, reverse=True)[:5]
+            
+            for contour in shape_contours:
+                # Ignore background noise and tiny dots
+                if cv2.contourArea(contour) > 1500:
+                    shape_name = get_shape_name(contour)
                     
-                    # Tool 1: Check ORB first (Danger, Fingerprint)
-                    roi = gray[y:y+h, x:x+w]
-                    kp_live, des_live = orb.detectAndCompute(roi, None)
-                    
-                    if des_live is not None:
-                        max_matches = 0
-                        best_orb = None
-                        for name, master_des in orb_templates.items():
-                            matches = bf.match(master_des, des_live)
-                            if len(matches) > max_matches:
-                                max_matches = len(matches)
-                                best_orb = name
-                                
-                        if max_matches > 12:
-                            detected_label = f"{best_orb} (ORB: {max_matches})"
-                            box_coords = (x, y, w, h)
-                            break
+                    if shape_name != "Unknown":
+                        x, y, w, h = cv2.boundingRect(contour)
+                        cv2.drawContours(frame, [contour], -1, (0, 255, 0), 2)
+                        cv2.putText(frame, shape_name, (x, y-10), 
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+                        break # Once it finds the biggest valid shape, stop looking!
 
-                    # Tool 2: Check Sharp Hu Moments (Star, Arrow, Plus, etc.)
-                    live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
-                    lowest_diff = 4.0
-                    for name, master_dna in hu_sharp_templates.items():
-                        live_log = -np.sign(live_moments) * np.log10(np.abs(live_moments) + 1e-20)
-                        master_log = -np.sign(master_dna) * np.log10(np.abs(master_dna) + 1e-20)
-                        diff = np.sum(np.abs(live_log - master_log))
-                        
-                        if diff < lowest_diff:
-                            lowest_diff = diff
-                            detected_label = f"{name} (Hu: {lowest_diff:.2f})"
-                            box_coords = (x, y, w, h)
-
-        # --- PROCESS 2: CHECK THE GLUED IMAGE ---
-        if not detected_label:
-            cnts_glued, _ = cv2.findContours(thresh_glued, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            for c in cnts_glued:
-                if detected_label: break
-                area = cv2.contourArea(c)
-                
-                if 1000 < area < 60000:
-                    x, y, w, h = cv2.boundingRect(c)
-                    if 0.3 <= (w/h) <= 3.0: 
-                        
-                        # Tool 3: Check Glued Hu Moments (QR Code, Recycle, Press Button)
-                        live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
-                        lowest_diff = 4.0
-                        for name, master_dna in hu_glued_templates.items():
-                            live_log = -np.sign(live_moments) * np.log10(np.abs(live_moments) + 1e-20)
-                            master_log = -np.sign(master_dna) * np.log10(np.abs(master_dna) + 1e-20)
-                            diff = np.sum(np.abs(live_log - master_log))
-                            
-                            if diff < lowest_diff:
-                                lowest_diff = diff
-                                detected_label = f"{name} (Hu: {lowest_diff:.2f})"
-                                box_coords = (x, y, w, h)
-
-        # --- DRAW FINAL OUTPUT ---
-        if detected_label and box_coords:
-            x, y, w, h = box_coords
-            print(f">>> {detected_label}")
-            cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-            cv2.putText(frame, detected_label.split(" ")[0], (x, y-10), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-
+        # --- LIVE DISPLAY ---
         cv2.imshow("Robot View", frame)
-        cv2.imshow("Brain View (Sharp)", thresh_sharp)
-        if cv2.waitKey(1) & 0xFF == ord('q'): break
+        
+        # NOTE: Uncomment the line below to see what the Canny Edge detector is seeing!
+        # cv2.imshow("Canny Edges", edges) 
+        
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
 finally:
     picam2.stop()

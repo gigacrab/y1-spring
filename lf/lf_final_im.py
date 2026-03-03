@@ -56,7 +56,7 @@ while True:
         #cv2.imshow("raw", im)
         imgray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
         # we now try gaussian blur
-        #imgray = cv2.GaussianBlur(imgray, (5,5), 0)
+        imgray = cv2.GaussianBlur(imgray, (5,5), 0)
         #cv2.imshow("gray", imgray)
         # 0 - values above this, assigned 255, the Otsu method adjusts according to lighting
         # however the Otsu method wasn't that good because it'd always find a region of threshold
@@ -124,7 +124,7 @@ while True:
 
             else:
                 print(f"we cannot find contours {getSign(last_error)}")
-                pid = getSign(last_error) * 1.4
+                pid = getSign(last_error)
 
             left_pwm = base_speed + pid
             right_pwm = base_speed - pid

@@ -57,8 +57,8 @@ while True:
         # 0 - values above this, assigned 255, the Otsu method adjusts according to lighting
         # however the Otsu method wasn't that good because it'd always find a region of threshold
         # also idc about the ret
-        #_, thresh = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-        _, thresh = cv2.threshold(imgray, 127, 255, cv2.THRESH_BINARY_INV)
+        _, thresh = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+        #_, thresh = cv2.threshold(imgray, 127, 255, cv2.THRESH_BINARY_INV)
         #cv2.imshow("thresh", thresh)
 
         # hierarchy -> [next, previous, first_child, parent]
@@ -121,13 +121,12 @@ while True:
 
         movement.move(clamped_left_pwm, clamped_right_pwm)
 
-        '''
         cv2.imshow("contours", im2)
         
         if cv2.waitKey(1) == 27:
             movement.move(0, 0)
             break
-        '''
+        
     except (KeyboardInterrupt, Exception) as e:
         print(f"Error has occured - {e}")
         break
@@ -136,4 +135,4 @@ movement.move(0, 0)
 movement.pi.stop()
 picam2.stop()
 picam2.close()
-#cv2.destroyAllWindows()
+cv2.destroyAllWindows()

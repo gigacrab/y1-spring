@@ -5,24 +5,33 @@ import time
 import os
 
 os.environ["OPENCV_LOG_LEVEL"] = "ERROR"
-os.environ["QT_QPA_PLATFORM"] = "offscreen" # Change to "xcb" if you want to see the video window!
+os.environ["QT_QPA_PLATFORM"] = "offscreen" 
 
+# --- 1. LOAD YOUR SAVED DNA INTO A DICTIONARY ---
+# This is much cleaner than creating 13 different variables!
+base_path = '/home/jaydenbryan/Project/Symbols_npy/'
+template_files = {
+    "Arrow": "arrow.npy",
+    "3/4 Circle": "circle34.npy",
+    "Major Segment": "circlemajorsegment.npy",
+    "Danger": "danger.npy",
+    "Fingerprint": "fingerprint.npy",
+    "Kite": "kite.npy",
+    "Octagonal": "ortogonal.npy", # Fixed spelling
+    "Plus": "plus.npy",
+    "Press Button": "pressbutton.npy",
+    "QR Code": "qrcode.npy",
+    "Recycle": "recycle.npy",
+    "Star": "star.npy",
+    "Trapezium": "trapezium.npy"
+}
+
+templates = {}
 try:
-    arrow_dna = np.load(r'/home/jaydenbryan/Project/Symbols_npy/arrow.npy')
-    circle34_dna = np.load(r'/home/jaydenbryan/Project/Symbols_npy/circle34.npy')
-    circlemajorsegment_dna = np.load(r'/home/jaydenbryan/Project/Symbols_npy/circlemajorsegment.npy')
-    danger_dna = np.load(r'/home/jaydenbryan/Project/Symbols_npy/danger.npy')
-    fingerprint_dna = np.load(r'/home/jaydenbryan/Project/Symbols_npy/fingerprint.npy')
-    kite_dna = np.load(r'/home/jaydenbryan/Project/Symbols_npy/kite.npy')
-    ortogonal_dna = np.load(r'/home/jaydenbryan/Project/Symbols_npy/ortogonal.npy')
-    plus_dna = np.load(r'/home/jaydenbryan/Project/Symbols_npy/plus.npy')
-    pressbutton_dna = np.load(r'/home/jaydenbryan/Project/Symbols_npy/pressbutton.npy')
-    qrcode_dna = np.load(r'/home/jaydenbryan/Project/Symbols_npy/qrcode.npy')
-    recycle_dna = np.load(r'/home/jaydenbryan/Project/Symbols_npy/recycle.npy')
-    star_dna = np.load(r'/home/jaydenbryan/Project/Symbols_npy/star.npy')
-    trapezium_dna = np.load(r'/home/jaydenbryan/Project/Symbols_npy/trapezium.npy')
-except FileNotFoundError:
-    print("Error: Could not find the .npy files.")
+    for name, filename in template_files.items():
+        templates[name] = np.load(os.path.join(base_path, filename))
+except FileNotFoundError as e:
+    print(f"Error: Could not find {e.filename}. Check the Symbols_npy folder!")
     exit()
 
 # --- 2. START THE CAMERA ---
@@ -30,46 +39,40 @@ picam2 = Picamera2()
 picam2.configure(picam2.create_video_configuration(main={"size": (640, 480)}))
 picam2.start()
 time.sleep(2)
-print("Looking for symbols...")
+print("System Ready! Scanning for symbols...")
 
 try:
     while True:
         frame = picam2.capture_array()
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         
-        # Isolate the shapes (Black and White)
+        # Use Otsu's thresholding to isolate shapes automatically
         _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
         cnts, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         for c in cnts:
-            if cv2.contourArea(c) > 1500: # Ignore tiny background noise
-                
-                # Calculate Hu Moments for the shape the camera is looking at right now
+            if cv2.contourArea(c) > 1500:
+                # Calculate Hu Moments for the live shape
                 live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
                 
-                # Compare live DNA to your saved templates
-                arrow_diff = np.sum(np.abs(live_moments - arrow_dna))
-                circle_diff = np.sum(np.abs(live_moments - circle_dna))
-                
-                # Check which one is the closest match (lowest difference is better)
-                if arrow_diff < 0.1 and arrow_diff < circle_diff:
-                    label = "Arrow Detected"
-                elif circle_diff < 0.1 and circle_diff < arrow_diff:
-                    label = "3/4 Circle Detected"
-                else:
-                    label = "Unknown Shape"
+                best_match = None
+                lowest_diff = 0.1 # Lower this if it's too sensitive
+
+                # AUTOMATICALLY check against ALL templates in the dictionary
+                for name, master_dna in templates.items():
+                    diff = np.sum(np.abs(live_moments - master_dna))
+                    if diff < lowest_diff:
+                        lowest_diff = diff
+                        best_match = name
+
+                if best_match:
+                    print(f"Match Found: {best_match} (Diff: {lowest_diff:.4f})")
                     
-                # Print the result to the terminal!
-                if label != "Unknown Shape":
-                    print(label)
-                    
-                    # Optional: Draw a box if you are viewing the window
+                    # Optional visual markers
                     x, y, w, h = cv2.boundingRect(c)
                     cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                    cv2.putText(frame, label, (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-
-        # cv2.imshow("Robot View", frame) # Uncomment if you fixed the window/font stuff!
-        # if cv2.waitKey(1) == ord('q'): break
+                    cv2.putText(frame, best_match, (x, y-10), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
 
 finally:
     picam2.stop()

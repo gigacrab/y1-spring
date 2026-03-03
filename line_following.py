@@ -113,13 +113,14 @@ while True:
         pid = error * 1000
         left_pwm = base_speed + pid
         right_pwm = base_speed - pid
+        print("we cannot find contours")
 
         clamped_left_pwm = clamp(left_pwm, -1, 1)
         clamped_right_pwm = clamp(right_pwm, -1, 1)
 
         movement.move(clamped_left_pwm, clamped_right_pwm)
 
-    cv2.imshow("contours", im2)
+    #cv2.imshow("contours", im2)
 
     if cv2.waitKey(1) == 27:
         movement.move(0, 0)

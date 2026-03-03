@@ -74,7 +74,7 @@ try:
         
         # FIX 1: Raised block size to 151 to stop "hollowing out" the Star and Plus!
         thresh_sharp = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                                             cv2.THRESH_BINARY_INV, 151, 5)
+                                             cv2.THRESH_BINARY_INV, 151, 2)
         
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (25, 25))
         thresh_glued = cv2.morphologyEx(thresh_sharp, cv2.MORPH_CLOSE, kernel)

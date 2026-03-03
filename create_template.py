@@ -5,6 +5,8 @@ import time
 import os
 
 # --- WE REMOVED THE "OFFSCREEN" RULE SO VNC CAN OPEN WINDOWS! ---
+os.environ["DISPLAY"] = ":0"           # Tells it to use the main monitor
+os.environ["QT_QPA_PLATFORM"] = "xcb"
 os.environ["OPENCV_LOG_LEVEL"] = "ERROR"
 
 # --- 1. LOAD SAVED DNA ---

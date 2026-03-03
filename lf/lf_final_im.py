@@ -62,7 +62,6 @@ while True:
         # however the Otsu method wasn't that good because it'd always find a region of threshold
         # also idc about the ret
         ret, thresh = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-        print(f"return value: {ret}")
         #_, thresh = cv2.threshold(imgray, 127, 255, cv2.THRESH_BINARY_INV)
         #cv2.imshow("thresh", thresh)
 
@@ -82,7 +81,7 @@ while True:
                     filtered_contour_areas.append(contour_areas[i])
             
             # here we have the ACTUAL contours, if none, maximum error
-            if len(filtered_contours) > 0:
+            if len(filtered_contours) > 0 or ret < 180:
                 if len(filtered_contours) > 1:
                     zipped_pairs = zip(filtered_contour_areas, filtered_contours)
                     # this sorts by the first element

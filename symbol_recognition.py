@@ -8,8 +8,8 @@ os.environ["OPENCV_LOG_LEVEL"] = "ERROR"
 os.environ["QT_QPA_PLATFORM"] = "offscreen" # Change to "xcb" if you want to see the video window!
 
 try:
-    arrow_dna = np.load('arrow.npy')
-    circle_dna = np.load('circle34.npy')
+    arrow_dna = np.load(r'/home/jaydenbryan/Project/Symbols_npy/arrow.npy')
+    circle_dna = np.load(r'/home/jaydenbryan/Project/Symbols_npy/circle34.npy')
 except FileNotFoundError:
     print("Error: Could not find the .npy files.")
     exit()

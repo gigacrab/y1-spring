@@ -72,7 +72,7 @@ try:
                 
                 best_match = None
                 # Note: Log-scale differences are naturally larger numbers, so we start at 0.5
-                lowest_diff = 15.0 
+                lowest_diff = 0.5 
 
                 for name, master_dna in templates.items():
                     # --- THE PRO MATH: Logarithmic Scale ---

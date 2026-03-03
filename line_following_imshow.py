@@ -76,7 +76,7 @@ while True:
                     area = cv2.contourArea(cont)
                     if (area == 0):
                         count += 1
-                    else:
+                    elif (area > 20):
                         print(cv2.contourArea(cont))
                 if count != 0:
                     print(f'0 count - {count}')

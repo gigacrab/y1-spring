@@ -121,13 +121,12 @@ while True:
 
         movement.move(clamped_left_pwm, clamped_right_pwm)
 
-        '''
         cv2.imshow("contours", im2)
         
         if cv2.waitKey(1) == 27:
             movement.move(0, 0)
             break
-        '''
+        
     except (KeyboardInterrupt, Exception) as e:
         print(f"Error has occured - {e}")
         break
@@ -136,4 +135,4 @@ movement.move(0, 0)
 movement.pi.stop()
 picam2.stop()
 picam2.close()
-#cv2.destroyAllWindows()
+cv2.destroyAllWindows()

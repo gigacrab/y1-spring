@@ -62,7 +62,7 @@ try:
                 # AUTOMATICALLY check against ALL templates in the dictionary
                 for name, master_dna in templates.items():
                     live_log = -np.sign(live_moments) * np.log10(np.abs(live_moments) + 1e-20)
-                    master_log = -np.sign(master_dna) * np.log10(np.abs(master_dna) + 1e-10)
+                    master_log = -np.sign(master_dna) * np.log10(np.abs(master_dna) + 1e-20)
                     diff = np.sum(np.abs(live_log - master_log))
                     if diff < lowest_diff:
                         lowest_diff = diff

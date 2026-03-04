@@ -78,7 +78,7 @@ try:
         # ==========================================
         # PHASE 1: GEOMETRY FIRST (With the "Holes" Gatekeeper)
         # ==========================================
-        thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 151, 20)
+        thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 151, 10)
         
         # CRITICAL FIX: We changed RETR_EXTERNAL to RETR_TREE so the robot can look INSIDE the shapes!
         cnts, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -92,7 +92,7 @@ try:
                     holes = 0
                     for j, child_c in enumerate(cnts):
                         # hierarchy[0][j][3] tells us who the "parent" of the contour is
-                        if hierarchy[0][j][3] == i and cv2.contourArea(child_c) > 50:
+                        if hierarchy[0][j][3] == i and cv2.contourArea(child_c) > 200:
                             holes += 1
                     
                     # IF THE SHAPE IS COMPLETELY SOLID (0 HOLES), IT'S A BASIC GEOMETRY SHAPE!

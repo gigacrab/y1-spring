@@ -108,6 +108,7 @@ finally:
     picam2.stop()
     cv2.destroyAllWindows()
 '''
+'''
 try:
     while True:
         frame = picam2.capture_array()
@@ -180,6 +181,79 @@ try:
         # cv2.imshow("Robot View", frame)
         # cv2.imshow("Glued Brain", thresh_glued)
         # if cv2.waitKey(1) & 0xFF == ord('q'): break
+
+finally:
+    picam2.stop()
+    cv2.destroyAllWindows()
+'''
+# (Make sure to comment out os.environ["QT_QPA_PLATFORM"] = "offscreen" at the top so VNC works!)
+
+try:
+    while True:
+        frame = picam2.capture_array()
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        
+        # --- THE MAGIC BULLET: Otsu's Threshold (From your working code!) ---
+        _, thresh_sharp = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+        
+        # --- THE GLUE: For the broken shapes ---
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (19, 19))
+        thresh_glued = cv2.morphologyEx(thresh_sharp, cv2.MORPH_CLOSE, kernel)
+
+        detected_label = None
+        box_coords = None
+
+        # --- BRAIN 1: CHECK SHARP SHAPES (Using your exact working math) ---
+        cnts_sharp, _ = cv2.findContours(thresh_sharp, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        for c in cnts_sharp:
+            # Your exact working filter
+            if cv2.contourArea(c) > 1500:
+                live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
+                lowest_diff = 0.1  # Your exact working threshold
+                
+                for name, master_dna in templates_sharp.items():
+                    # Your exact working simple math (No log scale!)
+                    diff = np.sum(np.abs(live_moments - master_dna))
+                    
+                    if diff < lowest_diff:
+                        lowest_diff = diff
+                        detected_label = f"{name} (Diff: {lowest_diff:.4f})"
+                        box_coords = cv2.boundingRect(c)
+
+        # --- BRAIN 2: CHECK GLUED SHAPES (Only if Brain 1 found nothing) ---
+        if not detected_label:
+            cnts_glued, _ = cv2.findContours(thresh_glued, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            
+            for c in cnts_glued:
+                # Same exact working filter and math, just applied to the glued shapes
+                if cv2.contourArea(c) > 1500:
+                    live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
+                    lowest_diff = 0.1  
+                    
+                    for name, master_dna in templates_glued.items():
+                        diff = np.sum(np.abs(live_moments - master_dna))
+                        
+                        if diff < lowest_diff:
+                            lowest_diff = diff
+                            detected_label = f"{name} (Diff: {lowest_diff:.4f})"
+                            box_coords = cv2.boundingRect(c)
+
+        # --- DRAW THE WINNER ---
+        if detected_label and box_coords:
+            print(f">>> Match Found: {detected_label}")
+            x, y, w, h = box_coords
+            cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+            cv2.putText(frame, detected_label.split(" ")[0], (x, y-10), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+
+        # Show the windows in VNC so you can debug!
+        cv2.imshow("Robot View", frame)
+        cv2.imshow("Brain View (Sharp - Otsu)", thresh_sharp)
+        cv2.imshow("Brain View (Glued)", thresh_glued)
+        
+        if cv2.waitKey(1) & 0xFF == ord('q'): 
+            break
 
 finally:
     picam2.stop()

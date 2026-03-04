@@ -66,8 +66,11 @@ try:
                         lowest_diff = diff
                         best_match = name
                 if best_match in ["Plus", "Kite"]:
-                    print(f"DEBUG -> Live 3rd Moment: {live_moments[2]:.9f}")
-                    if live_moments[2] > 0.0000015:  # Example additional check for Plus vs Kite
+                    peri = cv2.arcLength(c, True)
+                    approx = cv2.approxPolyDP(c, 0.04 * peri, True)
+                    corners = len(approx)
+                    print(f"DEBUG -> Shape has {corners} corners")
+                    if corners < 8:
                         best_match = "Kite"
                     else:
                         best_match = "Plus"

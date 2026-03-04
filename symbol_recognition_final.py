@@ -146,6 +146,20 @@ try:
                                 # 4. The arrow points in the opposite direction of the heaviest edge!
                                 geom_match = max(masses, key=masses.get)
                         # --------------------------------
+                        if geom_match == "Kite":
+                            # Draw a rotating box that perfectly hugs the shape
+                            rect = cv2.minAreaRect(c)
+                            w_rect, h_rect = rect[1]
+                            
+                            if w_rect != 0 and h_rect != 0:
+                                # Divide the long side by the short side
+                                aspect_ratio = max(w_rect, h_rect) / min(w_rect, h_rect)
+                                
+                                # A QR Code block is a perfect square (ratio ~ 1.0)
+                                # A Kite is stretched out (ratio usually > 1.3)
+                                if aspect_ratio < 1.15:
+                                    geom_match = None  # It's a square! Reject it and let ORB scan!
+                        # --------------------------------
 
                         if geom_match:
                             best_match = geom_match

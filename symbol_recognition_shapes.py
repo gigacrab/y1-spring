@@ -57,7 +57,7 @@ try:
                 live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
                 
                 best_match = None
-                lowest_diff = 5.0 # Lower this if it's too sensitive
+                lowest_diff = 3.5 # Lower this if it's too sensitive
 
                 # AUTOMATICALLY check against ALL templates in the dictionary
                 for name, master_dna in templates.items():

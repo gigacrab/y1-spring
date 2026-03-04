@@ -52,40 +52,59 @@ try:
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(gray, (5, 5), 0)
         
-        # Boost contrast so ORB can see the lines easier
+        symbol_detected = False
+        best_label = None
+
+        # ==========================================
+        # TOOL: ORB TEXTURE SCANNER
+        # ==========================================
         gray_processed = cv2.equalizeHist(blurred)
-        
-        # Find the dots/corners in the live video
         kp_frame, des_frame = orb.detectAndCompute(gray_processed, None)
         
-        best_label = None
         max_good_matches = 0
         
-        # SAFETY CHECK: Only run matcher if it actually sees features
         if des_frame is not None and len(des_frame) >= 2:
             for label, (kp_template, des_template) in template_features.items():
                 if des_template is not None:
                     matches = flann.knnMatch(des_template, des_frame, k=2)
                     
-                    # Lowe's ratio test to filter out bad matches
                     good_matches = []
                     for m_n in matches:
                         if len(m_n) == 2:
                             m, n = m_n
-                            if m.distance < 0.75 * n.distance:
-                                good_matches.append(m)
+                            
+                            # --- 1. THE FAKE QR CODE BYPASS ---
+                            if label == "QR Code":
+                                # Turn off the strict ratio test! Just use raw distance.
+                                if m.distance < 65: 
+                                    good_matches.append(m)
+                            # ----------------------------------
+                            else:
+                                # Normal strict ratio test for Fingerprint, Recycle, etc.
+                                if m.distance < 0.75 * n.distance:
+                                    good_matches.append(m)
                     
-                    # If it finds more than 15 perfect matches, it's a success!
-                    if len(good_matches) > 10 and len(good_matches) > max_good_matches:
+                    # --- 2. THE DANGER SIGN BYPASS ---
+                    # Danger is smooth, so it only needs 6 matches. QR needs a lot because of the raw distance hack.
+                    if label == "Danger":
+                        required_matches = 6
+                    elif label == "QR Code":
+                        required_matches = 25
+                    else:
+                        required_matches = 15
+                    # ---------------------------------
+                    
+                    if len(good_matches) >= required_matches and len(good_matches) > max_good_matches:
                         max_good_matches = len(good_matches)
                         best_label = label
+                        symbol_detected = True
 
-        if best_label:
-            print(f"ORB Match: {best_label} ({max_good_matches} connection points)")
+        # --- DRAW THE RESULTS ---
+        if symbol_detected:
+            print(f"MATCH: {best_label} (Strength: {max_good_matches})")
             cv2.putText(frame, f"MATCH: {best_label}", (20, 50), 
                         cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 3)
 
-        # --- LIVE DISPLAY ---
         cv2.imshow("Robot View", frame)
         
         # --- SAFE QUIT LOGIC ---

@@ -66,8 +66,8 @@ try:
                         lowest_diff = diff
                         best_match = name
                 if best_match in ["Plus", "Kite"]:
-                    print(f"DEBUG -> Live 4th Moment: {live_moments[3]:.9f}")
-                    if live_moments[3] > 0.0000019:  # Example additional check for Plus vs Kite
+                    print(f"DEBUG -> Live 3rd Moment: {live_moments[2]:.9f}")
+                    if live_moments[2] > 0.0000015:  # Example additional check for Plus vs Kite
                         best_match = "Kite"
                     else:
                         best_match = "Plus"
@@ -78,7 +78,6 @@ try:
                     # Optional visual markers
                     x, y, w, h = cv2.boundingRect(c)
                     cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                    cv2.drawContours(frame, [c], -1, (255, 0, 0), thickness=cv2.FILLED)
                     cv2.putText(frame, best_match, (x, y-10), 
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
 

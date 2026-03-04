@@ -112,7 +112,13 @@ try:
                             approx = cv2.approxPolyDP(c, 0.02 * peri, True)
                             corners = len(approx)
                             geom_match = "Kite" if corners < 8 else "Plus"
-                            
+                        
+                        if geom_match == "Arrow":
+                            peri = cv2.arcLength(c, True)
+                            approx = cv2.approxPolyDP(c, 0.02 * peri, True)
+                            if len(approx) > 9: 
+                                geom_match = None
+
                         if geom_match:
                             best_match = geom_match
                             x, y, w, h = cv2.boundingRect(c)

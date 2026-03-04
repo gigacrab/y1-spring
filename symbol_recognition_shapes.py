@@ -7,11 +7,6 @@ import os
 os.environ["OPENCV_LOG_LEVEL"] = "ERROR"
 os.environ["QT_QPA_PLATFORM"] = "xcb" 
 
-# --- REQUIRED FOR SLIDER ---
-# OpenCV requires a dummy function to attach to the slider
-def nothing(x):
-    pass
-
 # --- 1. LOAD YOUR SAVED DNA INTO A DICTIONARY ---
 base_path = '/home/jaydenbryan/Project/Symbols_npy/'
 template_files = {
@@ -45,11 +40,6 @@ picam2.start()
 time.sleep(2)
 print("System Ready! Scanning for symbols...")
 
-# --- 3. CREATE THE SLIDER WINDOW ---
-cv2.namedWindow("Robot View")
-# Creates a slider from 1 to 100. Default starting value is 40.
-cv2.createTrackbar("Threshold", "Robot View", 40, 100, nothing)
-
 try:
     while True:
         frame = picam2.capture_array()
@@ -61,26 +51,26 @@ try:
         thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 151, 15)
         cnts, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        # READ THE LIVE SLIDER VALUE AND DIVIDE BY 10 (e.g., 40 becomes 4.0)
-        live_threshold = cv2.getTrackbarPos("Threshold", "Robot View") / 10.0
-
         for c in cnts:
             if cv2.contourArea(c) > 1500:
                 # Calculate Hu Moments for the live shape
                 live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
                 
                 best_match = None
-                lowest_diff = live_threshold # Lower this if it's too sensitive
+                lowest_diff = 0.1 # Lower this if it's too sensitive
 
                 # AUTOMATICALLY check against ALL templates in the dictionary
                 for name, master_dna in templates.items():
-                    live_log = -np.sign(live_moments) * np.log10(np.abs(live_moments) + 1e-20)
-                    master_log = -np.sign(master_dna) * np.log10(np.abs(master_dna) + 1e-20)
-                    diff = np.sum(np.abs(live_log - master_log))
+                    diff = np.sum(np.abs(live_moments - master_dna))
                     if diff < lowest_diff:
                         lowest_diff = diff
                         best_match = name
-
+                if best_match in ["Plus", "Kite"]:
+                    if live_moments[1] > 0.0001:  # Example additional check for Plus vs Kite
+                        best_match = "Kite"
+                    else:
+                        best_match = "Plus"
+                        
                 if best_match:
                     print(f"Match Found: {best_match} (Diff: {lowest_diff:.4f})")
                     

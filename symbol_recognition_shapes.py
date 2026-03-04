@@ -66,8 +66,8 @@ try:
                         lowest_diff = diff
                         best_match = name
                 if best_match in ["Plus", "Kite"]:
-                    print(f"DEBUG -> Live 2nd Moment: {live_moments[1]:.6f}")
-                    if live_moments[1] > 0.0003:  # Example additional check for Plus vs Kite
+                    print(f"DEBUG -> Live 3rd Moment: {live_moments[2]:.9f}")
+                    if live_moments[2] > 0.0000:  # Example additional check for Plus vs Kite
                         best_match = "Kite"
                     else:
                         best_match = "Plus"

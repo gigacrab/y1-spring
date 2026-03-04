@@ -80,8 +80,8 @@ try:
         # ---------------------------------------------------------
         # PHASE 1: ORB SCANNER (Runs fast on the whole screen)
         # ---------------------------------------------------------
-        gray_processed = cv2.equalizeHist(blurred)
-        kp_frame, des_frame = orb.detectAndCompute(gray_processed, None)
+        # No more fake contrast! Just look at the raw, normal image.
+        kp_frame, des_frame = orb.detectAndCompute(blurred, None)
         max_good_matches = 0
         
         if des_frame is not None and len(des_frame) >= 2:

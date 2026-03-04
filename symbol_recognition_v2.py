@@ -21,7 +21,7 @@ template_files = {
 }
 
 # ORB + FLANN Setup
-orb = cv2.ORB_create(nfeatures=3000)
+orb = cv2.ORB_create(nfeatures=1200)
 FLANN_INDEX_LSH = 6
 index_params = dict(algorithm=FLANN_INDEX_LSH, table_number=6, key_size=12, multi_probe_level=1)
 search_params = dict(checks=50)
@@ -72,11 +72,11 @@ try:
                     for m_n in matches:
                         if len(m_n) == 2:
                             m, n = m_n
-                            if m.distance < 0.7 * n.distance:
+                            if m.distance < 0.75 * n.distance:
                                 good_matches.append(m)
                     
                     # If it finds more than 15 perfect matches, it's a success!
-                    if len(good_matches) > 15 and len(good_matches) > max_good_matches:
+                    if len(good_matches) > 10 and len(good_matches) > max_good_matches:
                         max_good_matches = len(good_matches)
                         best_label = label
 

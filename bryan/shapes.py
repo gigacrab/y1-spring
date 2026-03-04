@@ -52,14 +52,15 @@ try:
         thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 151, 15)
         cnts, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        cv2.drawContours(frame, cnts, -1, (0, 255, 0), thickness=cv2.FILLED)
+        cv2.drawContours(frame, cnts, -1, (255, 0, 0), thickness=cv2.FILLED)
         for c in cnts:
             if cv2.contourArea(c) > 1500:
+                cv2.drawContours(frame, [c], -1, (0, 0, 255), thickness=cv2.FILLED)
                 # Calculate Hu Moments for the live shape
                 live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
                 
                 best_match = None
-                lowest_diff = 4 # Lower this if it's too sensitive
+                lowest_diff = 10 # Lower this if it's too sensitive
 
                 live_log = -np.sign(live_moments) * np.log10(np.abs(live_moments) + 1e-20)
                 

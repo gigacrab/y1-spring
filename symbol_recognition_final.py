@@ -20,11 +20,11 @@ template_files_png = {
     "QR Code": "qrcode.png"
 }
 
-# The hyper-sensitive ORB Brain
-orb = cv2.ORB_create(nfeatures=1200, fastThreshold=10)
+# --- THE CPU FIX: Optimized so the Pi doesn't stutter! ---
+orb = cv2.ORB_create(nfeatures=800, fastThreshold=12)
 FLANN_INDEX_LSH = 6
 index_params = dict(algorithm=FLANN_INDEX_LSH, table_number=6, key_size=12, multi_probe_level=1)
-search_params = dict(checks=50)
+search_params = dict(checks=20) 
 flann = cv2.FlannBasedMatcher(index_params, search_params)
 
 template_features = {}
@@ -66,36 +66,28 @@ picam2 = Picamera2()
 picam2.configure(picam2.create_video_configuration(main={"size": (640, 480)}))
 picam2.start()
 time.sleep(2)
-print("Hybrid Master Brain Ready! Scanning for all 13 symbols...")
+print("Hybrid Master Brain Ready! Scanning the whole room...")
 
 try:
     while True:
         frame = picam2.capture_array()
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        
-        # ==========================================
-        # THE STATIC SCANNER BOX (300x300 in the center)
-        # ==========================================
-        x1, y1 = 170, 90
-        x2, y2 = 470, 390
-        
-        # Crop everything down to just the scanner box!
-        roi_gray = gray[y1:y2, x1:x2]
-        roi_blurred = cv2.GaussianBlur(roi_gray, (5, 5), 0)
+        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
         
         best_match = None
-
-        # ==========================================
-        # METHOD 1: ORB SCANNER (Inside the box)
-        # ==========================================
-        gray_processed = cv2.equalizeHist(roi_blurred)
-        kp_roi, des_roi = orb.detectAndCompute(gray_processed, None)
+        orb_found_art = False
+        
+        # ---------------------------------------------------------
+        # PHASE 1: ORB SCANNER (Runs fast on the whole screen)
+        # ---------------------------------------------------------
+        gray_processed = cv2.equalizeHist(blurred)
+        kp_frame, des_frame = orb.detectAndCompute(gray_processed, None)
         max_good_matches = 0
         
-        if des_roi is not None and len(des_roi) >= 2:
+        if des_frame is not None and len(des_frame) >= 2:
             for label, (kp_template, des_template) in template_features.items():
                 if des_template is not None:
-                    matches = flann.knnMatch(des_template, des_roi, k=2)
+                    matches = flann.knnMatch(des_template, des_frame, k=2)
                     
                     good_matches = []
                     for m_n in matches:
@@ -104,24 +96,28 @@ try:
                             if m.distance < 0.75 * n.distance:
                                 good_matches.append(m)
                     
-                    # Danger is tight (8), others are looser (10)
-                    required_matches = 8 if label == "Danger" else 10
+                    # Custom thresholds to stop them from overlapping
+                    if label == "Danger":
+                        required_matches = 8
+                    elif label == "Fingerprint":
+                        required_matches = 15
+                    else:
+                        required_matches = 12
                     
                     if len(good_matches) >= required_matches and len(good_matches) > max_good_matches:
                         max_good_matches = len(good_matches)
-                        best_match = label 
-
-        # ==========================================
-        # METHOD 2: GEOMETRY SCANNER (If ORB found nothing)
-        # ==========================================
-        if best_match is None:
-            # We use the crisp, un-glued image so your Hu Moments stay perfect!
-            thresh = cv2.adaptiveThreshold(roi_blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 151, 10)
+                        best_match = label
+                        orb_found_art = True
+        
+        # ---------------------------------------------------------
+        # PHASE 2: GEOMETRY SCANNER (Only if ORB sees no art)
+        # ---------------------------------------------------------
+        if not orb_found_art:
+            thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 151, 10)
             cnts, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             
             for c in cnts:
-                # Lowered the area requirement slightly since the box is smaller
-                if cv2.contourArea(c) > 800: 
+                if cv2.contourArea(c) > 1500:
                     live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
                     lowest_diff = 0.05 
                     geom_match = None
@@ -132,7 +128,6 @@ try:
                             lowest_diff = diff
                             geom_match = name
                             
-                    # Your Kite vs Plus Tie-Breaker
                     if geom_match in ["Plus", "Kite"]:
                         peri = cv2.arcLength(c, True)
                         approx = cv2.approxPolyDP(c, 0.02 * peri, True)
@@ -142,18 +137,14 @@ try:
                     if geom_match:
                         best_match = geom_match
                         
-                        # Draw a mini box tightly around the shape inside the big box
-                        shape_x, shape_y, shape_w, shape_h = cv2.boundingRect(c)
-                        cv2.rectangle(frame, (x1+shape_x, y1+shape_y), (x1+shape_x+shape_w, y1+shape_y+shape_h), (0, 255, 255), 2)
+                        # Draw geometry box
+                        x, y, w, h = cv2.boundingRect(c)
+                        cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
                         break 
 
-        # ==========================================
-        # DISPLAY HUD AND RESULTS
-        # ==========================================
-        # Draw the permanent Scanner Box on the screen
-        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 3)
-        cv2.putText(frame, "SCAN ZONE", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-
+        # ---------------------------------------------------------
+        # DISPLAY RESULTS
+        # ---------------------------------------------------------
         if best_match:
             cv2.putText(frame, f"MATCH: {best_match}", (20, 50), 
                         cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 3)

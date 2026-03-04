@@ -199,7 +199,7 @@ try:
         thresh_sharp = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 151, 15)
         
         # --- THE GLUE ---
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (25, 25))
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (20, 20))
         thresh_glued = cv2.morphologyEx(thresh_sharp, cv2.MORPH_CLOSE, kernel)
 
         best_label = None

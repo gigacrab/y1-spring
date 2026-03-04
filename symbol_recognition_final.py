@@ -21,7 +21,7 @@ template_files_png = {
 }
 
 # The hyper-sensitive ORB Brain
-orb = cv2.ORB_create(nfeatures=3000, fastThreshold=10)
+orb = cv2.ORB_create(nfeatures=1200, fastThreshold=10)
 FLANN_INDEX_LSH = 6
 index_params = dict(algorithm=FLANN_INDEX_LSH, table_number=6, key_size=12, multi_probe_level=1)
 search_params = dict(checks=50)
@@ -114,7 +114,6 @@ try:
                 if cv2.contourArea(c) > 1500:
                     live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
                     lowest_diff = 0.05 # Your sensitive geometry threshold
-                    geom_match = None
                     
                     # Check the DNA
                     for name, master_dna in templates_npy.items():

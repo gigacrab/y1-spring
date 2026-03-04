@@ -13,11 +13,11 @@ os.environ["OPENCV_LOG_LEVEL"] = "ERROR"
 # ==========================================
 img_path = '/home/jaydenbryan/Project/Symbols_png/'
 template_files = {
-    "Danger": "symbol_danger.png",
-    "Fingerprint": "symbol_fingerprint.png",
-    "Press Button": "symbol_pressbutton.png",
-    "Recycle": "symbol_recycle.png",
-    "QR Code": "symbol_qrcode.png"
+    "Danger": "danger.png",
+    "Fingerprint": "fingerprint.png",
+    "Press Button": "pressbutton.png",
+    "Recycle": "recycle.png",
+    "QR Code": "qrcode.png"
 }
 
 # ORB + FLANN Setup

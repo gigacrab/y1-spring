@@ -118,6 +118,32 @@ try:
                             approx = cv2.approxPolyDP(c, 0.02 * peri, True)
                             if len(approx) > 9: 
                                 geom_match = None
+                            if geom_match == "Arrow":
+                                # 1. Find the Center of Mass (Centroid) of the Arrow
+                                M = cv2.moments(c)
+                                if M["m00"] != 0:
+                                    cx = int(M["m10"] / M["m00"])
+                                    cy = int(M["m01"] / M["m00"])
+                                    
+                                    # 2. Find the extreme outer edges of the drawing
+                                    extLeft = tuple(c[c[:, :, 0].argmin()][0])
+                                    extRight = tuple(c[c[:, :, 0].argmax()][0])
+                                    extTop = tuple(c[c[:, :, 1].argmin()][0])
+                                    extBot = tuple(c[c[:, :, 1].argmax()][0])
+                                    
+                                    # 3. If it is wider than it is tall, it's Left/Right
+                                    x, y, w, h = cv2.boundingRect(c)
+                                    if w > h:
+                                        dist_left = ((cx - extLeft[0])**2 + (cy - extLeft[1])**2)**0.5
+                                        dist_right = ((cx - extRight[0])**2 + (cy - extRight[1])**2)**0.5
+                                        # The tip is always the furthest point from the center!
+                                        geom_match = "Arrow (RIGHT)" if dist_right > dist_left else "Arrow (LEFT)"
+                                    
+                                    # 4. If it is taller than it is wide, it's Up/Down
+                                    else:
+                                        dist_top = ((cx - extTop[0])**2 + (cy - extTop[1])**2)**0.5
+                                        dist_bot = ((cx - extBot[0])**2 + (cy - extBot[1])**2)**0.5
+                                        geom_match = "Arrow (DOWN)" if dist_bot > dist_top else "Arrow (UP)"
 
                         if geom_match:
                             best_match = geom_match

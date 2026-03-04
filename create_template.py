@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-image_path = r"C:\Users\WINDOWS 11\Documents\Documents\UNM\Year_1\Applied Electrical and Electronic Engineering\y1-spring\Symbols_png\symbol_fingerprint.png"
+image_path = r"C:\Users\WINDOWS 11\Documents\Documents\UNM\Year_1\Applied Electrical and Electronic Engineering\y1-spring\Symbols_png\symbol_plus.png"
 image = cv2.imread(image_path)
 
 if image is None:
@@ -11,17 +11,17 @@ if image is None:
 # Convert to grayscale and threshold
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 _, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY_INV)
-
+'''
 kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (20, 20))
 dilated_thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
-
+'''
 '''
 kernel = np.ones((5,5), np.uint8)
 dilated_thresh = cv2.dilate(thresh, kernel, iterations=2)
 '''
 
 # Find the shape
-cnts, _ = cv2.findContours(dilated_thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+cnts, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
 if len(cnts) > 0:
     # Get the largest contour of the shape
@@ -31,7 +31,7 @@ if len(cnts) > 0:
     moments = cv2.HuMoments(cv2.moments(c)).flatten()
     
     # Save it permanently
-    np.save(r"C:\Users\WINDOWS 11\Documents\Documents\UNM\Year_1\Applied Electrical and Electronic Engineering\y1-spring\Symbols_npy\fingerprint.npy", moments)
+    np.save(r"C:\Users\WINDOWS 11\Documents\Documents\UNM\Year_1\Applied Electrical and Electronic Engineering\y1-spring\Symbols_npy\plus.npy", moments)
     
     print("SUCCESS! Master Template DNA Saved:")
     print(moments)

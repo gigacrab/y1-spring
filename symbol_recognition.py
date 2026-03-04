@@ -5,7 +5,7 @@ import time
 import os
 
 os.environ["OPENCV_LOG_LEVEL"] = "ERROR"
-os.environ["QT_QPA_PLATFORM"] = "offscreen" 
+os.environ["QT_QPA_PLATFORM"] = "xcb" 
 '''
 # --- 1. LOAD YOUR SAVED DNA INTO A DICTIONARY ---
 # This is much cleaner than creating 13 different variables!

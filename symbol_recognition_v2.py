@@ -79,7 +79,7 @@ try:
                     # --- THE DANGER SIGN TWEAK ---
                     # Danger is smooth, so it will inherently have fewer corners.
                     if label == "Danger":
-                        required_matches = 4  
+                        required_matches = 3  
                     else:
                         required_matches = 12 
                     # -----------------------------

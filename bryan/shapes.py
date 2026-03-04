@@ -55,6 +55,7 @@ try:
         cv2.drawContours(frame, cnts, -1, (255, 0, 0), thickness=cv2.FILLED)
         for c in cnts:
             if cv2.contourArea(c) > 1500:
+                cv2.drawContours(frame, [c], -1, (0, 0, 255), thickness=cv2.FILLED)
                 # Calculate Hu Moments for the live shape
                 live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
                 

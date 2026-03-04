@@ -52,16 +52,15 @@ try:
         
         blurred = cv2.GaussianBlur(gray, (5, 5), 0)
         
-        # Erase the paper edge shadow!
+        # Erases the paper edge shadow
         thresh_sharp = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 151, 15)
         
-        # --- THE GLUE ---
+        # THE BIG GLUE: Matches the thick templates you made on your laptop!
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (35, 35))
         thresh_glued = cv2.morphologyEx(thresh_sharp, cv2.MORPH_CLOSE, kernel)
 
         best_label = None
         best_box = None
-        best_moments = None # <--- NEW: We will store the actual winner's DNA here!
         largest_valid_area = 0
 
         # --- CHECK GLUED SHAPES FIRST ---
@@ -82,7 +81,6 @@ try:
                             lowest_diff = diff
                             best_label = f"{name} (Diff: {lowest_diff:.4f})"
                             best_box = (x, y, w, h)
-                            best_moments = live_moments # <--- SAVE THE WINNER'S DNA!
                             largest_valid_area = area
 
         # --- CHECK SHARP SHAPES ---
@@ -103,7 +101,6 @@ try:
                             lowest_diff = diff
                             best_label = f"{name} (Diff: {lowest_diff:.4f})"
                             best_box = (x, y, w, h)
-                            best_moments = live_moments # <--- SAVE THE WINNER'S DNA!
                             largest_valid_area = area
 
         # --- DRAW THE WINNER ---
@@ -118,23 +115,9 @@ try:
         cv2.imshow("Brain View (Sharp)", thresh_sharp)
         cv2.imshow("Brain View (Glued)", thresh_glued)
         
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord('q'): 
+        # Only 'q' to quit. No more scanning gimmicks.
+        if cv2.waitKey(1) & 0xFF == ord('q'): 
             break
-            
-        # --- THE SMART DNA SCANNER ---
-        elif key == ord('s'):
-            if best_box is not None and best_moments is not None:
-                save_path = '/home/jaydenbryan/Project/Symbols_npy/recycle.npy'
-                # 1. Save it to the hard drive
-                np.save(save_path, best_moments)
-                
-                # 2. Instantly update the robot's active memory so you don't have to restart!
-                templates_glued["Recycle"] = best_moments
-                
-                print(f"\n[SUCCESS] DNA SAVED AND BRAIN UPDATED INSTANTLY!\n")
-            else:
-                print("No shape detected to save!")
 
 finally:
     picam2.stop()

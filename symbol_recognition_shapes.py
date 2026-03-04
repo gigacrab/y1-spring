@@ -57,11 +57,13 @@ try:
                 live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
                 
                 best_match = None
-                lowest_diff = 0.05 # Lower this if it's too sensitive
+                lowest_diff = 0.2 # Lower this if it's too sensitive
 
                 # AUTOMATICALLY check against ALL templates in the dictionary
                 for name, master_dna in templates.items():
-                    diff = np.sum(np.abs(live_moments - master_dna))
+                    live_log = -np.sign(live_moments) * np.log10(np.abs(live_moments) + 1e-20)
+                    master_log = -np.sign(master_dna) * np.log10(np.abs(master_dna) + 1e-20)
+                    diff = np.sum(np.abs(live_log - master_log))
                     if diff < lowest_diff:
                         lowest_diff = diff
                         best_match = name

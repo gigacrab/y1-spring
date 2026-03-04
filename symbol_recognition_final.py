@@ -120,33 +120,31 @@ try:
                                 geom_match = None
                             if geom_match == "Arrow":
                                 x, y, w, h = cv2.boundingRect(c)
-                                box_center_x = x + (w / 2)
-                                box_center_y = y + (h / 2)
                                 
-                                # If it's wider than it is tall, it's Horizontal
+                                # 1. Create a perfect digital silhouette of the arrow to ignore background noise
+                                mask = np.zeros((h, w), dtype=np.uint8)
+                                cv2.drawContours(mask, [c - [x, y]], -1, 255, -1)
+                                
+                                # 2. If it's wider than it is tall, it's Horizontal
                                 if w > h:
-                                    # Find the Top and Bottom tips (the wings of a Left/Right arrow)
-                                    extTop = tuple(c[c[:, :, 1].argmin()][0])
-                                    extBot = tuple(c[c[:, :, 1].argmax()][0])
+                                    # Slice off just the extreme Left 10% and Right 10% of the shape
+                                    margin = max(1, int(w * 0.10))
+                                    left_edge = mask[:, :margin]
+                                    right_edge = mask[:, -margin:]
                                     
-                                    # Find the X position of where the wings are located
-                                    wing_x = (extTop[0] + extBot[0]) / 2
+                                    # The tip is a sharp point (few pixels). The tail is a flat base (many pixels).
+                                    geom_match = "Arrow (LEFT)" if cv2.countNonZero(left_edge) < cv2.countNonZero(right_edge) else "Arrow (RIGHT)"
                                     
-                                    # If the wings are on the Left side of the box, it points LEFT
-                                    geom_match = "Arrow (LEFT)" if wing_x < box_center_x else "Arrow (RIGHT)"
-                                    
-                                # If it's taller than it is wide, it's Vertical
+                                # 3. If it's taller than it is wide, it's Vertical
                                 else:
-                                    # Find the Left and Right tips (the wings of an Up/Down arrow)
-                                    extLeft = tuple(c[c[:, :, 0].argmin()][0])
-                                    extRight = tuple(c[c[:, :, 0].argmax()][0])
+                                    # Slice off just the extreme Top 10% and Bottom 10% of the shape
+                                    margin = max(1, int(h * 0.10))
+                                    top_edge = mask[:margin, :]
+                                    bottom_edge = mask[-margin:, :]
                                     
-                                    # Find the Y position of where the wings are located
-                                    wing_y = (extLeft[1] + extRight[1]) / 2
-                                    
-                                    # In OpenCV, y=0 is the top of the screen. So smaller Y = UP.
-                                    # If the wings are in the top half of the box, it points UP
-                                    geom_match = "Arrow (UP)" if wing_y < box_center_y else "Arrow (DOWN)"
+                                    # The tip is a sharp point (few pixels). The tail is a flat base (many pixels).
+                                    geom_match = "Arrow (UP)" if cv2.countNonZero(top_edge) < cv2.countNonZero(bottom_edge) else "Arrow (DOWN)"
+                        # --------------------------------
 
                         if geom_match:
                             best_match = geom_match

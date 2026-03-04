@@ -127,7 +127,7 @@ try:
                     
                     if shape_name != "Unknown":
                         x, y, w, h = cv2.boundingRect(contour)
-                        cv2.drawContours(frame, [contour], -1, (0, 255, 0), 2)
+                        cv2.drawContours(frame, [contour], -1, (0, 255, 0), thickness=cv2.FILLED)
                         cv2.putText(frame, shape_name, (x, y-10), 
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
                         break # Once it finds the biggest valid shape, stop looking!

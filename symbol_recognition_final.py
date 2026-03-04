@@ -113,13 +113,14 @@ try:
         # PHASE 2: GEOMETRY SCANNER (Only if ORB sees no art)
         # ---------------------------------------------------------
         if not orb_found_art:
-            thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 151, 10)
+            # Otsu's method creates perfectly solid shapes without jagged shadows
+            _, thresh = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
             cnts, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             
             for c in cnts:
                 if cv2.contourArea(c) > 1500:
                     live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
-                    lowest_diff = 0.05 
+                    lowest_diff = 0.1
                     geom_match = None
                     
                     for name, master_dna in templates_npy.items():

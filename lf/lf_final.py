@@ -61,7 +61,7 @@ while True:
         # 0 - values above this, assigned 255, the Otsu method adjusts according to lighting
         # however the Otsu method wasn't that good because it'd always find a region of threshold
         # also idc about the ret
-        _, thresh = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+        ret, thresh = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
         #_, thresh = cv2.threshold(imgray, 127, 255, cv2.THRESH_BINARY_INV)
         #cv2.imshow("thresh", thresh)
 
@@ -81,7 +81,7 @@ while True:
                     filtered_contour_areas.append(contour_areas[i])
             
             # here we have the ACTUAL contours, if none, maximum error
-            if len(filtered_contours) > 0:
+            if len(filtered_contours) > 0 and ret < 180:
                 if len(filtered_contours) > 1:
                     zipped_pairs = zip(filtered_contour_areas, filtered_contours)
                     # this sorts by the first element
@@ -124,7 +124,7 @@ while True:
 
             else:
                 print(f"we cannot find contours {getSign(last_error)}")
-                pid = getSign(last_error)
+                pid = getSign(last_error) * 2
 
             left_pwm = base_speed + pid
             right_pwm = base_speed - pid

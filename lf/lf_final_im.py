@@ -66,7 +66,7 @@ while True:
         #cv2.imshow("thresh", thresh)
 
         # hierarchy -> [next, previous, first_child, parent]
-        contours, hierarchy = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         im2 = np.zeros((240, 640, 3), dtype=np.uint8)
         
         if len(contours) > 0:

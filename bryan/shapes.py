@@ -60,7 +60,7 @@ try:
                 live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
                 
                 best_match = None
-                lowest_diff = 6 # Lower this if it's too sensitive
+                lowest_diff = 10 # Lower this if it's too sensitive
 
                 live_log = -np.sign(live_moments) * np.log10(np.abs(live_moments) + 1e-20)
                 

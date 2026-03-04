@@ -66,11 +66,11 @@ try:
                         lowest_diff = diff
                         best_match = name
                 if best_match in ["Plus", "Kite"]:
-                    if live_moments[1] > 0.0001:  # Example additional check for Plus vs Kite
+                    if live_moments[1] > 0.00005:  # Example additional check for Plus vs Kite
                         best_match = "Kite"
                     else:
                         best_match = "Plus"
-                        
+
                 if best_match:
                     print(f"Match Found: {best_match} (Diff: {lowest_diff:.4f})")
                     

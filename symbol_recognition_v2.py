@@ -68,32 +68,27 @@ try:
                 if des_template is not None:
                     matches = flann.knnMatch(des_template, des_frame, k=2)
                     
+                    # --- CUSTOM TUNING FOR EACH SYMBOL ---
+                    if label == "QR Code":
+                        ratio_strictness = 0.85 # Relaxed for repetitive squares
+                        required_matches = 20   # High count to prevent false positives
+                    elif label == "Danger":
+                        ratio_strictness = 0.75 # Standard strictness
+                        required_matches = 5    # Low count because it's a smooth shape
+                    else:
+                        ratio_strictness = 0.75 # Standard strictness
+                        required_matches = 12   # Standard count
+                    # -------------------------------------
+                    
                     good_matches = []
                     for m_n in matches:
                         if len(m_n) == 2:
                             m, n = m_n
-                            
-                            # --- 1. THE FAKE QR CODE BYPASS ---
-                            if label == "QR Code":
-                                # Turn off the strict ratio test! Just use raw distance.
-                                if m.distance < 65: 
-                                    good_matches.append(m)
-                            # ----------------------------------
-                            else:
-                                # Normal strict ratio test for Fingerprint, Recycle, etc.
-                                if m.distance < 0.75 * n.distance:
-                                    good_matches.append(m)
+                            # Apply the custom ratio test
+                            if m.distance < ratio_strictness * n.distance:
+                                good_matches.append(m)
                     
-                    # --- 2. THE DANGER SIGN BYPASS ---
-                    # Danger is smooth, so it only needs 6 matches. QR needs a lot because of the raw distance hack.
-                    if label == "Danger":
-                        required_matches = 6
-                    elif label == "QR Code":
-                        required_matches = 25
-                    else:
-                        required_matches = 15
-                    # ---------------------------------
-                    
+                    # Check if it passes the required matches!
                     if len(good_matches) >= required_matches and len(good_matches) > max_good_matches:
                         max_good_matches = len(good_matches)
                         best_label = label

@@ -76,61 +76,51 @@ try:
         best_match = None
 
         # ==========================================
-        # PHASE 1: GEOMETRY FIRST (With Solidity Filter!)
+        # PHASE 1: GEOMETRY FIRST (With the "Holes" Gatekeeper)
         # ==========================================
         thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 151, 10)
-        cnts, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
-        for c in cnts:
-            if cv2.contourArea(c) > 1500:
-                
-                # --- THE SOLIDITY FILTER ---
-                x, y, w, h = cv2.boundingRect(c)
-                
-                # 1. Create a blank mask for just this shape
-                mask = np.zeros((h, w), dtype=np.uint8)
-                # 2. Shift the contour to fit the tiny mask and draw a solid silhouette
-                c_shifted = c - [x, y]
-                cv2.drawContours(mask, [c_shifted], -1, 255, -1)
-                
-                # 3. Compare the solid silhouette to the actual black ink on the paper
-                roi_thresh = thresh[y:y+h, x:x+w]
-                ink_pixels = cv2.countNonZero(cv2.bitwise_and(roi_thresh, mask))
-                silhouette_pixels = cv2.countNonZero(mask)
-                
-                # Prevent math crash
-                if silhouette_pixels == 0: continue
-                
-                fill_ratio = ink_pixels / silhouette_pixels
-                
-                # IF THE SHAPE IS MOSTLY EMPTY (Like Danger or Press Button), IGNORE IT!
-                if fill_ratio > 0.80:
-                    live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
-                    lowest_diff = 0.05 
-                    geom_match = None
+        # CRITICAL FIX: We changed RETR_EXTERNAL to RETR_TREE so the robot can look INSIDE the shapes!
+        cnts, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        
+        if hierarchy is not None:
+            for i, c in enumerate(cnts):
+                if cv2.contourArea(c) > 1500:
                     
-                    for name, master_dna in templates_npy.items():
-                        diff = np.sum(np.abs(live_moments - master_dna))
-                        if diff < lowest_diff:
-                            lowest_diff = diff
-                            geom_match = name
+                    # --- THE "HOLES" FILTER ---
+                    # Count how many inner details (children) are inside this main shape
+                    holes = 0
+                    for j, child_c in enumerate(cnts):
+                        # hierarchy[0][j][3] tells us who the "parent" of the contour is
+                        if hierarchy[0][j][3] == i and cv2.contourArea(child_c) > 50:
+                            holes += 1
+                    
+                    # IF THE SHAPE IS COMPLETELY SOLID (0 HOLES), IT'S A BASIC GEOMETRY SHAPE!
+                    if holes == 0:
+                        live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
+                        lowest_diff = 0.05 
+                        geom_match = None
+                        
+                        for name, master_dna in templates_npy.items():
+                            diff = np.sum(np.abs(live_moments - master_dna))
+                            if diff < lowest_diff:
+                                lowest_diff = diff
+                                geom_match = name
+                                
+                        if geom_match in ["Plus", "Kite"]:
+                            peri = cv2.arcLength(c, True)
+                            approx = cv2.approxPolyDP(c, 0.02 * peri, True)
+                            corners = len(approx)
+                            geom_match = "Kite" if corners < 8 else "Plus"
                             
-                    if geom_match in ["Plus", "Kite"]:
-                        peri = cv2.arcLength(c, True)
-                        approx = cv2.approxPolyDP(c, 0.02 * peri, True)
-                        corners = len(approx)
-                        geom_match = "Kite" if corners < 8 else "Plus"
-                        
-                    if geom_match:
-                        best_match = geom_match
-                        cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                        
-                        # (Optional) Uncomment the line below to see the math in real time!
-                        # cv2.putText(frame, f"Solid: {fill_ratio:.2f}", (x, y-30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
-                        break 
+                        if geom_match:
+                            best_match = geom_match
+                            x, y, w, h = cv2.boundingRect(c)
+                            cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+                            break 
 
         # ==========================================
-        # PHASE 2: ORB SCANNER (Catches the empty/complex symbols)
+        # PHASE 2: ORB SCANNER (Catches all complex/hollow symbols)
         # ==========================================
         if best_match is None:
             gray_processed = cv2.equalizeHist(blurred)
@@ -149,6 +139,7 @@ try:
                                 if m.distance < 0.75 * n.distance:
                                     good_matches.append(m)
                         
+                        # Danger is strict, Fingerprint is loose
                         if label == "Danger": required_matches = 8
                         elif label == "Fingerprint": required_matches = 15
                         else: required_matches = 12

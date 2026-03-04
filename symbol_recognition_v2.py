@@ -21,7 +21,7 @@ template_files = {
 }
 
 # ORB + FLANN Setup
-orb = cv2.ORB_create(nfeatures=1200)
+orb = cv2.ORB_create(nfeatures=3000, fastThreshold=10)
 FLANN_INDEX_LSH = 6
 index_params = dict(algorithm=FLANN_INDEX_LSH, table_number=6, key_size=12, multi_probe_level=1)
 search_params = dict(checks=50)

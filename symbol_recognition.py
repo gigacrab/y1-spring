@@ -6,26 +6,7 @@ import os
 
 os.environ["OPENCV_LOG_LEVEL"] = "ERROR"
 os.environ["QT_QPA_PLATFORM"] = "xcb" 
-'''
-# --- 1. LOAD YOUR SAVED DNA INTO A DICTIONARY ---
-# This is much cleaner than creating 13 different variables!
-base_path = '/home/jaydenbryan/Project/Symbols_npy/'
-template_files = {
-    "Arrow": "arrow.npy",
-    "3/4 Circle": "circle34.npy",
-    "Major Segment": "circlemajorsegment.npy",
-    "Danger": "danger.npy",
-    "Fingerprint": "fingerprint.npy",
-    "Kite": "kite.npy",
-    "Octagon": "octagon.npy", # Fixed spelling
-    "Plus": "plus.npy",
-    "Press Button": "pressbutton.npy",
-    "QR Code": "qrcode.npy",
-    "Recycle": "recycle.npy",
-    "Star": "star.npy",
-    "Trapezium": "trapezium.npy"
-}
-'''
+
 # --- 1. LOAD SAVED DNA ---
 base_path = '/home/jaydenbryan/Project/Symbols_npy/'
 
@@ -54,15 +35,6 @@ for name, filename in sharp_files.items():
 for name, filename in glued_files.items():
     try: templates_glued[name] = np.load(os.path.join(base_path, filename))
     except: pass
-'''
-templates = {}
-try:
-    for name, filename in template_files.items():
-        templates[name] = np.load(os.path.join(base_path, filename))
-except FileNotFoundError as e:
-    print(f"Error: Could not find {e.filename}. Check the Symbols_npy folder!")
-    exit()
-'''
 
 # --- 2. START THE CAMERA ---
 picam2 = Picamera2()
@@ -70,122 +42,7 @@ picam2.configure(picam2.create_video_configuration(main={"size": (640, 480)}))
 picam2.start()
 time.sleep(2)
 print("System Ready! Scanning for symbols...")
-'''
-try:
-    while True:
-        frame = picam2.capture_array()
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        
-        # Use Otsu's thresholding to isolate shapes automatically
-        _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-        cnts, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        for c in cnts:
-            if cv2.contourArea(c) > 1500:
-                # Calculate Hu Moments for the live shape
-                live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
-                
-                best_match = None
-                lowest_diff = 0.1 # Lower this if it's too sensitive
-
-                # AUTOMATICALLY check against ALL templates in the dictionary
-                for name, master_dna in templates.items():
-                    diff = np.sum(np.abs(live_moments - master_dna))
-                    if diff < lowest_diff:
-                        lowest_diff = diff
-                        best_match = name
-
-                if best_match:
-                    print(f"Match Found: {best_match} (Diff: {lowest_diff:.4f})")
-                    
-                    # Optional visual markers
-                    x, y, w, h = cv2.boundingRect(c)
-                    cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                    cv2.putText(frame, best_match, (x, y-10), 
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-
-finally:
-    picam2.stop()
-    cv2.destroyAllWindows()
-'''
-'''
-try:
-    while True:
-        frame = picam2.capture_array()
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        
-        # --- PRE-PROCESSING ---
-        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-        
-        # 1. The Sharp Image (No Glue)
-        thresh_sharp = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                                             cv2.THRESH_BINARY_INV, 31, 5)
-        
-        # 2. The Glued Image (Adds the 19x19 brush on top of the sharp image)
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (19, 19))
-        thresh_glued = cv2.morphologyEx(thresh_sharp, cv2.MORPH_CLOSE, kernel)
-
-        detected_label = None
-        box_coords = None
-        lowest_diff = 4.0 # Strict Log-Scale Threshold
-
-        # --- BRAIN 1: CHECK SHARP SHAPES (Star, Plus, Arrow, etc.) ---
-        cnts_sharp, _ = cv2.findContours(thresh_sharp, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        for c in cnts_sharp:
-            area = cv2.contourArea(c)
-            if 2000 < area < 40000:
-                x, y, w, h = cv2.boundingRect(c)
-                if 0.6 <= (w/h) <= 1.4:
-                    live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
-                    for name, master_dna in templates_sharp.items():
-                        # Log-Scale Math
-                        live_log = -np.sign(live_moments) * np.log10(np.abs(live_moments) + 1e-20)
-                        master_log = -np.sign(master_dna) * np.log10(np.abs(master_dna) + 1e-20)
-                        diff = np.sum(np.abs(live_log - master_log))
-                        
-                        if diff < lowest_diff:
-                            lowest_diff = diff
-                            detected_label = f"{name} (Diff: {lowest_diff:.2f})"
-                            box_coords = (x, y, w, h)
-
-        # --- BRAIN 2: CHECK GLUED SHAPES (QR Code, Fingerprint, Recycle) ---
-        # Only run this if Brain 1 didn't already find a perfect match
-        if not detected_label:
-            cnts_glued, _ = cv2.findContours(thresh_glued, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            for c in cnts_glued:
-                area = cv2.contourArea(c)
-                if 2000 < area < 40000:
-                    x, y, w, h = cv2.boundingRect(c)
-                    if 0.6 <= (w/h) <= 1.4:
-                        live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
-                        for name, master_dna in templates_glued.items():
-                            # Log-Scale Math
-                            live_log = -np.sign(live_moments) * np.log10(np.abs(live_moments) + 1e-20)
-                            master_log = -np.sign(master_dna) * np.log10(np.abs(master_dna) + 1e-20)
-                            diff = np.sum(np.abs(live_log - master_log))
-                            
-                            if diff < lowest_diff:
-                                lowest_diff = diff
-                                detected_label = f"{name} (Diff: {lowest_diff:.2f})"
-                                box_coords = (x, y, w, h)
-
-        # --- DRAW THE WINNER ---
-        if detected_label and box_coords:
-            print(f">>> {detected_label}")
-            x, y, w, h = box_coords
-            cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-            cv2.putText(frame, detected_label.split(" ")[0], (x, y-10), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-
-        # (Optional) Remove the "offscreen" rule at the top of your file to see this in VNC
-        # cv2.imshow("Robot View", frame)
-        # cv2.imshow("Glued Brain", thresh_glued)
-        # if cv2.waitKey(1) & 0xFF == ord('q'): break
-
-finally:
-    picam2.stop()
-    cv2.destroyAllWindows()
-'''
 # (Make sure to comment out os.environ["QT_QPA_PLATFORM"] = "offscreen" at the top so VNC works!)
 
 try:
@@ -195,7 +52,7 @@ try:
         
         blurred = cv2.GaussianBlur(gray, (5, 5), 0)
         
-        # FIX 1: Raised the constant to 15 to completely erase the paper edge shadow!
+        # Erase the paper edge shadow!
         thresh_sharp = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 151, 15)
         
         # --- THE GLUE ---
@@ -204,20 +61,20 @@ try:
 
         best_label = None
         best_box = None
+        best_moments = None # <--- NEW: We will store the actual winner's DNA here!
         largest_valid_area = 0
 
-        # --- FIX 2: CHECK GLUED SHAPES FIRST (Prioritize large compound shapes) ---
+        # --- CHECK GLUED SHAPES FIRST ---
         cnts_glued, _ = cv2.findContours(thresh_glued, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
         for c in cnts_glued:
             area = cv2.contourArea(c)
-            # Only process it if it's the biggest valid shape we've seen so far
             if 1500 < area < 60000 and area > largest_valid_area:
                 x, y, w, h = cv2.boundingRect(c)
                 
                 if 0.4 <= (w/h) <= 2.5: 
                     live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
-                    lowest_diff = 0.15 # Slightly looser for glued shapes
+                    lowest_diff = 0.15 
                     
                     for name, master_dna in templates_glued.items():
                         diff = np.sum(np.abs(live_moments - master_dna))
@@ -225,14 +82,14 @@ try:
                             lowest_diff = diff
                             best_label = f"{name} (Diff: {lowest_diff:.4f})"
                             best_box = (x, y, w, h)
-                            largest_valid_area = area # Save the size to beat!
+                            best_moments = live_moments # <--- SAVE THE WINNER'S DNA!
+                            largest_valid_area = area
 
-        # --- BRAIN 1: CHECK SHARP SHAPES ---
+        # --- CHECK SHARP SHAPES ---
         cnts_sharp, _ = cv2.findContours(thresh_sharp, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
         for c in cnts_sharp:
             area = cv2.contourArea(c)
-            # It will ignore the tiny arrow because its area is smaller than the Glued Recycle sign!
             if 1500 < area < 60000 and area > largest_valid_area:
                 x, y, w, h = cv2.boundingRect(c)
                 
@@ -246,6 +103,7 @@ try:
                             lowest_diff = diff
                             best_label = f"{name} (Diff: {lowest_diff:.4f})"
                             best_box = (x, y, w, h)
+                            best_moments = live_moments # <--- SAVE THE WINNER'S DNA!
                             largest_valid_area = area
 
         # --- DRAW THE WINNER ---
@@ -260,8 +118,23 @@ try:
         cv2.imshow("Brain View (Sharp)", thresh_sharp)
         cv2.imshow("Brain View (Glued)", thresh_glued)
         
-        if cv2.waitKey(1) & 0xFF == ord('q'): 
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('q'): 
             break
+            
+        # --- THE SMART DNA SCANNER ---
+        elif key == ord('s'):
+            if best_box is not None and best_moments is not None:
+                save_path = '/home/jaydenbryan/Project/Symbols_npy/recycle.npy'
+                # 1. Save it to the hard drive
+                np.save(save_path, best_moments)
+                
+                # 2. Instantly update the robot's active memory so you don't have to restart!
+                templates_glued["Recycle"] = best_moments
+                
+                print(f"\n[SUCCESS] DNA SAVED AND BRAIN UPDATED INSTANTLY!\n")
+            else:
+                print("No shape detected to save!")
 
 finally:
     picam2.stop()

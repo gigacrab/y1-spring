@@ -52,6 +52,7 @@ try:
         thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 151, 15)
         cnts, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
+        cv2.drawContours(frame, cnts, -1, (0, 255, 0), thickness=cv2.FILLED)
         for c in cnts:
             if cv2.contourArea(c) > 1500:
                 # Calculate Hu Moments for the live shape
@@ -75,7 +76,7 @@ try:
                     # Optional visual markers
                     x, y, w, h = cv2.boundingRect(c)
                     cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                    cv2.drawContours(frame, [c], -1, (0, 0, 0), thickness=cv2.FILLED)
+                    cv2.drawContours(frame, [c], -1, (0, 255, 0), thickness=cv2.FILLED)
                     cv2.putText(frame, best_match, (x, y-10), 
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
 

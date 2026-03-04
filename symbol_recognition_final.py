@@ -137,10 +137,10 @@ try:
                                 # 3. Weigh the ink on all four edges
                                 # An arrow has 3 sharp points (low mass) and 1 flat tail (high mass)!
                                 masses = {
-                                    "Arrow (DOWN)": cv2.countNonZero(top_edge),   # If Top is the heavy tail, it points DOWN
-                                    "Arrow (UP)": cv2.countNonZero(bottom_edge),  # If Bottom is the heavy tail, it points UP
-                                    "Arrow (RIGHT)": cv2.countNonZero(left_edge), # If Left is the heavy tail, it points RIGHT
-                                    "Arrow (LEFT)": cv2.countNonZero(right_edge)  # If Right is the heavy tail, it points LEFT
+                                    "Arrow (UP)"s: cv2.countNonZero(top_edge),   # If Top is the heavy tail, it points DOWN
+                                    "Arrow (DOWN)": cv2.countNonZero(bottom_edge),  # If Bottom is the heavy tail, it points UP
+                                    "Arrow (LEFT)": cv2.countNonZero(left_edge), # If Left is the heavy tail, it points RIGHT
+                                    "Arrow (RIGHT)": cv2.countNonZero(right_edge)  # If Right is the heavy tail, it points LEFT
                                 }
                                 
                                 # 4. The arrow points in the opposite direction of the heaviest edge!

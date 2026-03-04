@@ -67,7 +67,6 @@ picam2.configure(picam2.create_video_configuration(main={"size": (640, 480)}))
 picam2.start()
 time.sleep(2)
 print("Hybrid Master Brain Ready! Scanning the whole room...")
-
 try:
     while True:
         frame = picam2.capture_array()
@@ -75,77 +74,72 @@ try:
         blurred = cv2.GaussianBlur(gray, (5, 5), 0)
         
         best_match = None
-        orb_found_art = False
-        
-        # ---------------------------------------------------------
-        # PHASE 1: ORB SCANNER (Runs fast on the whole screen)
-        # ---------------------------------------------------------
-        # No more fake contrast! Just look at the raw, normal image.
-        kp_frame, des_frame = orb.detectAndCompute(blurred, None)
-        max_good_matches = 0
-        
-        if des_frame is not None and len(des_frame) >= 2:
-            for label, (kp_template, des_template) in template_features.items():
-                if des_template is not None:
-                    matches = flann.knnMatch(des_template, des_frame, k=2)
-                    
-                    good_matches = []
-                    for m_n in matches:
-                        if len(m_n) == 2:
-                            m, n = m_n
-                            if m.distance < 0.75 * n.distance:
-                                good_matches.append(m)
-                    
-                    # Custom thresholds to stop them from overlapping
-                    if label == "Danger":
-                        required_matches = 8
-                    elif label == "Fingerprint":
-                        required_matches = 15
-                    else:
-                        required_matches = 12
-                    
-                    if len(good_matches) >= required_matches and len(good_matches) > max_good_matches:
-                        max_good_matches = len(good_matches)
-                        best_match = label
-                        orb_found_art = True
-        
-        # ---------------------------------------------------------
-        # PHASE 2: GEOMETRY SCANNER (Only if ORB sees no art)
-        # ---------------------------------------------------------
-        if not orb_found_art:
-            # Otsu's method creates perfectly solid shapes without jagged shadows
-            _, thresh = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-            cnts, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            
-            for c in cnts:
-                if cv2.contourArea(c) > 1500:
-                    live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
-                    lowest_diff = 0.1
-                    geom_match = None
-                    
-                    for name, master_dna in templates_npy.items():
-                        diff = np.sum(np.abs(live_moments - master_dna))
-                        if diff < lowest_diff:
-                            lowest_diff = diff
-                            geom_match = name
-                            
-                    if geom_match in ["Plus", "Kite"]:
-                        peri = cv2.arcLength(c, True)
-                        approx = cv2.approxPolyDP(c, 0.02 * peri, True)
-                        corners = len(approx)
-                        geom_match = "Kite" if corners < 8 else "Plus"
-                        
-                    if geom_match:
-                        best_match = geom_match
-                        
-                        # Draw geometry box
-                        x, y, w, h = cv2.boundingRect(c)
-                        cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                        break 
 
-        # ---------------------------------------------------------
+        # ==========================================
+        # PHASE 1: GEOMETRY FIRST (The Solid Shape Gatekeeper)
+        # ==========================================
+        # Restored the adaptive threshold so the shapes are visible again!
+        thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 151, 10)
+        cnts, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        for c in cnts:
+            if cv2.contourArea(c) > 1500:
+                live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
+                lowest_diff = 0.05 
+                geom_match = None
+                
+                for name, master_dna in templates_npy.items():
+                    diff = np.sum(np.abs(live_moments - master_dna))
+                    if diff < lowest_diff:
+                        lowest_diff = diff
+                        geom_match = name
+                        
+                if geom_match in ["Plus", "Kite"]:
+                    peri = cv2.arcLength(c, True)
+                    approx = cv2.approxPolyDP(c, 0.02 * peri, True)
+                    corners = len(approx)
+                    geom_match = "Kite" if corners < 8 else "Plus"
+                    
+                if geom_match:
+                    best_match = geom_match
+                    
+                    # Draw geometry box
+                    x, y, w, h = cv2.boundingRect(c)
+                    cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+                    break 
+
+        # ==========================================
+        # PHASE 2: ORB SCANNER (Only if Geometry finds nothing!)
+        # ==========================================
+        if best_match is None:
+            # Restored equalizeHist so your QR and Fingerprint work perfectly!
+            gray_processed = cv2.equalizeHist(blurred)
+            kp_frame, des_frame = orb.detectAndCompute(gray_processed, None)
+            max_good_matches = 0
+            
+            if des_frame is not None and len(des_frame) >= 2:
+                for label, (kp_template, des_template) in template_features.items():
+                    if des_template is not None:
+                        matches = flann.knnMatch(des_template, des_frame, k=2)
+                        
+                        good_matches = []
+                        for m_n in matches:
+                            if len(m_n) == 2:
+                                m, n = m_n
+                                if m.distance < 0.75 * n.distance:
+                                    good_matches.append(m)
+                        
+                        if label == "Danger": required_matches = 8
+                        elif label == "Fingerprint": required_matches = 15
+                        else: required_matches = 12
+                        
+                        if len(good_matches) >= required_matches and len(good_matches) > max_good_matches:
+                            max_good_matches = len(good_matches)
+                            best_match = label
+
+        # ==========================================
         # DISPLAY RESULTS
-        # ---------------------------------------------------------
+        # ==========================================
         if best_match:
             cv2.putText(frame, f"MATCH: {best_match}", (20, 50), 
                         cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 3)

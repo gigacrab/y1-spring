@@ -114,6 +114,7 @@ try:
                 if cv2.contourArea(c) > 1500:
                     live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
                     lowest_diff = 0.05 # Your sensitive geometry threshold
+                    geom_match = None
                     
                     # Check the DNA
                     for name, master_dna in templates_npy.items():

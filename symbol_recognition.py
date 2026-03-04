@@ -193,9 +193,8 @@ try:
         frame = picam2.capture_array()
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         
-        # --- THE MAGIC BULLET: Otsu's Threshold (From your working code!) ---
-        _, thresh_sharp = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-        
+        # Thresholding and pre-processing for both brains
+        thresh_sharp = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 151, 6)
         # --- THE GLUE: For the broken shapes ---
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (19, 19))
         thresh_glued = cv2.morphologyEx(thresh_sharp, cv2.MORPH_CLOSE, kernel)

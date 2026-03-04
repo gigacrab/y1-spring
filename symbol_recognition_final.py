@@ -119,30 +119,26 @@ try:
                             if len(approx) > 9: 
                                 geom_match = None
                             if geom_match == "Arrow":
+                                # 1. Find the exact geometric center of the bounding box
+                                x, y, w, h = cv2.boundingRect(c)
+                                box_center_x = x + (w // 2)
+                                box_center_y = y + (h // 2)
+                                
+                                # 2. Find the physical Center of Mass of the actual shape
                                 M = cv2.moments(c)
                                 if M["m00"] != 0:
                                     cx = int(M["m10"] / M["m00"])
                                     cy = int(M["m01"] / M["m00"])
                                     
-                                    extLeft = tuple(c[c[:, :, 0].argmin()][0])
-                                    extRight = tuple(c[c[:, :, 0].argmax()][0])
-                                    extTop = tuple(c[c[:, :, 1].argmin()][0])
-                                    extBot = tuple(c[c[:, :, 1].argmax()][0])
-                                    
-                                    x, y, w, h = cv2.boundingRect(c)
-                                    
-                                    # We swapped the labels 90 degrees Clockwise to fix the Anticlockwise error!
+                                    # 3. The mass always shifts toward the heavy arrowhead!
+                                    # If it's wider than it is tall, it's Horizontal
                                     if w > h:
-                                        dist_left = ((cx - extLeft[0])**2 + (cy - extLeft[1])**2)**0.5
-                                        dist_right = ((cx - extRight[0])**2 + (cy - extRight[1])**2)**0.5
-                                        # Old RIGHT/LEFT is now DOWN/UP
-                                        geom_match = "Arrow (DOWN)" if dist_right > dist_left else "Arrow (UP)"
-                                    
+                                        geom_match = "Arrow (RIGHT)" if cx > box_center_x else "Arrow (LEFT)"
+                                        
+                                    # If it's taller than it is wide, it's Vertical
                                     else:
-                                        dist_top = ((cx - extTop[0])**2 + (cy - extTop[1])**2)**0.5
-                                        dist_bot = ((cx - extBot[0])**2 + (cy - extBot[1])**2)**0.5
-                                        # Old DOWN/UP is now LEFT/RIGHT
-                                        geom_match = "Arrow (LEFT)" if dist_bot > dist_top else "Arrow (RIGHT)"
+                                        # Note: In OpenCV, y=0 is the top of the screen, so a higher 'y' means DOWN.
+                                        geom_match = "Arrow (DOWN)" if cy > box_center_y else "Arrow (UP)"
 
                         if geom_match:
                             best_match = geom_match

@@ -119,26 +119,34 @@ try:
                             if len(approx) > 9: 
                                 geom_match = None
                             if geom_match == "Arrow":
-                                # 1. Find the exact geometric center of the bounding box
                                 x, y, w, h = cv2.boundingRect(c)
-                                box_center_x = x + (w // 2)
-                                box_center_y = y + (h // 2)
+                                box_center_x = x + (w / 2)
+                                box_center_y = y + (h / 2)
                                 
-                                # 2. Find the physical Center of Mass of the actual shape
-                                M = cv2.moments(c)
-                                if M["m00"] != 0:
-                                    cx = int(M["m10"] / M["m00"])
-                                    cy = int(M["m01"] / M["m00"])
+                                # If it's wider than it is tall, it's Horizontal
+                                if w > h:
+                                    # Find the Top and Bottom tips (the wings of a Left/Right arrow)
+                                    extTop = tuple(c[c[:, :, 1].argmin()][0])
+                                    extBot = tuple(c[c[:, :, 1].argmax()][0])
                                     
-                                    # 3. The mass always shifts toward the heavy arrowhead!
-                                    # If it's wider than it is tall, it's Horizontal
-                                    if w > h:
-                                        geom_match = "Arrow (RIGHT)" if cx > box_center_x else "Arrow (LEFT)"
-                                        
-                                    # If it's taller than it is wide, it's Vertical
-                                    else:
-                                        # Note: In OpenCV, y=0 is the top of the screen, so a higher 'y' means DOWN.
-                                        geom_match = "Arrow (DOWN)" if cy > box_center_y else "Arrow (UP)"
+                                    # Find the X position of where the wings are located
+                                    wing_x = (extTop[0] + extBot[0]) / 2
+                                    
+                                    # If the wings are on the Left side of the box, it points LEFT
+                                    geom_match = "Arrow (LEFT)" if wing_x < box_center_x else "Arrow (RIGHT)"
+                                    
+                                # If it's taller than it is wide, it's Vertical
+                                else:
+                                    # Find the Left and Right tips (the wings of an Up/Down arrow)
+                                    extLeft = tuple(c[c[:, :, 0].argmin()][0])
+                                    extRight = tuple(c[c[:, :, 0].argmax()][0])
+                                    
+                                    # Find the Y position of where the wings are located
+                                    wing_y = (extLeft[1] + extRight[1]) / 2
+                                    
+                                    # In OpenCV, y=0 is the top of the screen. So smaller Y = UP.
+                                    # If the wings are in the top half of the box, it points UP
+                                    geom_match = "Arrow (UP)" if wing_y < box_center_y else "Arrow (DOWN)"
 
                         if geom_match:
                             best_match = geom_match

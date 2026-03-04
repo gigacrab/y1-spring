@@ -121,29 +121,30 @@ try:
                             if geom_match == "Arrow":
                                 x, y, w, h = cv2.boundingRect(c)
                                 
-                                # 1. Create a perfect digital silhouette of the arrow to ignore background noise
+                                # 1. Create a perfect digital silhouette of the arrow
                                 mask = np.zeros((h, w), dtype=np.uint8)
                                 cv2.drawContours(mask, [c - [x, y]], -1, 255, -1)
                                 
-                                # 2. If it's wider than it is tall, it's Horizontal
-                                if w > h:
-                                    # Slice off just the extreme Left 10% and Right 10% of the shape
-                                    margin = max(1, int(w * 0.10))
-                                    left_edge = mask[:, :margin]
-                                    right_edge = mask[:, -margin:]
-                                    
-                                    # The tip is a sharp point (few pixels). The tail is a flat base (many pixels).
-                                    geom_match = "Arrow (LEFT)" if cv2.countNonZero(left_edge) < cv2.countNonZero(right_edge) else "Arrow (RIGHT)"
-                                    
-                                # 3. If it's taller than it is wide, it's Vertical
-                                else:
-                                    # Slice off just the extreme Top 10% and Bottom 10% of the shape
-                                    margin = max(1, int(h * 0.10))
-                                    top_edge = mask[:margin, :]
-                                    bottom_edge = mask[-margin:, :]
-                                    
-                                    # The tip is a sharp point (few pixels). The tail is a flat base (many pixels).
-                                    geom_match = "Arrow (UP)" if cv2.countNonZero(top_edge) < cv2.countNonZero(bottom_edge) else "Arrow (DOWN)"
+                                # 2. Grab the extreme 15% edges of all four sides
+                                margin_x = max(1, int(w * 0.15))
+                                margin_y = max(1, int(h * 0.15))
+                                
+                                top_edge = mask[:margin_y, :]
+                                bottom_edge = mask[-margin_y:, :]
+                                left_edge = mask[:, :margin_x]
+                                right_edge = mask[:, -margin_x:]
+                                
+                                # 3. Weigh the ink on all four edges
+                                # An arrow has 3 sharp points (low mass) and 1 flat tail (high mass)!
+                                masses = {
+                                    "Arrow (DOWN)": cv2.countNonZero(top_edge),   # If Top is the heavy tail, it points DOWN
+                                    "Arrow (UP)": cv2.countNonZero(bottom_edge),  # If Bottom is the heavy tail, it points UP
+                                    "Arrow (RIGHT)": cv2.countNonZero(left_edge), # If Left is the heavy tail, it points RIGHT
+                                    "Arrow (LEFT)": cv2.countNonZero(right_edge)  # If Right is the heavy tail, it points LEFT
+                                }
+                                
+                                # 4. The arrow points in the opposite direction of the heaviest edge!
+                                geom_match = max(masses, key=masses.get)
                         # --------------------------------
 
                         if geom_match:

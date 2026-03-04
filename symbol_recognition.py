@@ -193,52 +193,63 @@ try:
         frame = picam2.capture_array()
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         
+        # RESTORED: We must blur the image before doing math!
+        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+        
         # Thresholding and pre-processing for both brains
         thresh_sharp = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 151, 6)
+        
         # --- THE GLUE: For the broken shapes ---
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (19, 19))
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (25, 25)) # Bumped to 25x25 just in case!
         thresh_glued = cv2.morphologyEx(thresh_sharp, cv2.MORPH_CLOSE, kernel)
 
         detected_label = None
         box_coords = None
 
-        # --- BRAIN 1: CHECK SHARP SHAPES (Using your exact working math) ---
+        # --- BRAIN 1: CHECK SHARP SHAPES ---
         cnts_sharp, _ = cv2.findContours(thresh_sharp, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
         for c in cnts_sharp:
-            # Your exact working filter
-            if cv2.contourArea(c) > 1500:
-                live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
-                lowest_diff = 0.1  # Your exact working threshold
+            area = cv2.contourArea(c)
+            # Ignore giant wall shadows and tiny static
+            if 1500 < area < 60000:
+                x, y, w, h = cv2.boundingRect(c)
                 
-                for name, master_dna in templates_sharp.items():
-                    # Your exact working simple math (No log scale!)
-                    diff = np.sum(np.abs(live_moments - master_dna))
+                # Loose proportions to allow rotation
+                if 0.4 <= (w/h) <= 2.5:
+                    live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
+                    lowest_diff = 0.1  
                     
-                    if diff < lowest_diff:
-                        lowest_diff = diff
-                        detected_label = f"{name} (Diff: {lowest_diff:.4f})"
-                        box_coords = cv2.boundingRect(c)
+                    for name, master_dna in templates_sharp.items():
+                        diff = np.sum(np.abs(live_moments - master_dna))
+                        
+                        if diff < lowest_diff:
+                            lowest_diff = diff
+                            detected_label = f"{name} (Diff: {lowest_diff:.4f})"
+                            box_coords = (x, y, w, h)
 
         # --- BRAIN 2: CHECK GLUED SHAPES (Only if Brain 1 found nothing) ---
         if not detected_label:
             cnts_glued, _ = cv2.findContours(thresh_glued, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             
             for c in cnts_glued:
-                # Same exact working filter and math, just applied to the glued shapes
-                if cv2.contourArea(c) > 1500:
-                    live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
-                    lowest_diff = 0.1  
+                area = cv2.contourArea(c)
+                if 1500 < area < 60000: 
+                    x, y, w, h = cv2.boundingRect(c)
                     
-                    for name, master_dna in templates_glued.items():
-                        diff = np.sum(np.abs(live_moments - master_dna))
+                    if 0.4 <= (w/h) <= 2.5: 
+                        live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
+                        lowest_diff = 0.1  
                         
-                        if diff < lowest_diff:
-                            lowest_diff = diff
-                            detected_label = f"{name} (Diff: {lowest_diff:.4f})"
-                            box_coords = cv2.boundingRect(c)
+                        for name, master_dna in templates_glued.items():
+                            diff = np.sum(np.abs(live_moments - master_dna))
+                            
+                            if diff < lowest_diff:
+                                lowest_diff = diff
+                                detected_label = f"{name} (Diff: {lowest_diff:.4f})"
+                                box_coords = (x, y, w, h)
 
-        # --- DRAW THE WINNER ---
+        # RESTORED: --- DRAW THE WINNER AND SHOW WINDOWS ---
         if detected_label and box_coords:
             print(f">>> Match Found: {detected_label}")
             x, y, w, h = box_coords
@@ -246,9 +257,9 @@ try:
             cv2.putText(frame, detected_label.split(" ")[0], (x, y-10), 
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
 
-        # Show the windows in VNC so you can debug!
+        # Display the live views
         cv2.imshow("Robot View", frame)
-        cv2.imshow("Brain View (Sharp - Otsu)", thresh_sharp)
+        cv2.imshow("Brain View (Sharp)", thresh_sharp)
         cv2.imshow("Brain View (Glued)", thresh_glued)
         
         if cv2.waitKey(1) & 0xFF == ord('q'): 

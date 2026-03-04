@@ -146,7 +146,7 @@ try:
                                 # 4. The arrow points in the opposite direction of the heaviest edge!
                                 geom_match = max(masses, key=masses.get)
                         # --------------------------------
-                        if geom_match == "Kite":
+                        if geom_match == "Star":
                             # Draw a rotating box that perfectly hugs the shape
                             rect = cv2.minAreaRect(c)
                             w_rect, h_rect = rect[1]

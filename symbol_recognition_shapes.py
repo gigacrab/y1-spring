@@ -67,7 +67,7 @@ try:
                         best_match = name
                 if best_match in ["Plus", "Kite"]:
                     peri = cv2.arcLength(c, True)
-                    approx = cv2.approxPolyDP(c, 0.04 * peri, True)
+                    approx = cv2.approxPolyDP(c, 0.02 * peri, True)
                     corners = len(approx)
                     print(f"DEBUG -> Shape has {corners} corners")
                     if corners < 8:

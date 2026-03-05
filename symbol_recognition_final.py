@@ -84,7 +84,7 @@ try:
         cnts, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         im2 = np.zeros((480, 640, 3), dtype=np.uint8)
         cv2.drawContours(im2, cnts, -1, (255, 255, 255), thickness=cv2.FILLED)
-        cv2.imshow(im2)
+        cv2.imshow("contours", im2)
         
         if hierarchy is not None:
             for i, c in enumerate(cnts):

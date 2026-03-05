@@ -85,87 +85,91 @@ try:
         
         if hierarchy is not None:
             for i, c in enumerate(cnts):
-                if cv2.contourArea(c) > 1500:
-                    
-                    # --- THE "HOLES" FILTER ---
-                    # Count how many inner details (children) are inside this main shape
-                    holes = 0
-                    for j, child_c in enumerate(cnts):
-                        # hierarchy[0][j][3] tells us who the "parent" of the contour is
-                        if hierarchy[0][j][3] == i and cv2.contourArea(child_c) > 200:
-                            holes += 1
-                    
-                    # IF THE SHAPE IS COMPLETELY SOLID (0 HOLES), IT'S A BASIC GEOMETRY SHAPE!
-                    if holes == 0:
-                        live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
-                        lowest_diff = 0.05 
-                        geom_match = None
-                        
-                        for name, master_dna in templates_npy.items():
-                            diff = np.sum(np.abs(live_moments - master_dna))
-                            if diff < lowest_diff:
-                                lowest_diff = diff
-                                geom_match = name
-                                
-                        if geom_match in ["Plus", "Kite"]:
-                            peri = cv2.arcLength(c, True)
-                            approx = cv2.approxPolyDP(c, 0.02 * peri, True)
-                            corners = len(approx)
-                            geom_match = "Kite" if corners < 8 else "Plus"
-                        
-                        if geom_match == "Arrow":
-                            peri = cv2.arcLength(c, True)
-                            approx = cv2.approxPolyDP(c, 0.02 * peri, True)
-                            if len(approx) > 9: 
-                                geom_match = None
-                            if geom_match == "Arrow":
-                                x, y, w, h = cv2.boundingRect(c)
-                                
-                                # 1. Create a perfect digital silhouette of the arrow
-                                mask = np.zeros((h, w), dtype=np.uint8)
-                                cv2.drawContours(mask, [c - [x, y]], -1, 255, -1)
-                                
-                                # 2. Grab the extreme 15% edges of all four sides
-                                margin_x = max(1, int(w * 0.15))
-                                margin_y = max(1, int(h * 0.15))
-                                
-                                top_edge = mask[:margin_y, :]
-                                bottom_edge = mask[-margin_y:, :]
-                                left_edge = mask[:, :margin_x]
-                                right_edge = mask[:, -margin_x:]
-                                
-                                # 3. Weigh the ink on all four edges
-                                # An arrow has 3 sharp points (low mass) and 1 flat tail (high mass)!
-                                masses = {
-                                    "Arrow (UP)": cv2.countNonZero(top_edge),   # If Top is the heavy tail, it points DOWN
-                                    "Arrow (DOWN)": cv2.countNonZero(bottom_edge),  # If Bottom is the heavy tail, it points UP
-                                    "Arrow (LEFT)": cv2.countNonZero(left_edge), # If Left is the heavy tail, it points RIGHT
-                                    "Arrow (RIGHT)": cv2.countNonZero(right_edge)  # If Right is the heavy tail, it points LEFT
-                                }
-                                
-                                # 4. The arrow points in the opposite direction of the heaviest edge!
-                                geom_match = max(masses, key=masses.get)
-                        # --------------------------------
-                        if geom_match == "Star":
-                            # Draw a rotating box that perfectly hugs the shape
-                            rect = cv2.minAreaRect(c)
-                            w_rect, h_rect = rect[1]
-                            
-                            if w_rect != 0 and h_rect != 0:
-                                # Divide the long side by the short side
-                                aspect_ratio = max(w_rect, h_rect) / min(w_rect, h_rect)
-                                
-                                # A QR Code block is a perfect square (ratio ~ 1.0)
-                                # A Kite is stretched out (ratio usually > 1.3)
-                                if aspect_ratio < 1.15:
-                                    geom_match = None  # It's a square! Reject it and let ORB scan!
-                        # --------------------------------
+                area = cv2.contourArea(c)
+                frame_area = frame.shape[0] * frame.shape[1]
+                if 500 < area < frame_area * 0.8:
+                    continue
+                parent_index = hierarchy[0][i][3]
+                first_child  = hierarchy[0][i][2]
 
-                        if geom_match:
-                            best_match = geom_match
+                is_box = (parent_index == -1 and first_child != -1)  # No parent (external contour) but has a child (internal contour)
+                if is_box:
+                    continue  # Skip contours that are likely just the green targeting box from the capture tool
+                holes = 0
+                for j, child_c in enumerate(cnts):
+                    if hierarchy[0][j][3] == i and cv2.contourArea(child_c) > 200:
+                        holes += 1
+                # IF THE SHAPE IS COMPLETELY SOLID (0 HOLES), IT'S A BASIC GEOMETRY SHAPE!
+                if holes == 0:
+                    live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
+                    lowest_diff = 0.05 
+                    geom_match = None
+                    
+                    for name, master_dna in templates_npy.items():
+                        diff = np.sum(np.abs(live_moments - master_dna))
+                        if diff < lowest_diff:
+                            lowest_diff = diff
+                            geom_match = name
+                            
+                    if geom_match in ["Plus", "Kite"]:
+                        peri = cv2.arcLength(c, True)
+                        approx = cv2.approxPolyDP(c, 0.02 * peri, True)
+                        corners = len(approx)
+                        geom_match = "Kite" if corners < 8 else "Plus"
+                    
+                    if geom_match == "Arrow":
+                        peri = cv2.arcLength(c, True)
+                        approx = cv2.approxPolyDP(c, 0.02 * peri, True)
+                        if len(approx) > 9: 
+                            geom_match = None
+                        if geom_match == "Arrow":
                             x, y, w, h = cv2.boundingRect(c)
-                            cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                            break 
+                            
+                            # 1. Create a perfect digital silhouette of the arrow
+                            mask = np.zeros((h, w), dtype=np.uint8)
+                            cv2.drawContours(mask, [c - [x, y]], -1, 255, -1)
+                            
+                            # 2. Grab the extreme 15% edges of all four sides
+                            margin_x = max(1, int(w * 0.15))
+                            margin_y = max(1, int(h * 0.15))
+                            
+                            top_edge = mask[:margin_y, :]
+                            bottom_edge = mask[-margin_y:, :]
+                            left_edge = mask[:, :margin_x]
+                            right_edge = mask[:, -margin_x:]
+                            
+                            # 3. Weigh the ink on all four edges
+                            # An arrow has 3 sharp points (low mass) and 1 flat tail (high mass)!
+                            masses = {
+                                "Arrow (UP)": cv2.countNonZero(top_edge),   # If Top is the heavy tail, it points DOWN
+                                "Arrow (DOWN)": cv2.countNonZero(bottom_edge),  # If Bottom is the heavy tail, it points UP
+                                "Arrow (LEFT)": cv2.countNonZero(left_edge), # If Left is the heavy tail, it points RIGHT
+                                "Arrow (RIGHT)": cv2.countNonZero(right_edge)  # If Right is the heavy tail, it points LEFT
+                            }
+                            
+                            # 4. The arrow points in the opposite direction of the heaviest edge!
+                            geom_match = max(masses, key=masses.get)
+                    # --------------------------------
+                    if geom_match == "Star":
+                        # Draw a rotating box that perfectly hugs the shape
+                        rect = cv2.minAreaRect(c)
+                        w_rect, h_rect = rect[1]
+                        
+                        if w_rect != 0 and h_rect != 0:
+                            # Divide the long side by the short side
+                            aspect_ratio = max(w_rect, h_rect) / min(w_rect, h_rect)
+                            
+                            # A QR Code block is a perfect square (ratio ~ 1.0)
+                            # A Kite is stretched out (ratio usually > 1.3)
+                            if aspect_ratio < 1.15:
+                                geom_match = None  # It's a square! Reject it and let ORB scan!
+                    # --------------------------------
+
+                    if geom_match:
+                        best_match = geom_match
+                        x, y, w, h = cv2.boundingRect(c)
+                        cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+                        break 
 
         # ==========================================
         # PHASE 2: ORB SCANNER (Catches all complex/hollow symbols)

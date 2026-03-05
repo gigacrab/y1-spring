@@ -141,7 +141,7 @@ try:
                 cv2.imshow("holes", im2)
                 if holes == 1:
                     # check for shapes!
-                    live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
+                    live_moments = cv2.HuMoments(cv2.moments(cnts[hrchy[0][curr_i][2]])).flatten()
                     lowest_diff = 0.05 
                     geom_match = None
                     

@@ -121,32 +121,26 @@ try:
                         
                         geom_match = None
 
-                        # --- 1. THE STAR FORCER ---
-                        if corners == 10:
-                            geom_match = "Star"
+                        live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
+                        lowest_diff = 0.035 # Relaxed tolerance
                         
-                        # --- 2. HU MOMENTS DNA SCANNER ---
-                        else:
-                            live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
-                            lowest_diff = 0.035 # Relaxed tolerance
-                            
-                            for name, master_dna in templates_npy.items():
-                                diff = np.sum(np.abs(live_moments - master_dna))
-                                if diff < lowest_diff:
-                                    lowest_diff = diff
-                                    geom_match = name
-                                    
-                            # Tie-breaker for Kite vs Plus
-                            if geom_match in ["Plus", "Kite"]:
-                                geom_match = "Kite" if corners < 8 else "Plus"
+                        for name, master_dna in templates_npy.items():
+                            diff = np.sum(np.abs(live_moments - master_dna))
+                            if diff < lowest_diff:
+                                lowest_diff = diff
+                                geom_match = name
                                 
-                            # The QR Box Defense (Protects the Kite)
-                            if geom_match == "Kite":
-                                rect = cv2.minAreaRect(c)
-                                w_rect, h_rect = rect[1]
-                                if w_rect != 0 and h_rect != 0:
-                                    if (max(w_rect, h_rect) / min(w_rect, h_rect)) < 1.15:
-                                        geom_match = None 
+                        # Tie-breaker for Kite vs Plus
+                        if geom_match in ["Plus", "Kite"]:
+                            geom_match = "Kite" if corners < 8 else "Plus"
+                            
+                        # The QR Box Defense (Protects the Kite)
+                        if geom_match == "Kite":
+                            rect = cv2.minAreaRect(c)
+                            w_rect, h_rect = rect[1]
+                            if w_rect != 0 and h_rect != 0:
+                                if (max(w_rect, h_rect) / min(w_rect, h_rect)) < 1.15:
+                                    geom_match = None 
 
                         # --- 3. THE ARROW DIRECTION FINDER ---
                         if geom_match == "Arrow":

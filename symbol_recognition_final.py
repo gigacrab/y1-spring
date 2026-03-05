@@ -114,38 +114,50 @@ try:
                             holes += 1
                     
                     # IF IT'S SOLID (0 HOLES)...
+                    # IF THE SHAPE IS COMPLETELY SOLID (0 HOLES)...
                     if holes == 0:
                         peri = cv2.arcLength(c, True)
                         approx = cv2.approxPolyDP(c, 0.02 * peri, True)
                         corners = len(approx)
                         
-                        geom_match = None
-
+                        # 1. Run the Hu Moments DNA test first!
+                        # We raised this to 0.06 so the Octagon stops being thrown in the trash!
                         live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
-                        lowest_diff = 0.035 # Relaxed tolerance
+                        lowest_diff = 0.06 
+                        geom_match = None
                         
                         for name, master_dna in templates_npy.items():
                             diff = np.sum(np.abs(live_moments - master_dna))
                             if diff < lowest_diff:
                                 lowest_diff = diff
                                 geom_match = name
-                                
-                        # Tie-breaker for Kite vs Plus
-                        if geom_match in ["Plus", "Kite"]:
-                            geom_match = "Kite" if corners < 8 else "Plus"
-                            
-                        # The QR Box Defense (Protects the Kite)
-                        if geom_match == "Kite":
-                            rect = cv2.minAreaRect(c)
-                            w_rect, h_rect = rect[1]
-                            if w_rect != 0 and h_rect != 0:
-                                if (max(w_rect, h_rect) / min(w_rect, h_rect)) < 1.15:
-                                    geom_match = None 
 
-                        # --- 3. THE ARROW DIRECTION FINDER ---
+                        # 2. THE BOUNCERS (Fact-Checkers)
+                        if geom_match:
+                            # A true Star has 10 corners. (We allow 8-11 for slight camera blur).
+                            if geom_match == "Star" and not (8 <= corners <= 11):
+                                geom_match = None
+                                
+                            # An Octagon has exactly 8 corners. (We allow 7-9).
+                            elif geom_match == "Octagon" and not (7 <= corners <= 9):
+                                geom_match = None
+                                
+                            # A Plus sign has 12 corners. If it has less, it's just a Kite.
+                            elif geom_match == "Plus" and corners < 10:
+                                geom_match = "Kite"
+                                
+                            # A Kite is stretched. If it's a perfect square (ratio ~ 1.0), it's a QR code block!
+                            elif geom_match == "Kite":
+                                rect = cv2.minAreaRect(c)
+                                w_rect, h_rect = rect[1]
+                                if w_rect != 0 and h_rect != 0:
+                                    if (max(w_rect, h_rect) / min(w_rect, h_rect)) < 1.15:
+                                        geom_match = None 
+
+                        # 3. THE ARROW DIRECTION FINDER
                         if geom_match == "Arrow":
                             if corners > 9: 
-                                geom_match = None  # Reject curvy hand
+                                geom_match = None  # Reject the curvy hand from "Press Button"
                             else:
                                 x, y, w, h = cv2.boundingRect(c)
                                 mask = np.zeros((h, w), dtype=np.uint8)
@@ -167,11 +179,12 @@ try:
                                 }
                                 geom_match = max(masses, key=masses.get)
 
+                        # 4. DRAW THE BOX
                         if geom_match:
                             best_match = geom_match
                             x, y, w, h = cv2.boundingRect(c)
                             cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                            break 
+                            break
 
         # ==========================================
         # PHASE 2: ORB SCANNER (Complex Symbols)

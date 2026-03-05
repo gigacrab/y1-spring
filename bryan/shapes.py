@@ -120,7 +120,7 @@ try:
                 # first child of the parent
                 curr_i = hrc[2]
                 # first child of the child, because it's its internal contour
-                curr_i = hrchy[0][cnts[curr_i]][2]
+                curr_i = hrchy[0][curr_i][2]
                 while curr_i != -1:
                     # now we check this child
                     if cv2.contourArea(cnts[curr_i]) > 200:

@@ -84,7 +84,7 @@ try:
         # just prints all contours
         im2 = np.zeros((480, 640, 3), dtype=np.uint8)
         cv2.drawContours(im2, cnts, -1, (255, 255, 255), thickness=cv2.FILLED)
-        #cv2.imshow("contours", im2)
+        cv2.imshow("contours", im2)
 
         parents = []
         targets = []
@@ -105,9 +105,8 @@ try:
                         # keep the hierarchy in the first element
                         targets.append([hrchy[0][i], c])
             # now we take a look at the targets, hopefully it's right
-            print(len(targets))
             cv2.drawContours(im2, [row[1] for row in targets], -1, (0, 255, 0), thickness=cv2.FILLED)
-            cv2.imshow("contours", im2)
+            cv2.imshow("targets", im2)
             
             for hrc, c in targets:
                 holes = 0

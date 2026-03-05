@@ -96,11 +96,13 @@ try:
                     holes = 0
                     for j, child_c in enumerate(cnts):
                         # hierarchy[0][j][3] tells us who the "parent" of the contour is
+                        if hierarchy[0][j][3] == -1:
+                            continue
                         if hierarchy[0][j][3] == i and cv2.contourArea(child_c) > 200:
                             holes += 1
                     
                     # IF THE SHAPE IS COMPLETELY SOLID (0 HOLES), IT'S A BASIC GEOMETRY SHAPE!
-                    if holes < 2:
+                    if holes == 0:
                         live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
                         lowest_diff = 0.05 
                         geom_match = None

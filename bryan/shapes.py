@@ -91,6 +91,7 @@ try:
 
         # why is it only one hole?
         # make sure that they follow the boundaries to check
+        # try increasing neighbourhood area!
         
         # [next, previous, first_child, parent]
         if hrchy is not None:
@@ -109,7 +110,6 @@ try:
                         targets.append([hrchy[0][i], c])    
             # now we take a look at the targets, hopefully it's right
             cv2.drawContours(im2, [row[1] for row in targets], -1, (0, 255, 0), thickness=cv2.FILLED)
-            cv2.imshow("targets", im2)
             
             for hrc, c in targets:
                 holes = 0
@@ -127,6 +127,8 @@ try:
                     # set to the next child
                     curr_i = hrchy[0][curr_i][0]
                 print(f'there are {holes} holes!')
+
+                # see blue holes
                 cv2.imshow("holes", im2)
                 if holes == 0:
                     # check for shapes!

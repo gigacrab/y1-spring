@@ -20,18 +20,24 @@ template_files_png = {
     "QR Code": "qrcode.png"
 }
 
-# --- THE CPU FIX: Optimized so the Pi doesn't stutter! ---
-orb = cv2.ORB_create(nfeatures=800, fastThreshold=12)
+# --- RESTORED ORB SETTINGS (Full power!) ---
+orb = cv2.ORB_create(nfeatures=3000, fastThreshold=10)
 FLANN_INDEX_LSH = 6
 index_params = dict(algorithm=FLANN_INDEX_LSH, table_number=6, key_size=12, multi_probe_level=1)
-search_params = dict(checks=20) 
+search_params = dict(checks=50) 
 flann = cv2.FlannBasedMatcher(index_params, search_params)
+
+# Create the exact same Anti-Glare filter used in the live video
+clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
 
 template_features = {}
 for label, filename in template_files_png.items():
     img = cv2.imread(os.path.join(png_path, filename), 0)
     if img is not None:
-        kp, des = orb.detectAndCompute(img, None)
+        # MAGIC FIX: Apply the filter to the PNGs so they perfectly match the live camera!
+        img_clahe = clahe.apply(img) 
+        kp, des = orb.detectAndCompute(img_clahe, None)
+        
         if des is not None:
             template_features[label] = (kp, des)
     else:
@@ -114,10 +120,9 @@ try:
                         corners = len(approx)
                         
                         geom_match = None
-                        if corners == 8:
-                            geom_match = "Octagon"
+
                         # --- 1. THE STAR FORCER ---
-                        elif corners == 10:
+                        if corners == 10:
                             geom_match = "Star"
                         
                         # --- 2. HU MOMENTS DNA SCANNER ---

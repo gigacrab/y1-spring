@@ -137,7 +137,7 @@ try:
 
                 # see blue holes
                 cv2.imshow("holes", im2)
-                if holes == 2:
+                if holes == 1:
                     # check for shapes!
                     live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
                     lowest_diff = 0.05 

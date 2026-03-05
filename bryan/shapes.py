@@ -95,7 +95,7 @@ try:
                 if hrchy[0][i][3] == -1:
                     # we now know this is a parent
                     parents.append([hrchy[0][i][3], c])
-            for i, c in enumerate(parents):
+            for i, c in parents:
                 # cv2.contourArea gives us closed area by external contour, so we can check area
                 if cv2.contourArea(c) > 3000: #MODIFY THIS NUMBER LATER!
                     epsilon = 0.2 * cv2.arcLength(c, closed=True)

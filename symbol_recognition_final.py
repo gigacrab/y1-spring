@@ -116,7 +116,7 @@ try:
                         geom_match = None
                         
                         # --- 1. THE STAR FORCER ---
-                        if 9 <= corners <= 11:
+                        if corners == 10:
                             geom_match = "Star"
                         
                         # --- 2. HU MOMENTS DNA SCANNER ---

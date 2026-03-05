@@ -77,7 +77,7 @@ try:
         best_match = None
 
         # uses adaptive thresholding, 151 - size of neighbourhood area, 8 - constant subtracted from weighted mean
-        thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 151, 8)
+        thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 200, 8)
         
         cnts, hrchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -120,7 +120,8 @@ try:
                 # first child of the parent
                 curr_i = hrc[2]
                 # first child of the child, because it's its internal contour
-                curr_i = hrchy[0][curr_i][2]
+                if cv2.contourArea(cnts[curr_i]) - cv2.contourArea(cnts[hrchy[0][curr_i][2]]) < 50:
+                    curr_i = hrchy[0][curr_i][2]
                 while curr_i != -1:
                     # now we check this child
                     if cv2.contourArea(cnts[curr_i]) > 200:

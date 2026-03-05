@@ -103,13 +103,13 @@ try:
                 approx = cv2.approxPolyDP(c, epsilon, closed=True)
                 if len(approx) == 4:
                     # keep the hierarchy in the first element
-                    targets.append([i, c])
+                    targets.append([hrchy[0][i], c])
             # now we take a look at the targets, hopefully it's right
             print(len(targets))
             cv2.drawContours(im2, [row[1] for row in targets], -1, (0, 255, 0), thickness=cv2.FILLED)
             cv2.imshow("contours", im2)
             
-            for hrc, cnt in targets:
+            for hrc, c in targets:
                 holes = 0
                 # now we check the children, by using the parent's first child and continuing on
                 # if there are holes, we go to ORB

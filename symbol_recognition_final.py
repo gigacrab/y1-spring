@@ -21,7 +21,7 @@ template_files_png = {
 }
 
 # --- THE CPU FIX: Optimized so the Pi doesn't stutter! ---
-orb = cv2.ORB_create(nfeatures=1200, fastThreshold=12)
+orb = cv2.ORB_create(nfeatures=800, fastThreshold=12)
 FLANN_INDEX_LSH = 6
 index_params = dict(algorithm=FLANN_INDEX_LSH, table_number=6, key_size=12, multi_probe_level=1)
 search_params = dict(checks=20) 
@@ -188,7 +188,7 @@ try:
                                     good_matches.append(m)
                         
                         # Danger is strict, Fingerprint is loose
-                        if label == "Danger": required_matches = 8
+                        if label == "Danger": required_matches = 12
                         elif label == "Fingerprint": required_matches = 15
                         else: required_matches = 12
                         

@@ -97,12 +97,12 @@ try:
                     parents.append([hrchy[0][i][3], c])
             for i, c in parents:
                 # cv2.contourArea gives us closed area by external contour, so we can check area
-                if cv2.contourArea(c) > 3000: #MODIFY THIS NUMBER LATER!
-                    epsilon = 0.2 * cv2.arcLength(c, closed=True)
-                    approx = cv2.approxPolyDP(c, epsilon, closed=True)
-                    if len(approx) == 4:
-                        # keep the hierarchy in the first element
-                        targets.append([parents[i], c])
+                #if cv2.contourArea(c) > 3000: #MODIFY THIS NUMBER LATER!
+                epsilon = 0.2 * cv2.arcLength(c, closed=True)
+                approx = cv2.approxPolyDP(c, epsilon, closed=True)
+                if len(approx) == 4:
+                    # keep the hierarchy in the first element
+                    targets.append([parents[i], c])
             # now we take a look at the targets, hopefully it's right
             print(len(targets))
             cv2.drawContours(im2, targets, -1, (0, 255, 0), thickness=cv2.FILLED)

@@ -96,7 +96,7 @@ try:
                     # we now know this is a parent
                     parents.append([hrchy[0][i][3], c])
             cv2.drawContours(im2, cnts, -1, (0, 0, 255), thickness=cv2.FILLED)
-            print(f"parents = {len(parents)}")
+            print(f"parents = {len(parents)}, {len(cnts)}")
             for i, c in parents:
                 # cv2.contourArea gives us closed area by external contour, so we can check area
                 #if cv2.contourArea(c) > 3000: #MODIFY THIS NUMBER LATER!

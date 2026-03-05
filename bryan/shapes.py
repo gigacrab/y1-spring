@@ -99,7 +99,7 @@ try:
             for i, c in parents:
                 # cv2.contourArea gives us closed area by external contour, so we can check area
                 #if cv2.contourArea(c) > 3000: #MODIFY THIS NUMBER LATER!
-                epsilon = 0.02 * cv2.arcLength(c, closed=True)
+                epsilon = 0.001 * cv2.arcLength(c, closed=True)
                 approx = cv2.approxPolyDP(c, epsilon, closed=True)
                 if len(approx) == 4:
                     # keep the hierarchy in the first element

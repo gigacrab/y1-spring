@@ -96,6 +96,8 @@ try:
                     # we now know this is a parent
                     parents.append([hrchy[0][i][3], c])
             hello = [row[1] for row in parents]
+            print(parents)
+            print(hello)
             cv2.drawContours(im2, hello, (0, 0, 255), thickness=cv2.FILLED)
             print(f"parents = {len(parents)}, {len(cnts)}")
             for i, c in parents:

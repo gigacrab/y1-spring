@@ -87,7 +87,7 @@ try:
             for i, c in enumerate(cnts):
                 area = cv2.contourArea(c)
                 frame_area = frame.shape[0] * frame.shape[1]
-                if 500 < area < frame_area * 0.8:
+                if area < 1500 or area > frame_area * 0.8:
                     continue
                 parent_index = hierarchy[0][i][3]
                 first_child  = hierarchy[0][i][2]

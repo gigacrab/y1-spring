@@ -125,15 +125,17 @@ try:
                 # first child of the child, because it's its internal contour
                 #if cv2.contourArea(c) - cv2.contourArea(cnts[curr_i]) < 50:
                 curr_i = hrchy[0][curr_i][2]
+                count = 0
                 while curr_i != -1:
                     # now we check this child
+                    count += 1
                     if cv2.contourArea(cnts[curr_i]) > 200:
                         holes += 1
                         # remember that this accepts an array of contours!
                         cv2.drawContours(im2, [cnts[curr_i]], -1, (255, 0, 0), thickness=cv2.FILLED)
                     # set to the next child
                     curr_i = hrchy[0][curr_i][0]
-                print(f'there are {holes} holes!')
+                print(f'there are {holes} holes!, and {count}')
 
                 # see blue holes
                 cv2.imshow("holes", im2)

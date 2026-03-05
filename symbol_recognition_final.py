@@ -188,7 +188,7 @@ try:
                                     good_matches.append(m)
                         
                         # Danger is strict, Fingerprint is loose
-                        if label == "Danger": required_matches = 12
+                        if label == "Danger": required_matches = 5
                         elif label == "Fingerprint": required_matches = 15
                         else: required_matches = 12
                         

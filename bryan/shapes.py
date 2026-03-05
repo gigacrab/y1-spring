@@ -84,7 +84,7 @@ try:
         # just prints all contours
         im2 = np.zeros((480, 640, 3), dtype=np.uint8)
         cv2.drawContours(im2, cnts, -1, (255, 255, 255), thickness=cv2.FILLED)
-        #cv2.imshow("contours", im2)
+        cv2.imshow("contours", im2)
 
         parents = []
         targets = []
@@ -98,18 +98,18 @@ try:
             cv2.drawContours(im2, [row[1] for row in parents], -1, (0, 0, 255), thickness=cv2.FILLED)
             for i, c in parents:
                 # cv2.contourArea gives us closed area by external contour, so we can check area
-                #if cv2.contourArea(c) > 3000: #MODIFY THIS NUMBER LATER!
-                epsilon = 0.2 * cv2.arcLength(c, closed=True)
-                approx = cv2.approxPolyDP(c, epsilon, closed=True)
-                if len(approx) == 4:
-                    # keep the hierarchy in the first element
-                    targets.append([i, c])
+                if cv2.contourArea(c) > 3000: #MODIFY THIS NUMBER LATER!
+                    epsilon = 0.01 * cv2.arcLength(c, closed=True)
+                    approx = cv2.approxPolyDP(c, epsilon, closed=True)
+                    if len(approx) == 4:
+                        # keep the hierarchy in the first element
+                        targets.append([hrchy[0][i], c])
+                        print(approx.ravel())
             # now we take a look at the targets, hopefully it's right
-            print(len(targets))
             cv2.drawContours(im2, [row[1] for row in targets], -1, (0, 255, 0), thickness=cv2.FILLED)
-            cv2.imshow("contours", im2)
+            cv2.imshow("targets", im2)
             
-            for hrc, cnt in targets:
+            for hrc, c in targets:
                 holes = 0
                 # now we check the children, by using the parent's first child and continuing on
                 # if there are holes, we go to ORB
@@ -123,6 +123,7 @@ try:
                         holes += 1
                     # set to the next child
                     curr_i = hrchy[0][curr_i][0]
+                print(f'there are {holes} holes!')
                 if holes == 0:
                     # check for shapes!
                     live_moments = cv2.HuMoments(cv2.moments(c)).flatten()

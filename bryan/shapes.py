@@ -104,8 +104,8 @@ try:
                     if len(approx) == 4:
                         # keep the hierarchy in the first element
                         targets.append([hrchy[0][i], c])
+                        print(approx)
             # now we take a look at the targets, hopefully it's right
-            print(targets)
             cv2.drawContours(im2, [row[1] for row in targets], -1, (0, 255, 0), thickness=cv2.FILLED)
             cv2.imshow("targets", im2)
             

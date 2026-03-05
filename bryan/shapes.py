@@ -124,7 +124,7 @@ try:
                 curr_i = hrc[2]
                 # first child of the child, because it's its internal contour
                 print(f'area 1: {cv2.contourArea(cnts[curr_i])}, area 2: {cv2.contourArea(cnts[hrchy[0][curr_i][2]])}')
-                if cv2.contourArea(cnts[curr_i]) - cv2.contourArea(cnts[hrchy[0][curr_i][2]]) < 50:
+                if cv2.contourArea(c) - cv2.contourArea(cnts[curr_i]) < 50:
                     curr_i = hrchy[0][curr_i][2]
                 while curr_i != -1:
                     # now we check this child

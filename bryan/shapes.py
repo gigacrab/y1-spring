@@ -88,6 +88,10 @@ try:
 
         parents = []
         targets = []
+
+        # why is it only one hole?
+        # make sure that they follow the boundaries to check
+        # try increasing neighbourhood area!
         
         # [next, previous, first_child, parent]
         if hrchy is not None:
@@ -103,11 +107,9 @@ try:
                     approx = cv2.approxPolyDP(c, epsilon, closed=True)
                     if len(approx) == 4:
                         # keep the hierarchy in the first element
-                        targets.append([hrchy[0][i], c])
-                        print(approx.ravel())
+                        targets.append([hrchy[0][i], c])    
             # now we take a look at the targets, hopefully it's right
             cv2.drawContours(im2, [row[1] for row in targets], -1, (0, 255, 0), thickness=cv2.FILLED)
-            cv2.imshow("targets", im2)
             
             for hrc, c in targets:
                 holes = 0
@@ -117,13 +119,20 @@ try:
                 
                 # first child of the parent
                 curr_i = hrc[2]
+                # first child of the child, because it's its internal contour
+                curr_i = hrchy[0][curr_i][2]
                 while curr_i != -1:
                     # now we check this child
                     if cv2.contourArea(cnts[curr_i]) > 200:
                         holes += 1
+                        # remember that this accepts an array of contours!
+                        cv2.drawContours(im2, [cnts[curr_i]], -1, (255, 0, 0), thickness=cv2.FILLED)
                     # set to the next child
                     curr_i = hrchy[0][curr_i][0]
                 print(f'there are {holes} holes!')
+
+                # see blue holes
+                cv2.imshow("holes", im2)
                 if holes == 0:
                     # check for shapes!
                     live_moments = cv2.HuMoments(cv2.moments(c)).flatten()

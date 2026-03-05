@@ -17,29 +17,21 @@ template_files_png = {
     "Fingerprint": "fingerprint.png",
     "Press Button": "pressbutton.png",
     "Recycle": "recycle.png",
-    "QR Code": "qrcode.png",
-    "Octagon": "octagon.png",  # ADDED TO PHASE 2!
-    "Kite": "kite.png"         # ADDED TO PHASE 2!
+    "QR Code": "qrcode.png"
 }
 
-# --- RESTORED ORB SETTINGS (Full power!) ---
-orb = cv2.ORB_create(nfeatures=3000, fastThreshold=10)
+# --- THE CPU FIX: Optimized so the Pi doesn't stutter! ---
+orb = cv2.ORB_create(nfeatures=800, fastThreshold=12)
 FLANN_INDEX_LSH = 6
 index_params = dict(algorithm=FLANN_INDEX_LSH, table_number=6, key_size=12, multi_probe_level=1)
-search_params = dict(checks=50) 
+search_params = dict(checks=20) 
 flann = cv2.FlannBasedMatcher(index_params, search_params)
-
-# Create the exact same Anti-Glare filter used in the live video
-clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
 
 template_features = {}
 for label, filename in template_files_png.items():
     img = cv2.imread(os.path.join(png_path, filename), 0)
     if img is not None:
-        # MAGIC FIX: Apply the filter to the PNGs so they perfectly match the live camera!
-        img_clahe = clahe.apply(img) 
-        kp, des = orb.detectAndCompute(img_clahe, None)
-        
+        kp, des = orb.detectAndCompute(img, None)
         if des is not None:
             template_features[label] = (kp, des)
     else:
@@ -53,10 +45,11 @@ template_files_npy = {
     "Arrow": "arrow.npy",
     "3/4 Circle": "circle34.npy",
     "Major Segment": "circlemajorsegment.npy",
+    "Kite": "kite.npy",
+    "Octagon": "octagon.npy", 
     "Plus": "plus.npy",
     "Star": "star.npy",
     "Trapezium": "trapezium.npy"
-    # OCTAGON AND KITE HAVE BEEN DELETED FROM HERE!
 }
 
 templates_npy = {}
@@ -77,44 +70,33 @@ print("Hybrid Master Brain Ready! Scanning the whole room...")
 try:
     while True:
         frame = picam2.capture_array()
-        # frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR) # Only keep this if colors look backwards on your screen!
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(gray, (5, 5), 0)
         
         best_match = None
 
         # ==========================================
-        # PHASE 1: GEOMETRY FIRST
+        # PHASE 1: GEOMETRY FIRST (With the "Holes" Gatekeeper)
         # ==========================================
         thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 151, 10)
         
-        kernel = np.ones((3, 3), np.uint8)
-        thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
-        
+        # CRITICAL FIX: We changed RETR_EXTERNAL to RETR_TREE so the robot can look INSIDE the shapes!
         cnts, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         
         if hierarchy is not None:
             for i, c in enumerate(cnts):
-                # UPGRADED TO 4000: This blinds the robot to the tiny nested QR squares!
-                if cv2.contourArea(c) > 4000:
+                if cv2.contourArea(c) > 1500:
                     
+                    # --- THE "HOLES" FILTER ---
+                    # Count how many inner details (children) are inside this main shape
                     holes = 0
                     for j, child_c in enumerate(cnts):
-                        if hierarchy[0][j][3] == i and cv2.contourArea(child_c) > 500:
+                        # hierarchy[0][j][3] tells us who the "parent" of the contour is
+                        if hierarchy[0][j][3] == i and cv2.contourArea(child_c) > 200:
                             holes += 1
-                            
-                    # IF IT IS SOLID INK (0 HOLES)...
+                    
+                    # IF THE SHAPE IS COMPLETELY SOLID (0 HOLES), IT'S A BASIC GEOMETRY SHAPE!
                     if holes == 0:
-                        peri = cv2.arcLength(c, True)
-                        approx = cv2.approxPolyDP(c, 0.02 * peri, True)
-                        corners = len(approx)
-                        
-                        hull = cv2.convexHull(c)
-                        hull_area = cv2.contourArea(hull)
-                        area = cv2.contourArea(c)
-                        solidity = area / float(hull_area) if hull_area > 0 else 0
-                        
-                        # RUN DNA MATH (Octagon and Kite are gone! Only solid black shapes remain)
                         live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
                         lowest_diff = 0.05 
                         geom_match = None
@@ -124,52 +106,72 @@ try:
                             if diff < lowest_diff:
                                 lowest_diff = diff
                                 geom_match = name
-
-                        # THE FACT-CHECKERS
-                        if geom_match:
-                            
-                            # --- The QR Block vs Star Defense ---
-                            if geom_match == "Star":
-                                # Stars are spiky. If solidity is high, it's a blurry square!
-                                if solidity > 0.6 or corners < 8:
-                                    geom_match = None  
-
-                        # THE ARROW DIRECTION FINDER
-                        if geom_match == "Arrow":
-                            if corners > 10: 
-                                geom_match = None  
-                            else:
-                                x, y, w, h = cv2.boundingRect(c)
-                                bx = x + (w / 2.0)
-                                by = y + (h / 2.0)
                                 
-                                M = cv2.moments(c)
-                                if M["m00"] != 0:
-                                    cx = M["m10"] / M["m00"]
-                                    cy = M["m01"] / M["m00"]
-                                    dx = cx - bx
-                                    dy = cy - by
-                                    
-                                    if abs(dx) > abs(dy):
-                                        geom_match = "Arrow (RIGHT)" if dx > 0 else "Arrow (LEFT)"
-                                    else:
-                                        geom_match = "Arrow (DOWN)" if dy > 0 else "Arrow (UP)"
+                        if geom_match in ["Plus", "Kite"]:
+                            peri = cv2.arcLength(c, True)
+                            approx = cv2.approxPolyDP(c, 0.02 * peri, True)
+                            corners = len(approx)
+                            geom_match = "Kite" if corners < 8 else "Plus"
+                        
+                        if geom_match == "Arrow":
+                            peri = cv2.arcLength(c, True)
+                            approx = cv2.approxPolyDP(c, 0.02 * peri, True)
+                            if len(approx) > 9: 
+                                geom_match = None
+                            if geom_match == "Arrow":
+                                x, y, w, h = cv2.boundingRect(c)
+                                
+                                # 1. Create a perfect digital silhouette of the arrow
+                                mask = np.zeros((h, w), dtype=np.uint8)
+                                cv2.drawContours(mask, [c - [x, y]], -1, 255, -1)
+                                
+                                # 2. Grab the extreme 15% edges of all four sides
+                                margin_x = max(1, int(w * 0.15))
+                                margin_y = max(1, int(h * 0.15))
+                                
+                                top_edge = mask[:margin_y, :]
+                                bottom_edge = mask[-margin_y:, :]
+                                left_edge = mask[:, :margin_x]
+                                right_edge = mask[:, -margin_x:]
+                                
+                                # 3. Weigh the ink on all four edges
+                                # An arrow has 3 sharp points (low mass) and 1 flat tail (high mass)!
+                                masses = {
+                                    "Arrow (UP)": cv2.countNonZero(top_edge),   # If Top is the heavy tail, it points DOWN
+                                    "Arrow (DOWN)": cv2.countNonZero(bottom_edge),  # If Bottom is the heavy tail, it points UP
+                                    "Arrow (LEFT)": cv2.countNonZero(left_edge), # If Left is the heavy tail, it points RIGHT
+                                    "Arrow (RIGHT)": cv2.countNonZero(right_edge)  # If Right is the heavy tail, it points LEFT
+                                }
+                                
+                                # 4. The arrow points in the opposite direction of the heaviest edge!
+                                geom_match = max(masses, key=masses.get)
+                        # --------------------------------
+                        if geom_match == "Star":
+                            # Draw a rotating box that perfectly hugs the shape
+                            rect = cv2.minAreaRect(c)
+                            w_rect, h_rect = rect[1]
+                            
+                            if w_rect != 0 and h_rect != 0:
+                                # Divide the long side by the short side
+                                aspect_ratio = max(w_rect, h_rect) / min(w_rect, h_rect)
+                                
+                                # A QR Code block is a perfect square (ratio ~ 1.0)
+                                # A Kite is stretched out (ratio usually > 1.3)
+                                if aspect_ratio < 1.15:
+                                    geom_match = None  # It's a square! Reject it and let ORB scan!
+                        # --------------------------------
 
-                        # DRAW THE BOX
                         if geom_match:
                             best_match = geom_match
                             x, y, w, h = cv2.boundingRect(c)
                             cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                            break
+                            break 
 
         # ==========================================
-        # PHASE 2: ORB SCANNER (Complex Symbols)
+        # PHASE 2: ORB SCANNER (Catches all complex/hollow symbols)
         # ==========================================
         if best_match is None:
-            # --- THE ANTI-GLARE UPGRADE ---
-            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-            gray_processed = clahe.apply(blurred)
-            
+            gray_processed = cv2.equalizeHist(blurred)
             kp_frame, des_frame = orb.detectAndCompute(gray_processed, None)
             max_good_matches = 0
             
@@ -185,7 +187,7 @@ try:
                                 if m.distance < 0.75 * n.distance:
                                     good_matches.append(m)
                         
-                        # Relaxed Danger threshold!
+                        # Danger is strict, Fingerprint is loose
                         if label == "Danger": required_matches = 8
                         elif label == "Fingerprint": required_matches = 15
                         else: required_matches = 12
@@ -203,6 +205,7 @@ try:
 
         cv2.imshow("Robot View", frame)
         
+        # --- SAFE QUIT ---
         if cv2.waitKey(1) & 0xFF == ord('q'): break
         if cv2.getWindowProperty("Robot View", cv2.WND_PROP_VISIBLE) < 1: break
 

@@ -142,7 +142,7 @@ try:
                                 if extent > 0.75:
                                     geom_match = None # It's a QR block! Reject!
                         if geom_match == "Arrow":
-                            if corners > 10: 
+                            if corners > 10 or solidity > 0.95: 
                                 geom_match = None  
                             else:
                                 x, y, w, h = cv2.boundingRect(c)

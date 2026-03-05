@@ -89,7 +89,7 @@ try:
         if hierarchy is not None:
             for i, c in enumerate(cnts):
                 if cv2.contourArea(c) > 1500:
-                    
+                    print(f"{i}: {cv2.contourArea(c)}")
                     # --- THE "HOLES" FILTER ---
                     # Count how many inner details (children) are inside this main shape
                     holes = 0

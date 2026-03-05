@@ -77,7 +77,8 @@ try:
         frame = picam2.capture_array()
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+        gray_processed = clahe.apply(gray)  # FIX: Apply lighting fix BEFORE Phase 1!
+        blurred = cv2.GaussianBlur(gray_processed, (5, 5), 0)
         
         best_match = None
 
@@ -94,7 +95,7 @@ try:
         if hierarchy is not None:
             for i, c in enumerate(cnts):
                 # BLINDS ROBOT TO TINY INNER QR SQUARES
-                if cv2.contourArea(c) > 4000: 
+                if cv2.contourArea(c) > 1500: 
                     
                     holes = 0
                     for j, child_c in enumerate(cnts):
@@ -123,6 +124,11 @@ try:
                         if geom_match in ["Plus", "Kite"]:
                             geom_match = "Kite" if corners < 8 else "Plus"
                         if geom_match:
+                            # Calculate 'extent' to defeat the QR Square
+                            x, y, w, h = cv2.boundingRect(c)
+                            box_area = w * h
+                            extent = area / float(box_area) if box_area > 0 else 0
+
                             if geom_match == "Star":
                                 # Rejects chunky squares!
                                 if solidity > 0.6 or corners < 8:
@@ -131,6 +137,10 @@ try:
                                 # FLICKER FIX: Relaxed corners to 5 to forgive camera blur!
                                 if corners < 5 or solidity < 0.75:
                                     geom_match = None
+                            elif geom_match == "Kite":
+                                # THE EXTENT SHIELD: A QR square fills the box (Extent > 0.75).
+                                if extent > 0.75:
+                                    geom_match = None # It's a QR block! Reject!
                         if geom_match == "Arrow":
                             if corners > 10: 
                                 geom_match = None  
@@ -161,7 +171,7 @@ try:
         # PHASE 2: ORB SCANNER 
         # ==========================================
         if best_match is None:
-            gray_processed = clahe.apply(blurred)
+            # gray_processed = clahe.apply(blurred)
             
             kp_frame, des_frame = orb.detectAndCompute(gray_processed, None)
             max_good_matches = 0

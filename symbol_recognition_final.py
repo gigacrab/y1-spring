@@ -99,8 +99,6 @@ try:
                     
                     # --- THE BORDER ASSASSIN ---
                     # If it has no parent (-1), it's the TA's outer box. Ignore it!
-                    if hierarchy[0][i][3] == -1:
-                        continue
                     # ---------------------------
 
                     # --- THE "HOLES" FILTER ---

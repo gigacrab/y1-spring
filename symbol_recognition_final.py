@@ -86,6 +86,10 @@ try:
         if hierarchy is not None:
             for i, c in enumerate(cnts):
                 area = cv2.contourArea(c)
+                if area > 500:  # only print meaningful contours
+                    parent = hierarchy[0][i][3]
+                    child = hierarchy[0][i][2]
+                    print(f"Contour {i:3d} | area={area:6.0f} | parent={parent:3d} | has_child={child != -1}")
                 frame_area = frame.shape[0] * frame.shape[1]
                 if area < 1500 or area > frame_area * 0.8:
                     continue
@@ -208,6 +212,34 @@ try:
                         cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 3)
 
         cv2.imshow("Robot View", frame)
+        # Create debug visualisations
+        debug_contours = frame.copy()
+        debug_thresh = cv2.cvtColor(thresh, cv2.COLOR_GRAY2BGR)  # convert to BGR so we can draw colours on it
+
+        # Draw ALL contours in red, then valid ones in green
+        cv2.drawContours(debug_contours, cnts, -1, (0, 0, 255), 1)  # all = red
+
+        for i, c in enumerate(cnts):
+            if cv2.contourArea(c) > 1500:
+                cv2.drawContours(debug_contours, [c], -1, (0, 255, 0), 2)  # big enough = green
+                
+                # Label each contour with its area
+                x, y, w, h = cv2.boundingRect(c)
+                area = int(cv2.contourArea(c))
+                cv2.putText(debug_contours, str(area), (x, y - 5),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 0), 1)
+
+        # Stack all views into one window
+        # Top row: original + threshold
+        # Bottom row: contours + your result
+        top    = np.hstack([frame, debug_thresh])
+        bottom = np.hstack([debug_contours, frame.copy()])  # bottom right = final result
+        combined = np.vstack([top, bottom])
+
+        # Resize so it fits on screen
+        combined = cv2.resize(combined, (1280, 720))
+        cv2.imshow("DEBUG", combined)
+        
         
         # --- SAFE QUIT ---
         if cv2.waitKey(1) & 0xFF == ord('q'): break

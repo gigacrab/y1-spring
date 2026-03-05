@@ -104,7 +104,7 @@ try:
                         # keep the hierarchy in the first element
                         targets.append([parents[i], c])
             # now we take a look at the targets, hopefully it's right
-            cv2.drawContours(im2, targets, -1, (0, 255, 0), thickness=cv2.FILLED)
+            cv2.drawContours(im2, targets[:][1], -1, (0, 255, 0), thickness=cv2.FILLED)
             cv2.imshow("contours", im2)
             
             for hrc, cnt in targets:

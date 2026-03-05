@@ -94,7 +94,7 @@ try:
             for i, c in enumerate(cnts): 
                 if hrchy[0][i][3] == -1:
                     # we now know this is a parent
-                    parents.append([hrchy[0][i][0]-1, c])
+                    parents.append([i, c])
             cv2.drawContours(im2, [row[1] for row in parents], -1, (0, 0, 255), thickness=cv2.FILLED)
             for i, c in parents:
                 # cv2.contourArea gives us closed area by external contour, so we can check area
@@ -103,7 +103,7 @@ try:
                 approx = cv2.approxPolyDP(c, epsilon, closed=True)
                 if len(approx) == 4:
                     # keep the hierarchy in the first element
-                    targets.append([parents[i][1], c])
+                    targets.append([i, c])
             # now we take a look at the targets, hopefully it's right
             print(len(targets))
             cv2.drawContours(im2, [row[1] for row in targets], -1, (0, 255, 0), thickness=cv2.FILLED)

@@ -141,6 +141,10 @@ try:
                                 # THE EXTENT SHIELD: A QR square fills the box (Extent > 0.75).
                                 if extent > 0.75:
                                     geom_match = None # It's a QR block! Reject!
+                            elif geom_match == "3/4 Circle":
+                                # FLICKER FIX: Accept 5-7 corners to forgive camera blur!
+                                if solidity > 0.95:
+                                    geom_match = None
                         if geom_match == "Arrow":
                             if corners > 10 or solidity > 0.95: 
                                 geom_match = None  

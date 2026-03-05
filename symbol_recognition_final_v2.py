@@ -51,7 +51,7 @@ template_files_npy = {
     "Major Segment": "circlemajorsegment.npy",
     "Plus": "plus.npy",
     "Star": "star.npy",
-    "Trapezium": "trapezium.npy"
+    "Trapezium": "trapezium.npy",
     "Octagon": "octagon.npy",
     "Kite": "kite.npy"
 }

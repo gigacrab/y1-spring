@@ -94,7 +94,7 @@ try:
         if hierarchy is not None:
             for i, c in enumerate(cnts):
                 # BLINDS ROBOT TO TINY INNER QR SQUARES
-                if cv2.contourArea(c) > 3000: 
+                if cv2.contourArea(c) > 4000: 
                     
                     holes = 0
                     for j, child_c in enumerate(cnts):

@@ -115,13 +115,13 @@ try:
                     
                     # IF IT'S SOLID (0 HOLES)...
                     # IF THE SHAPE IS COMPLETELY SOLID (0 HOLES)...
+                    # IF THE SHAPE IS COMPLETELY SOLID (0 HOLES), IT'S A BASIC GEOMETRY SHAPE!
                     if holes == 0:
                         peri = cv2.arcLength(c, True)
                         approx = cv2.approxPolyDP(c, 0.02 * peri, True)
                         corners = len(approx)
                         
-                        # 1. Run the Hu Moments DNA test first!
-                        # We raised this to 0.06 so the Octagon stops being thrown in the trash!
+                        # 1. RUN DNA MATH FIRST (Relaxed to 0.06 so the Octagon survives!)
                         live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
                         lowest_diff = 0.06 
                         geom_match = None
@@ -132,38 +132,38 @@ try:
                                 lowest_diff = diff
                                 geom_match = name
 
-                        # 2. THE BOUNCERS & THE CIRCULARITY SHIELD (Fact-Checkers)
+                        # 2. THE BOUNCERS (Fact-Checkers)
                         if geom_match:
+                            x, y, w, h = cv2.boundingRect(c)
+                            box_area = w * h
                             area = cv2.contourArea(c)
-                            # Circularity = 4 * pi * Area / Perimeter^2
-                            # Fat shapes (Octagon/Circle) are ~0.9. Spiky shapes (Star) are ~0.3
-                            circularity = (4 * np.pi * area) / (peri * peri) if peri > 0 else 0
+                            # Extent = How much of the bounding box is filled with actual ink?
+                            extent = area / float(box_area) if box_area > 0 else 0
                             
-                            # A true Star has 8-12 corners AND is spiky (circularity < 0.55)
-                            # This stops fat Danger blobs from pretending to be Stars!
-                            if geom_match == "Star" and (not (8 <= corners <= 12) or circularity > 0.55):
-                                geom_match = None
-                                
-                            # An Octagon has 8 corners (allow 6-10 for blur) AND is fat (circularity > 0.7)
-                            # This stops the Octagon from failing and falling into Phase 2!
-                            elif geom_match == "Octagon" and (not (6 <= corners <= 10) or circularity < 0.7):
-                                geom_match = None
-                                
-                            # A Plus sign has 12 corners. If it has less, it's just a Kite.
+                            # --- The QR Squiggle vs Star Defense ---
+                            # A Star is mostly empty space (Extent < 0.4) and has ~10 corners.
+                            if geom_match == "Star":
+                                if not (8 <= corners <= 12) or extent > 0.40:
+                                    geom_match = None  # It's chunky! Throw it to Phase 2!
+                            
+                            # --- The Octagon Defense ---
+                            elif geom_match == "Octagon":
+                                if not (7 <= corners <= 9):
+                                    geom_match = None
+                                    
+                            # --- Plus vs Kite Tie-Breaker ---
                             elif geom_match == "Plus" and corners < 10:
                                 geom_match = "Kite"
                                 
-                            # A Kite is stretched. If it's a perfect square (ratio ~ 1.0), it's a QR code block!
+                            # --- QR Box vs Kite Defense ---
                             elif geom_match == "Kite":
-                                rect = cv2.minAreaRect(c)
-                                w_rect, h_rect = rect[1]
-                                if w_rect != 0 and h_rect != 0:
-                                    if (max(w_rect, h_rect) / min(w_rect, h_rect)) < 1.15:
-                                        geom_match = None
-                                        
+                                if w != 0 and h != 0:
+                                    if (max(w, h) / min(w, h)) < 1.15:
+                                        geom_match = None 
+
                         # 3. THE ARROW DIRECTION FINDER
                         if geom_match == "Arrow":
-                            if corners > 9: 
+                            if corners > 10: 
                                 geom_match = None  # Reject the curvy hand from "Press Button"
                             else:
                                 x, y, w, h = cv2.boundingRect(c)

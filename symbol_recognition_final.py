@@ -17,7 +17,9 @@ template_files_png = {
     "Fingerprint": "fingerprint.png",
     "Press Button": "pressbutton.png",
     "Recycle": "recycle.png",
-    "QR Code": "qrcode.png"
+    "QR Code": "qrcode.png",
+    "Octagon": "octagon.png",  # ADDED TO PHASE 2!
+    "Kite": "kite.png"         # ADDED TO PHASE 2!
 }
 
 # --- RESTORED ORB SETTINGS (Full power!) ---
@@ -51,11 +53,10 @@ template_files_npy = {
     "Arrow": "arrow.npy",
     "3/4 Circle": "circle34.npy",
     "Major Segment": "circlemajorsegment.npy",
-    "Kite": "kite.npy",
-    "Octagon": "octagon.npy", 
     "Plus": "plus.npy",
     "Star": "star.npy",
     "Trapezium": "trapezium.npy"
+    # OCTAGON AND KITE HAVE BEEN DELETED FROM HERE!
 }
 
 templates_npy = {}

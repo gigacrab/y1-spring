@@ -185,7 +185,7 @@ try:
                                     good_matches.append(m)
                         
                         # Relaxed Danger threshold!
-                        if label == "Danger": required_matches = 5
+                        if label == "Danger": required_matches = 8
                         elif label == "Fingerprint": required_matches = 15
                         else: required_matches = 12
                         

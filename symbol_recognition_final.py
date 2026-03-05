@@ -132,14 +132,21 @@ try:
                                 lowest_diff = diff
                                 geom_match = name
 
-                        # 2. THE BOUNCERS (Fact-Checkers)
+                        # 2. THE BOUNCERS & THE CIRCULARITY SHIELD (Fact-Checkers)
                         if geom_match:
-                            # A true Star has 10 corners. (We allow 8-11 for slight camera blur).
-                            if geom_match == "Star" and not (8 <= corners <= 11):
+                            area = cv2.contourArea(c)
+                            # Circularity = 4 * pi * Area / Perimeter^2
+                            # Fat shapes (Octagon/Circle) are ~0.9. Spiky shapes (Star) are ~0.3
+                            circularity = (4 * np.pi * area) / (peri * peri) if peri > 0 else 0
+                            
+                            # A true Star has 8-12 corners AND is spiky (circularity < 0.55)
+                            # This stops fat Danger blobs from pretending to be Stars!
+                            if geom_match == "Star" and (not (8 <= corners <= 12) or circularity > 0.55):
                                 geom_match = None
                                 
-                            # An Octagon has exactly 8 corners. (We allow 7-9).
-                            elif geom_match == "Octagon" and not (7 <= corners <= 9):
+                            # An Octagon has 8 corners (allow 6-10 for blur) AND is fat (circularity > 0.7)
+                            # This stops the Octagon from failing and falling into Phase 2!
+                            elif geom_match == "Octagon" and (not (6 <= corners <= 10) or circularity < 0.7):
                                 geom_match = None
                                 
                             # A Plus sign has 12 corners. If it has less, it's just a Kite.
@@ -152,8 +159,8 @@ try:
                                 w_rect, h_rect = rect[1]
                                 if w_rect != 0 and h_rect != 0:
                                     if (max(w_rect, h_rect) / min(w_rect, h_rect)) < 1.15:
-                                        geom_match = None 
-
+                                        geom_match = None
+                                        
                         # 3. THE ARROW DIRECTION FINDER
                         if geom_match == "Arrow":
                             if corners > 9: 

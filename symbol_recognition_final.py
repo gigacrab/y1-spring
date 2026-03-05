@@ -85,38 +85,43 @@ try:
         # ==========================================
         # PHASE 1: GEOMETRY FIRST
         # ==========================================
-        # UPGRADE 1: Otsu Thresholding. Stops the brown Octagon from hollowing out!
-        _, thresh = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+        thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 151, 10)
         
-        # Digital Sandpaper
+        # --- THE DIGITAL SANDPAPER ---
+        # Fills in microscopic glare spots so solid shapes don't get fake holes
         kernel = np.ones((5, 5), np.uint8)
         thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
         
-        # UPGRADE 2: RETR_CCOMP perfectly separates INK from NEGATIVE SPACE
-        cnts, hierarchy = cv2.findContours(thresh, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+        cnts, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        
+        # Optional Debug View
+        # im2 = np.zeros((480, 640, 3), dtype=np.uint8)
+        # cv2.drawContours(im2, cnts, -1, (255, 255, 255), thickness=cv2.FILLED)
+        # cv2.imshow("contours", im2)
         
         if hierarchy is not None:
             for i, c in enumerate(cnts):
                 if cv2.contourArea(c) > 1500:
                     
-                    # UPGRADE 3: Ignore all negative space (white paper inside shapes)
-                    # Parent != -1 means it is a hole. Throw it in the trash!
-                    if hierarchy[0][i][3] != -1:
-                        continue
-                        
-                    # Count the holes inside this solid piece of ink
+                    # --- THE BORDER ASSASSIN ---
+                    # If it has no parent (-1), it's the TA's outer box. Ignore it!
+                    # ---------------------------
+
+                    # --- THE "HOLES" FILTER ---
                     holes = 0
-                    for j in range(len(cnts)):
-                        if hierarchy[0][j][3] == i and cv2.contourArea(cnts[j]) > 200:
+                    for j, child_c in enumerate(cnts):
+                        if hierarchy[0][j][3] == i and cv2.contourArea(child_c) > 200:
                             holes += 1
-                            
-                    # IF IT IS SOLID INK (0 HOLES)...
+                    
+                    # IF IT'S SOLID (0 HOLES)...
+                    # IF THE SHAPE IS COMPLETELY SOLID (0 HOLES)...
                     if holes == 0:
                         peri = cv2.arcLength(c, True)
                         approx = cv2.approxPolyDP(c, 0.02 * peri, True)
                         corners = len(approx)
                         
-                        # 1. RUN DNA MATH
+                        # 1. Run the Hu Moments DNA test first!
+                        # We raised this to 0.06 so the Octagon stops being thrown in the trash!
                         live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
                         lowest_diff = 0.06 
                         geom_match = None
@@ -127,57 +132,58 @@ try:
                                 lowest_diff = diff
                                 geom_match = name
 
-                        # 2. THE BOUNCERS (Fact-Checkers)
+                        # 2. THE BOUNCERS & THE CIRCULARITY SHIELD (Fact-Checkers)
                         if geom_match:
-                            x, y, w, h = cv2.boundingRect(c)
-                            box_area = w * h
                             area = cv2.contourArea(c)
-                            # Extent = How much of the bounding box is filled with actual ink?
-                            extent = area / float(box_area) if box_area > 0 else 0
+                            # Circularity = 4 * pi * Area / Perimeter^2
+                            # Fat shapes (Octagon/Circle) are ~0.9. Spiky shapes (Star) are ~0.3
+                            circularity = (4 * np.pi * area) / (peri * peri) if peri > 0 else 0
                             
-                            # --- The QR Squiggle vs Star Defense ---
-                            if geom_match == "Star":
-                                # Stars are spiky (Extent < 0.45). QR blocks are chunky (Extent = 1.0)
-                                if extent > 0.45 or corners < 8:
-                                    geom_match = None  
-                            
-                            # --- The Octagon Defense ---
-                            elif geom_match == "Octagon":
-                                if not (6 <= corners <= 10):
-                                    geom_match = None
-                                    
-                            # --- Plus vs Kite Tie-Breaker ---
+                            # A true Star has 8-12 corners AND is spiky (circularity < 0.55)
+                            # This stops fat Danger blobs from pretending to be Stars!
+                            if geom_match == "Star" and (not (8 <= corners <= 12) or circularity > 0.55):
+                                geom_match = None
+                                
+                            # An Octagon has 8 corners (allow 6-10 for blur) AND is fat (circularity > 0.7)
+                            # This stops the Octagon from failing and falling into Phase 2!
+                            elif geom_match == "Octagon" and (not (6 <= corners <= 10) or circularity < 0.7):
+                                geom_match = None
+                                
+                            # A Plus sign has 12 corners. If it has less, it's just a Kite.
                             elif geom_match == "Plus" and corners < 10:
                                 geom_match = "Kite"
                                 
-                            # --- QR Box vs Kite Defense ---
+                            # A Kite is stretched. If it's a perfect square (ratio ~ 1.0), it's a QR code block!
                             elif geom_match == "Kite":
-                                if w != 0 and h != 0:
-                                    if (max(w, h) / min(w, h)) < 1.15:
-                                        geom_match = None 
-
-                        # 3. THE ARROW DIRECTION FINDER (Physics Vector)
+                                rect = cv2.minAreaRect(c)
+                                w_rect, h_rect = rect[1]
+                                if w_rect != 0 and h_rect != 0:
+                                    if (max(w_rect, h_rect) / min(w_rect, h_rect)) < 1.15:
+                                        geom_match = None
+                        # 3. THE ARROW DIRECTION FINDER
                         if geom_match == "Arrow":
-                            if corners > 10: 
+                            if corners > 9: 
                                 geom_match = None  # Reject the curvy hand from "Press Button"
                             else:
                                 x, y, w, h = cv2.boundingRect(c)
-                                bx = x + (w / 2.0) # Bounding Box Center
-                                by = y + (h / 2.0)
+                                mask = np.zeros((h, w), dtype=np.uint8)
+                                cv2.drawContours(mask, [c - [x, y]], -1, 255, -1)
                                 
-                                M = cv2.moments(c)
-                                if M["m00"] != 0:
-                                    cx = M["m10"] / M["m00"] # Physical Center of Mass
-                                    cy = M["m01"] / M["m00"]
-                                    
-                                    dx = cx - bx
-                                    dy = cy - by
-                                    
-                                    # Mass pulls towards the heavy arrowhead!
-                                    if abs(dx) > abs(dy):
-                                        geom_match = "Arrow (RIGHT)" if dx > 0 else "Arrow (LEFT)"
-                                    else:
-                                        geom_match = "Arrow (DOWN)" if dy > 0 else "Arrow (UP)"
+                                margin_x = max(1, int(w * 0.15))
+                                margin_y = max(1, int(h * 0.15))
+                                
+                                top_edge = mask[:margin_y, :]
+                                bottom_edge = mask[-margin_y:, :]
+                                left_edge = mask[:, :margin_x]
+                                right_edge = mask[:, -margin_x:]
+                                
+                                masses = {
+                                    "Arrow (UP)": cv2.countNonZero(top_edge),   
+                                    "Arrow (DOWN)": cv2.countNonZero(bottom_edge),  
+                                    "Arrow (LEFT)": cv2.countNonZero(left_edge), 
+                                    "Arrow (RIGHT)": cv2.countNonZero(right_edge)  
+                                }
+                                geom_match = max(masses, key=masses.get)
 
                         # 4. DRAW THE BOX
                         if geom_match:
@@ -185,7 +191,7 @@ try:
                             x, y, w, h = cv2.boundingRect(c)
                             cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
                             break
-                        
+
         # ==========================================
         # PHASE 2: ORB SCANNER (Complex Symbols)
         # ==========================================

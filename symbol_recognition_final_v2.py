@@ -18,8 +18,8 @@ template_files_png = {
     "Press Button": "pressbutton.png",
     "Recycle": "recycle.png",
     "QR Code": "qrcode.png",
-    "Octagon": "octagon.png",  # Moved to ORB to bypass faint brown ink!
-    "Kite": "kite.png"         # Moved to ORB to bypass tight borders!
+    #"Octagon": "octagon.png",  # Moved to ORB to bypass faint brown ink!
+    #"Kite": "kite.png"         # Moved to ORB to bypass tight borders!
 }
 
 orb = cv2.ORB_create(nfeatures=3000, fastThreshold=10)
@@ -51,7 +51,9 @@ template_files_npy = {
     "Major Segment": "circlemajorsegment.npy",
     "Plus": "plus.npy",
     "Star": "star.npy",
-    "Trapezium": "trapezium.npy"
+    "Trapezium": "trapezium.npy",
+    "Octagon": "octagon.npy",
+    "Kite": "kite.npy"
 }
 
 templates_npy = {}

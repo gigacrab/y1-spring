@@ -102,7 +102,7 @@ try:
                             holes += 1
                     
                     # IF THE SHAPE IS COMPLETELY SOLID (0 HOLES), IT'S A BASIC GEOMETRY SHAPE!
-                    if holes == 0 or cv2.contourArea(c) > 2500:
+                    if holes == 0 or cv2.contourArea(c) > 2300:
                         live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
                         lowest_diff = 0.05 
                         geom_match = None

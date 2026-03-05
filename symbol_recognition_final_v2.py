@@ -146,7 +146,7 @@ try:
                                 if solidity > 0.95:
                                     geom_match = None
                         if geom_match == "Arrow":
-                            if 8 > corners or corners > 10 or solidity > 0.95: 
+                            if not (6 <= corners <= 9) or solidity < 0.55:
                                 geom_match = None  
                             else:
                                 x, y, w, h = cv2.boundingRect(c)

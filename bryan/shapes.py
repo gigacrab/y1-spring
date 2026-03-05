@@ -99,7 +99,7 @@ try:
                 if hrchy[0][i][3] == -1:
                     # we now know this is a parent
                     parents.append([i, c])
-            cv2.drawContours(im2, [row[1] for row in parents], -1, (0, 0, 255), thickness=cv2.FILLED)
+            #cv2.drawContours(im2, [row[1] for row in parents], -1, (0, 0, 255), thickness=cv2.FILLED)
             for i, c in parents:
                 # cv2.contourArea gives us closed area by external contour, so we can check area
                 if cv2.contourArea(c) > 3000: #MODIFY THIS NUMBER LATER!
@@ -109,7 +109,7 @@ try:
                         # keep the hierarchy in the first element
                         targets.append([hrchy[0][i], c])    
             # now we take a look at the targets, hopefully it's right
-            cv2.drawContours(im2, [row[1] for row in targets], -1, (0, 255, 0), thickness=cv2.FILLED)
+            #cv2.drawContours(im2, [row[1] for row in targets], -1, (0, 255, 0), thickness=cv2.FILLED)
             
             for hrc, c in targets:
                 holes = 0

@@ -98,7 +98,7 @@ try:
             hello = [row[1] for row in parents]
             print(parents)
             print(hello)
-            cv2.drawContours(im2, hello, (0, 0, 255), thickness=cv2.FILLED)
+            cv2.drawContours(im2, hello, -1, (0, 0, 255), thickness=cv2.FILLED)
             print(f"parents = {len(parents)}, {len(cnts)}")
             for i, c in parents:
                 # cv2.contourArea gives us closed area by external contour, so we can check area

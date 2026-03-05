@@ -112,7 +112,7 @@ try:
                         solidity = area / float(hull_area) if hull_area > 0 else 0
                         
                         live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
-                        lowest_diff = 0.05 
+                        lowest_diff = 0.06
                         geom_match = None
                         
                         for name, master_dna in templates_npy.items():
@@ -120,13 +120,26 @@ try:
                             if diff < lowest_diff:
                                 lowest_diff = diff
                                 geom_match = name
-
+                        if geom_match in ["Plus", "Kite"]:
+                            geom_match = "Kite" if corners < 8 else "Plus"
                         if geom_match:
                             if geom_match == "Star":
                                 # Rejects chunky squares!
                                 if solidity > 0.6 or corners < 8:
-                                    geom_match = None  
-
+                                    geom_match = None
+                            elif geom_match == "Octagon":
+                                # FLICKER FIX: Relaxed corners to 5 to forgive camera blur!
+                                if corners < 5 or solidity < 0.75:
+                                    geom_match = None
+                            elif geom_match == "Kite":
+                                # FLICKER FIX: Must use minAreaRect. A normal boundingRect on a 
+                                # rotated Diamond forms a perfect square and accidentally rejects it!
+                                rect = cv2.minAreaRect(c)
+                                w_rect, h_rect = rect[1]
+                                if w_rect != 0 and h_rect != 0:
+                                    aspect_ratio = max(w_rect, h_rect) / min(w_rect, h_rect)
+                                    if aspect_ratio < 1.10: 
+                                        geom_match = None # It's a perfect square (QR block), reject it!
                         if geom_match == "Arrow":
                             if corners > 10: 
                                 geom_match = None  

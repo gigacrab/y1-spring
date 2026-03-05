@@ -70,7 +70,6 @@ print("Hybrid Master Brain Ready! Scanning the whole room...")
 try:
     while True:
         frame = picam2.capture_array()
-        #frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(gray, (5, 5), 0)
         
@@ -79,7 +78,7 @@ try:
         # ==========================================
         # PHASE 1: GEOMETRY FIRST (With the "Holes" Gatekeeper)
         # ==========================================
-        thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 151, 15)
+        thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 151, 10)
         
         # CRITICAL FIX: We changed RETR_EXTERNAL to RETR_TREE so the robot can look INSIDE the shapes!
         cnts, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -189,7 +188,7 @@ try:
                                     good_matches.append(m)
                         
                         # Danger is strict, Fingerprint is loose
-                        if label == "Danger": required_matches = 5
+                        if label == "Danger": required_matches = 8
                         elif label == "Fingerprint": required_matches = 15
                         else: required_matches = 12
                         

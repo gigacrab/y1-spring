@@ -79,7 +79,7 @@ try:
         # uses adaptive thresholding, 151 - size of neighbourhood area, 8 - constant subtracted from weighted mean
         thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 255, 8)
         
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+        kernel = np.ones((3, 3), np.uint8)
         closed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
 
         cnts, hrchy = cv2.findContours(closed, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -124,20 +124,22 @@ try:
                 curr_i = hrc[2]
                 # first child of the child, because it's its internal contour
                 #if cv2.contourArea(c) - cv2.contourArea(cnts[curr_i]) < 50:
-                #    curr_i = hrchy[0][curr_i][2]
+                curr_i = hrchy[0][curr_i][2]
+                count = 0
                 while curr_i != -1:
                     # now we check this child
+                    count += 1
                     if cv2.contourArea(cnts[curr_i]) > 200:
                         holes += 1
                         # remember that this accepts an array of contours!
                         cv2.drawContours(im2, [cnts[curr_i]], -1, (255, 0, 0), thickness=cv2.FILLED)
                     # set to the next child
                     curr_i = hrchy[0][curr_i][0]
-                print(f'there are {holes} holes!')
+                print(f'there are {holes} holes!, and {count}')
 
                 # see blue holes
                 cv2.imshow("holes", im2)
-                if holes == 2:
+                if holes == 1:
                     # check for shapes!
                     live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
                     lowest_diff = 0.05 

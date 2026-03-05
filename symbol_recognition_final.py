@@ -114,9 +114,10 @@ try:
                         corners = len(approx)
                         
                         geom_match = None
-                        
+                        if corners == 8:
+                            geom_match = "Octagon"
                         # --- 1. THE STAR FORCER ---
-                        if corners == 10:
+                        elif corners == 10:
                             geom_match = "Star"
                         
                         # --- 2. HU MOMENTS DNA SCANNER ---

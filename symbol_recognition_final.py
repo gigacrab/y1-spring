@@ -70,6 +70,7 @@ print("Hybrid Master Brain Ready! Scanning the whole room...")
 try:
     while True:
         frame = picam2.capture_array()
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(gray, (5, 5), 0)
         
@@ -151,7 +152,7 @@ try:
                                 # 4. The arrow points in the opposite direction of the heaviest edge!
                                 geom_match = max(masses, key=masses.get)
                         # --------------------------------
-                        if geom_match == "Star":
+                        if geom_match == "Kite":
                             # Draw a rotating box that perfectly hugs the shape
                             rect = cv2.minAreaRect(c)
                             w_rect, h_rect = rect[1]

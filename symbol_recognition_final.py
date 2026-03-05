@@ -85,24 +85,20 @@ try:
         # ==========================================
         # PHASE 1: GEOMETRY FIRST
         # ==========================================
-        # 1. Back to Adaptive Threshold (Saves the faint brown Octagon!)
         thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 151, 10)
         
-        # 2. Smaller 3x3 Sandpaper (Stops the Diamond from gluing to the TA's border!)
         kernel = np.ones((3, 3), np.uint8)
         thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
         
-        # 3. Back to RETR_TREE (Safest for ignoring outer borders)
         cnts, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         
         if hierarchy is not None:
             for i, c in enumerate(cnts):
-                if cv2.contourArea(c) > 1500:
+                # UPGRADED TO 4000: This blinds the robot to the tiny nested QR squares!
+                if cv2.contourArea(c) > 4000:
                     
-                    # --- COUNT HOLES ---
                     holes = 0
                     for j, child_c in enumerate(cnts):
-                        # Increased to 500! This forgives the brown Octagon if it has a fake "glare" hole in the center!
                         if hierarchy[0][j][3] == i and cv2.contourArea(child_c) > 500:
                             holes += 1
                             
@@ -112,16 +108,14 @@ try:
                         approx = cv2.approxPolyDP(c, 0.02 * peri, True)
                         corners = len(approx)
                         
-                        # --- THE SOLIDITY SHIELD ---
-                        # Area divided by the rubber-band (Convex Hull) Area
                         hull = cv2.convexHull(c)
                         hull_area = cv2.contourArea(hull)
                         area = cv2.contourArea(c)
                         solidity = area / float(hull_area) if hull_area > 0 else 0
                         
-                        # RUN DNA MATH
+                        # RUN DNA MATH (Octagon and Kite are gone! Only solid black shapes remain)
                         live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
-                        lowest_diff = 0.06 
+                        lowest_diff = 0.05 
                         geom_match = None
                         
                         for name, master_dna in templates_npy.items():
@@ -135,23 +129,11 @@ try:
                             
                             # --- The QR Block vs Star Defense ---
                             if geom_match == "Star":
-                                # If solidity > 0.7, it's a solid block (QR code), NOT a Star! Throw it out!
-                                if solidity > 0.7 or corners < 8:
+                                # Stars are spiky. If solidity is high, it's a blurry square!
+                                if solidity > 0.6 or corners < 8:
                                     geom_match = None  
-                            
-                            # --- The Octagon Defense ---
-                            elif geom_match == "Octagon":
-                                # Must be relatively round/fat
-                                if corners < 6 or solidity < 0.8:
-                                    geom_match = None
-                                    
-                            # --- Plus vs Kite Tie-Breaker ---
-                            elif geom_match == "Plus" and corners < 10:
-                                geom_match = "Kite"
-                                
-                            # (I completely deleted the Kite Bouncer so your Diamond stops getting thrown in the trash!)
 
-                        # THE ARROW DIRECTION FINDER (Physics Vector)
+                        # THE ARROW DIRECTION FINDER
                         if geom_match == "Arrow":
                             if corners > 10: 
                                 geom_match = None  

@@ -124,8 +124,8 @@ try:
                 curr_i = hrc[2]
                 while curr_i != -1:
                     # now we check this child
-                    if cv2.contourArea(cnts[curr_i]) > 200:
-                        cv2.drawContours(im2, [cnts[curr_i]], -1, (255, 0, 0), thickness=cv2.FILLED)
+                    if cv2.contourArea(cnts[curr_i]) > 200: pass
+                    cv2.drawContours(im2, [cnts[curr_i]], -1, (255, 0, 0), thickness=cv2.FILLED)
                         # remember that this accepts an array of contours!
                         
                     # set to the next child
@@ -139,7 +139,7 @@ try:
                     if cv2.contourArea(cnts[curr_i]) > 200:
                         holes += 1
                         # remember that this accepts an array of contours!
-                        cv2.drawContours(im2, [cnts[hrchy[0][curr_i][0]]], -1, (255, 255, 0), thickness=cv2.FILLED)
+                    cv2.drawContours(im2, [cnts[hrchy[0][curr_i][0]]], -1, (255, 255, 0), thickness=cv2.FILLED)
                     # set to the next child
                     curr_i = hrchy[0][curr_i][0]
                 print(f'there are {holes} holes!')

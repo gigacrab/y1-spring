@@ -114,7 +114,8 @@ while True:
                 time.sleep(1)
                 hello = picam2.capture_array()
                 cv2.imshow("hello", hello)
-
+                for _ in range(100):
+                    cv2.waitKey(10)
                 # do checking
                 time.sleep(10)
                 time_cool = time.perf_counter()

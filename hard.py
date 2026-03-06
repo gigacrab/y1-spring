@@ -111,9 +111,8 @@ while True:
 
             if not flag and count >= 2 and count <= 4:
                 movement.move(0, 0)
-                #time.sleep(1)
+                time.sleep(1)
                 time_cool = time.perf_counter()
-                elapsed_time = time.perf_counter()
                 flag = True
             current_time = time.perf_counter()
             if (current_time - time_cool) > 2:

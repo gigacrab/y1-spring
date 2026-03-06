@@ -56,22 +56,20 @@ while True:
 
         roi = frame
 
-        #cv2.imshow("raw", im)
-        imgray = cv2.cvtColor(roi, cv2.COLOR_RGB2GRAY)
-        # we now try gaussian blur
-        imgray = clahe.apply(imgray)  # FIX: Apply lighting fix BEFORE Phase 1!
-        blurred = cv2.GaussianBlur(imgray, (5, 5), 0)
+        gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+        gray_processed = clahe.apply(gray)  # FIX: Apply lighting fix BEFORE Phase 1!
+        blurred = cv2.GaussianBlur(gray_processed, (5, 5), 0)
         
-        # 0 - values above this, assigned 255, the Otsu method adjusts according to lighting
-        # however the Otsu method wasn't that good because it'd always find a region of threshold
-        # also idc about the ret
-        ret, thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 255, 8)
-        #_, thresh = cv2.threshold(imgray, 127, 255, cv2.THRESH_BINARY_INV)
+        best_match = None
+
+        # ==========================================
+        # PHASE 1: GEOMETRY FIRST
+        # ==========================================
+        thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 255, 8)
         
         kernel = np.ones((3, 3), np.uint8)
         thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
-
-        # hierarchy -> [next, previous, first_child, parent]
+        
         cnts, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         im2 = np.zeros((480, 640, 3), dtype=np.uint8)
         cv2.drawContours(im2, cnts, -1, (255, 255, 255), thickness=cv2.FILLED)

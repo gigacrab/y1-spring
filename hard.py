@@ -115,6 +115,7 @@ while True:
                 time.sleep(0.01)
                 hello = picam2.capture_array()
                 cv2.imshow("hello", hello)
+                cv2.imshow("real", frame)
                 for _ in range(100):
                     cv2.waitKey(10)
                 # do checking

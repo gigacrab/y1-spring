@@ -54,7 +54,7 @@ while True:
 
         frame = picam2.capture_array()
 
-        roi = frame[240:480, :]
+        roi = frame
 
         #cv2.imshow("raw", im)
         imgray = cv2.cvtColor(roi, cv2.COLOR_RGB2GRAY)
@@ -73,7 +73,7 @@ while True:
 
         # hierarchy -> [next, previous, first_child, parent]
         contours, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-        im2 = np.zeros((240, 640, 3), dtype=np.uint8)
+        im2 = np.zeros((480, 640, 3), dtype=np.uint8)
         cv2.drawContours(im2, contours, -1, (255, 255, 255), thickness=cv2.FILLED)
         
         if len(contours) > 0:

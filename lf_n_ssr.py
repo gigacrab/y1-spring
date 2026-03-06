@@ -65,16 +65,16 @@ last_error = 0
 diff_error = 0
 first = True
 prev_frame_time = 0
+last_pid_time = time.perf_counter() # <-- NEW: Master PID Stopwatch
 
 try: 
     while True: 
-        time_marker = time.perf_counter()
         frame = picam2.capture_array()
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         
         # ==========================================
         # MODULE A: LIZARD BRAIN (LINE FOLLOWER)
         # ==========================================
-        # 1. Grab only the bottom half of the screen
         roi_bottom = frame[240:480, :]
         imgray_line = cv2.cvtColor(roi_bottom, cv2.COLOR_BGR2GRAY)
         imgray_line = cv2.GaussianBlur(imgray_line, (5,5), 0)
@@ -111,8 +111,12 @@ try:
                     cx = int(M['m10']/M['m00'])
                     cv2.line(im2, (cx, 0), (cx, 240), (0, 255, 255), 3)
 
-                    elapsed_time = time.perf_counter() - time_marker
+                    # --- THE STOPWATCH FIX ---
+                    current_time = time.perf_counter()
+                    elapsed_time = current_time - last_pid_time
                     if elapsed_time <= 0: elapsed_time = 0.0001
+                    last_pid_time = current_time 
+                    # -------------------------
                     
                     error = (320 - cx) / 320    
                     total_error += error * elapsed_time
@@ -123,7 +127,7 @@ try:
                     pid = kp * error + ki * total_error + kd * diff_error
                     last_error = error
                 else:
-                    pid = getSign(last_error)
+                    pid = getSign(last_error) # Reverted the * 2 bug!
             else:
                 pid = getSign(last_error)
 
@@ -142,12 +146,10 @@ try:
         # ==========================================
         # MODULE B: FRONTAL LOBE (SHAPE SCANNER)
         # ==========================================
-        # 1. Grab ONLY the top half of the screen (Prevents CPU waste and Track Hallucinations!)
         roi_top = frame[0:240, :]
         gray_shape = cv2.cvtColor(roi_top, cv2.COLOR_BGR2GRAY)
         blurred_shape = cv2.GaussianBlur(gray_shape, (5, 5), 0)
         
-        # Donut Fix & Geometry Shields
         thresh_sym = cv2.adaptiveThreshold(blurred_shape, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 255, 8)
         kernel = np.ones((3, 3), np.uint8)
         thresh_sym = cv2.morphologyEx(thresh_sym, cv2.MORPH_CLOSE, kernel)
@@ -159,7 +161,6 @@ try:
             for i, c in enumerate(cnts_shape):
                 if cv2.contourArea(c) > 1500:
                     
-                    # Holes Gatekeeper
                     holes = 0
                     for j, child_c in enumerate(cnts_shape):
                         if hierarchy[0][j][3] == i and cv2.contourArea(child_c) > 500: holes += 1
@@ -186,7 +187,6 @@ try:
                         if best_match in ["Plus", "Kite"]:
                             best_match = "Kite" if corners < 8 else "Plus"
 
-                        # Bouncers
                         if best_match:
                             x, y, w, h = cv2.boundingRect(c)
                             box_area = w * h
@@ -197,7 +197,6 @@ try:
                             elif best_match == "Kite" and extent > 0.75: best_match = None 
                             elif best_match == "3/4 Circle" and solidity > 0.95: best_match = None
 
-                        # Arrow Physics & Boomerang Shield
                         if best_match == "Arrow":
                             if not (6 <= corners <= 9) or solidity < 0.55:
                                 best_match = None  
@@ -212,7 +211,6 @@ try:
                                     else: best_match = "Arrow (DOWN)" if dy > 0 else "Arrow (UP)"
 
                         if best_match:
-                            # Draw on the main frame (y coordinates require no offset because roi_top starts at 0)
                             cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
                             cv2.putText(frame, best_match, (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
                             break 

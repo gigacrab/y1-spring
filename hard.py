@@ -107,12 +107,15 @@ while True:
                 if cnt_a >= 8500 and cnt_a <= 40000:
                     filtered_contours.append(contours[i])
                     filtered_contour_areas.append(contour_areas[i])
-            #print(count)
+            print(count)
 
             if not flag and count >= 2 and count <= 4:
                 movement.move(0, 0)
+                time.sleep(1)
                 hello = picam2.capture_array()
-                cv2.imshow("hello", frame)
+                cv2.imshow("hello", hello)
+
+                # do checking
                 time.sleep(10)
                 time_cool = time.perf_counter()
                 first = True

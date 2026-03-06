@@ -111,6 +111,7 @@ while True:
 
             if not flag and count >= 2 and count <= 4:
                 movement.move(0, 0)
+                movement.move(-0.5, -0.5)
                 time.sleep(1)
                 time_cool = time.perf_counter()
                 time_marker = time.perf_counter()

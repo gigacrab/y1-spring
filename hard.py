@@ -194,7 +194,7 @@ while True:
 
             # areas between 7500 to 40000 are accepted
             for i, cnt_a in enumerate(contour_areas):
-                if cnt_a > 2000:
+                if cnt_a > 3000:
                     count += 1
                 if cnt_a >= 8500 and cnt_a <= 40000:
                     filtered_contours.append(contours[i])

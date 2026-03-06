@@ -98,7 +98,7 @@ while True:
                     c_hull_area = cv2.contourArea(c_hull)
                     solidity = c_area / c_hull_area
 
-                    if solidity > 0.95:
+                    if solidity > 0.9:
                         filtered_contours.append(c)
                         filtered_contour_areas.append(c_area)
             print(len(filtered_contours))

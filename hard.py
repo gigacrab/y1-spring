@@ -160,100 +160,100 @@ while True:
         if best_match is not None:
             print(f"Best match is {best_match}")
             
-        else:
-            # line following
-            roi = frame[240:480, :]
+        
+        # line following
+        roi = frame[240:480, :]
 
-            #cv2.imshow("raw", im)
-            imgray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-            # we now try gaussian blur
-            imgray = cv2.GaussianBlur(imgray, (5,5), 0)
-            #cv2.imshow("gray", imgray)
-            # 0 - values above this, assigned 255, the Otsu method adjusts according to lighting
-            # however the Otsu method wasn't that good because it'd always find a region of threshold
-            # also idc about the ret
-            ret, thresh = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-            #_, thresh = cv2.threshold(imgray, 127, 255, cv2.THRESH_BINARY_INV)
-            #cv2.imshow("thresh", thresh)
+        #cv2.imshow("raw", im)
+        imgray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+        # we now try gaussian blur
+        imgray = cv2.GaussianBlur(imgray, (5,5), 0)
+        #cv2.imshow("gray", imgray)
+        # 0 - values above this, assigned 255, the Otsu method adjusts according to lighting
+        # however the Otsu method wasn't that good because it'd always find a region of threshold
+        # also idc about the ret
+        ret, thresh = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+        #_, thresh = cv2.threshold(imgray, 127, 255, cv2.THRESH_BINARY_INV)
+        #cv2.imshow("thresh", thresh)
 
-            # hierarchy -> [next, previous, first_child, parent]
-            contours, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-            im2 = np.zeros((240, 640, 3), dtype=np.uint8)
-            cv2.drawContours(im2, contours, -1, (255, 255, 255), thickness=cv2.FILLED)
+        # hierarchy -> [next, previous, first_child, parent]
+        contours, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        im2 = np.zeros((240, 640, 3), dtype=np.uint8)
+        cv2.drawContours(im2, contours, -1, (255, 255, 255), thickness=cv2.FILLED)
+        
+        if len(contours) > 0:
+            contour_areas = [cv2.contourArea(cnt) for cnt in contours]
+            filtered_contours = []
+            filtered_contour_areas = []
+
+            # areas between 7500 to 40000 are accepted
+            for i, cnt_a in enumerate(contour_areas):
+                if cnt_a >= 8500 and cnt_a <= 40000:
+                    filtered_contours.append(contours[i])
+                    filtered_contour_areas.append(contour_areas[i])
             
-            if len(contours) > 0:
-                contour_areas = [cv2.contourArea(cnt) for cnt in contours]
-                filtered_contours = []
-                filtered_contour_areas = []
+            # here we have the ACTUAL contours, if none, maximum error
+            if len(filtered_contours) > 0 and ret < 180:
+                if len(filtered_contours) > 1:
+                    zipped_pairs = zip(filtered_contour_areas, filtered_contours)
+                    # this sorts by the first element
+                    sorted_pairs = sorted(zipped_pairs, reverse=True)
 
-                # areas between 7500 to 40000 are accepted
-                for i, cnt_a in enumerate(contour_areas):
-                    if cnt_a >= 8500 and cnt_a <= 40000:
-                        filtered_contours.append(contours[i])
-                        filtered_contour_areas.append(contour_areas[i])
-                
-                # here we have the ACTUAL contours, if none, maximum error
-                if len(filtered_contours) > 0 and ret < 180:
-                    if len(filtered_contours) > 1:
-                        zipped_pairs = zip(filtered_contour_areas, filtered_contours)
-                        # this sorts by the first element
-                        sorted_pairs = sorted(zipped_pairs, reverse=True)
-
-                        _, sorted_contours = zip(*sorted_pairs)
-                        line_contour = sorted_contours[0]
-                        cv2.drawContours(im2, sorted_contours[1:], -1, (255, 255, 255), thickness=cv2.FILLED)
-                    else:
-                        line_contour = filtered_contours[0]
-                    
-                    cv2.drawContours(im2, [line_contour], -1, (0, 255, 0), thickness=cv2.FILLED)
-
-                    M = cv2.moments(line_contour)
-
-                    if M['m00'] == 0:
-                        continue
-                    cx = int(M['m10']/M['m00'])
-                    #cy = int(M['m01']/M['m00'])
-
-                    cv2.line(im2, (cx, 0), (cx, 240), (0, 255, 255), 3)
-
-                    # pwm - 80 for left, 78 for right 
-                    elapsed_time = time.perf_counter() - time_marker
-                    if elapsed_time <= 0:
-                        elapsed_time = 0.0001
-                    
-                    # error is normalized
-                    error = (320 - cx) / 320    
-                    total_error += error * elapsed_time
-
-                    if not first:
-                        diff_error = (error - last_error) / elapsed_time
-                    else:
-                        first = False
-                        
-                    pid = kp * error + ki * total_error + kd * diff_error
-                    
-                    last_error = error
-
+                    _, sorted_contours = zip(*sorted_pairs)
+                    line_contour = sorted_contours[0]
+                    cv2.drawContours(im2, sorted_contours[1:], -1, (255, 255, 255), thickness=cv2.FILLED)
                 else:
-                    print(f"we cannot find contours {getSign(last_error)}")
-                    pid = getSign(last_error)
-
-                left_pwm = base_speed + pid
-                right_pwm = base_speed - pid
-
-                clamped_left_pwm = clamp(left_pwm, -1, 1)
-                clamped_right_pwm = clamp(right_pwm, -1, 1)
-
-                movement.move(clamped_left_pwm, clamped_right_pwm)
-
-                cv2.imshow("contours", im2)
+                    line_contour = filtered_contours[0]
                 
-                if cv2.waitKey(1) == 27:
-                    movement.move(0, 0)
-                    break
+                cv2.drawContours(im2, [line_contour], -1, (0, 255, 0), thickness=cv2.FILLED)
+
+                M = cv2.moments(line_contour)
+
+                if M['m00'] == 0:
+                    continue
+                cx = int(M['m10']/M['m00'])
+                #cy = int(M['m01']/M['m00'])
+
+                cv2.line(im2, (cx, 0), (cx, 240), (0, 255, 255), 3)
+
+                # pwm - 80 for left, 78 for right 
+                elapsed_time = time.perf_counter() - time_marker
+                if elapsed_time <= 0:
+                    elapsed_time = 0.0001
+                
+                # error is normalized
+                error = (320 - cx) / 320    
+                total_error += error * elapsed_time
+
+                if not first:
+                    diff_error = (error - last_error) / elapsed_time
+                else:
+                    first = False
+                    
+                pid = kp * error + ki * total_error + kd * diff_error
+                
+                last_error = error
+
             else:
-                # this is unlikely but
-                continue     
+                print(f"we cannot find contours {getSign(last_error)}")
+                pid = getSign(last_error)
+
+            left_pwm = base_speed + pid
+            right_pwm = base_speed - pid
+
+            clamped_left_pwm = clamp(left_pwm, -1, 1)
+            clamped_right_pwm = clamp(right_pwm, -1, 1)
+
+            movement.move(clamped_left_pwm, clamped_right_pwm)
+
+            cv2.imshow("contours", im2)
+            
+            if cv2.waitKey(1) == 27:
+                movement.move(0, 0)
+                break
+        else:
+            # this is unlikely but
+            continue     
     except (KeyboardInterrupt, Exception) as e:
         print(f"Error has occured - {e}")
         break

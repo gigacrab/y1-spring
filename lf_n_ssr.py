@@ -1,26 +1,117 @@
 import cv2
-import numpy as np
 from picamera2 import Picamera2
 import time
+import numpy as np
 import movement
 import sys
 import os
-import collections
 
-os.environ["OPENCV_LOG_LEVEL"] = "ERROR"
-os.environ["QT_QPA_PLATFORM"] = "xcb" 
+def shape_rec(frame):
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    gray_processed = clahe.apply(gray)  # FIX: Apply lighting fix BEFORE Phase 1!
+    blurred = cv2.GaussianBlur(gray_processed, (5, 5), 0)
+    
+    best_match = None
 
-# ==========================================
-# 0. CONFIGURATION & SETUP
-# ==========================================
-def clamp(value, min_val, max_val):
-    if value > max_val: return max_val
-    elif value < min_val: return min_val
+    # ==========================================
+    # PHASE 1: GEOMETRY FIRST
+    # ==========================================
+    thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 191, 8)
+
+    
+    kernel = np.ones((3, 3), np.uint8)
+    thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+    
+    cnts, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    cv2.imshow("thresh", thresh)
+    for i, c in enumerate(cnts):
+        if cv2.contourArea(c) > 1500: 
+            peri = cv2.arcLength(c, True)
+            approx = cv2.approxPolyDP(c, 0.02 * peri, True)
+            corners = len(approx)
+            
+            hull = cv2.convexHull(c)
+            hull_area = cv2.contourArea(hull)
+            area = cv2.contourArea(c)
+            solidity = area / float(hull_area) if hull_area > 0 else 0
+            
+            live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
+            lowest_diff = 0.1
+            geom_match = None
+            
+            for name, master_dna in templates_npy.items():
+                diff = np.sum(np.abs(live_moments - master_dna))
+                if diff < lowest_diff:
+                    lowest_diff = diff
+                    geom_match = name
+            if geom_match in ["Plus", "Kite"]:
+                geom_match = "Kite" if corners < 8 else "Plus"
+            if geom_match:
+                # Calculate 'extent' to defeat the QR Square
+                x, y, w, h = cv2.boundingRect(c)
+                box_area = w * h
+                extent = area / float(box_area) if box_area > 0 else 0
+
+                if geom_match == "Star":
+                    # Rejects chunky squares!
+                    if solidity > 0.6 or corners < 8:
+                        geom_match = None
+                elif geom_match == "Octagon":
+                    # FLICKER FIX: Relaxed corners to 5 to forgive camera blur!
+                    if corners < 5 or solidity < 0.75:
+                        geom_match = None
+                elif geom_match == "Kite":
+                    # THE EXTENT SHIELD: A QR square fills the box (Extent > 0.75).
+                    if extent > 0.75:
+                        geom_match = None # It's a QR block! Reject!
+                elif geom_match == "3/4 Circle":
+                    # FLICKER FIX: Accept 5-7 corners to forgive camera blur!
+                    if solidity > 0.95:
+                        geom_match = None
+            if geom_match == "Arrow":
+                if not (6 <= corners <= 9) or solidity < 0.55:
+                    geom_match = None  
+                else:
+                    x, y, w, h = cv2.boundingRect(c)
+                    bx = x + (w / 2.0)
+                    by = y + (h / 2.0)
+                    
+                    M = cv2.moments(c)
+                    if M["m00"] != 0:
+                        cx = M["m10"] / M["m00"]
+                        cy = M["m01"] / M["m00"]
+                        dx = cx - bx
+                        dy = cy - by
+                        
+                        if abs(dx) > abs(dy):
+                            geom_match = "Arrow (RIGHT)" if dx > 0 else "Arrow (LEFT)"
+                        else:
+                            geom_match = "Arrow (DOWN)" if dy > 0 else "Arrow (UP)"
+
+            if geom_match:
+                best_match = geom_match
+                x, y, w, h = cv2.boundingRect(c)
+                cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+                break 
+    if best_match is not None:
+        return best_match
+    else:
+        return "unknown"
+
+
+def clamp(value, min, max):
+    if value > max:
+        return max
+    elif value < min:
+        return min
     return value
 
+# returns 1 if positive, -1 if negative
 def getSign(n):
     return (n > 0) - (n < 0)
 
+# __main__ is the script that was passed to execute
+# config from day 1 - 0.4 1.4 0.01 0.2
 if __name__ == "__main__":
     if len(sys.argv) == 5:
         base_speed = float(sys.argv[1])
@@ -28,113 +119,113 @@ if __name__ == "__main__":
         ki = float(sys.argv[3])
         kd = float(sys.argv[4])
     else:
-        print("No variables provided! Defaulting to Day 1 Config...")
-        base_speed = 0.4
-        kp = 1.4
-        ki = 0.01
-        kd = 0.2
+        raise Exception("Didn't input appropriate variables")
 
-# --- LOAD SHAPE DNA ---
-base_path = '/home/jaydenbryan/Project/Symbols_npy/'
-template_files = {
-    "Arrow": "arrow.npy",
-    "3/4 Circle": "circle34.npy",
-    "Major Segment": "circlemajorsegment.npy",
-    "Kite": "kite.npy",
-    "Octagon": "octagon.npy", 
-    "Plus": "plus.npy",
-    "Star": "star.npy",
-    "Trapezium": "trapezium.npy"
-}
-
-templates = {}
-try:
-    for name, filename in template_files.items():
-        templates[name] = np.load(os.path.join(base_path, filename))
-except FileNotFoundError as e:
-    print(f"Error: Could not find {e.filename}. Check the Symbols_npy folder!")
-    exit()
-
-# --- START CAMERA ---
+# Picamera2 init
 picam2 = Picamera2()
 camera_config = picam2.create_video_configuration(main={"size": (640, 480)})
 picam2.configure(camera_config)
 picam2.start()
 time.sleep(2)
-print("Junction Scanner Online. Driving...")
 
-# PID & STATE VARIABLES
+# PID
+# error and diff_error are assigned
 error = 0
 total_error = 0
 last_error = 0
 diff_error = 0
 first = True
+#kp = 1.4
+#ki = 0.01
+#kd = 0.2
 
-scanning_mode = False
-scan_frames = 0
-scan_results = []
-cooldown_until = 0
+clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
 
-last_pid_time = time.perf_counter()
-prev_frame_time = time.perf_counter()
+npy_path = '/home/jaydenbryan/Project/Symbols_npy/'
+template_files_npy = {
+    "Arrow": "arrow.npy",
+    "3/4 Circle": "circle34.npy",
+    "Major Segment": "circlemajorsegment.npy",
+    "Plus": "plus.npy",
+    "Star": "star.npy",
+    "Trapezium": "trapezium.npy",
+    "Octagon": "octagon.npy",
+    "Kite": "kite.npy"
+}
 
-try: 
-    while True: 
-        # === THE MASTER STOPWATCH ===
-        current_time = time.perf_counter()
-        elapsed_time = current_time - last_pid_time
-        if elapsed_time <= 0: elapsed_time = 0.0001
-        last_pid_time = current_time 
+templates_npy = {}
+for name, filename in template_files_npy.items():
+    try:
+        templates_npy[name] = np.load(os.path.join(npy_path, filename))
+    except FileNotFoundError:
+        print(f"Warning: Missing DNA file {filename}")
 
-        frame = picam2.capture_array()
-        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-        im2 = np.zeros((240, 640, 3), dtype=np.uint8)
+time_marker = time.perf_counter()
+time_cool = 0
+flag = False
+while True: 
+    try: 
         
-        # ==========================================
-        # MODULE A: LINE FOLLOWER & JUNCTION TRIGGER
-        # ==========================================
-        if not scanning_mode:
-            roi_bottom = frame[240:480, :]
-            imgray_line = cv2.cvtColor(roi_bottom, cv2.COLOR_BGR2GRAY)
-            imgray_line = cv2.GaussianBlur(imgray_line, (5,5), 0)
-            
-            ret, thresh_line = cv2.threshold(imgray_line, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-            contours_line, _ = cv2.findContours(thresh_line, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-            
-            count = 0
+        frame = picam2.capture_array()
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        # line following
+        roi = frame[240:480, 160:480]
+
+        imgray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+        # we now try gaussian blur
+        imgray = cv2.GaussianBlur(imgray, (5,5), 0)
+
+        # 0 - values above this, assigned 255, the Otsu method adjusts according to lighting
+        # however the Otsu method wasn't that good because it'd always find a region of threshold
+        # also idc about the ret
+        ret, thresh = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+        #_, thresh = cv2.threshold(imgray, 127, 255, cv2.THRESH_BINARY_INV)
+
+        # hierarchy -> [next, previous, first_child, parent]
+        contours, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        im2 = np.zeros((240, 360, 3), dtype=np.uint8)
+        cv2.drawContours(im2, contours, -1, (255, 255, 255), thickness=cv2.FILLED)
+        count = 0
+        if len(contours) > 0:
+            contour_areas = [cv2.contourArea(cnt) for cnt in contours]
             filtered_contours = []
             filtered_contour_areas = []
 
-            if len(contours_line) > 0:
-                contour_areas = [cv2.contourArea(cnt) for cnt in contours_line]
+            # areas between 7500 to 40000 are accepted
+            for i, cnt_a in enumerate(contour_areas):
+                if cnt_a > 2500:
+                    count += 1
+                if cnt_a >= 8500 and cnt_a <= 40000:
+                    filtered_contours.append(contours[i])
+                    filtered_contour_areas.append(contour_areas[i])
 
-                for i, cnt_a in enumerate(contour_areas):
-                    if cnt_a > 1000:
-                        count += 1
-                    if cnt_a >= 8500 and cnt_a <= 40000:
-                        filtered_contours.append(contours_line[i])
-                        filtered_contour_areas.append(contour_areas[i])
-            
-            # --- JUNCTION DETECTED! TRIGGER THE SCANNER ---
-            if count >= 2 and count <= 4 and current_time > cooldown_until:
-                print(f"Junction Detected (Count: {count})! Initiating Active Braking...")
-                
-                movement.move(-0.3, -0.3) 
-                time.sleep(0.15) 
+            if not flag and count >= 2 and count <= 4:
                 movement.move(0, 0)
-                time.sleep(0.1) 
+                movement.move(-0.5, -0.5)
+                time.sleep(0.3)
+                movement.move(0, 0)
+                time.sleep(1)
+                hello = picam2.capture_array()
+                for _ in range(100):
+                    cv2.waitKey(10)
+                # do checking
+                #time.sleep(2)
+                print(f"The shape is {shape_rec(hello)}")
+                time_cool = time.perf_counter()
+                first = True
+                flag = True
+            current_time = time.perf_counter()
+            if (current_time - time_cool) > 2:
+                flag = False
                 
-                print("Camera settled. Starting 50-frame consensus scan...")
-                scanning_mode = True
-                scan_frames = 0
-                scan_results = []
-                continue # Skip the PID math this frame, we are stopped!
-
-            # --- NORMAL PID LINE FOLLOWING ---
+            # here we have the ACTUAL contours, if none, maximum error
             if len(filtered_contours) > 0 and ret < 180:
                 if len(filtered_contours) > 1:
                     zipped_pairs = zip(filtered_contour_areas, filtered_contours)
+                    # this sorts by the first element
                     sorted_pairs = sorted(zipped_pairs, reverse=True)
+
                     _, sorted_contours = zip(*sorted_pairs)
                     line_contour = sorted_contours[0]
                     cv2.drawContours(im2, sorted_contours[1:], -1, (255, 255, 255), thickness=cv2.FILLED)
@@ -144,149 +235,60 @@ try:
                 cv2.drawContours(im2, [line_contour], -1, (0, 255, 0), thickness=cv2.FILLED)
 
                 M = cv2.moments(line_contour)
-                if M['m00'] != 0:
-                    cx = int(M['m10']/M['m00'])
-                    cv2.line(im2, (cx, 0), (cx, 240), (0, 255, 255), 3)
-                    
-                    error = (320 - cx) / 320    
-                    total_error += error * elapsed_time
 
-                    if not first: diff_error = (error - last_error) / elapsed_time
-                    else: first = False
-                        
-                    pid = kp * error + ki * total_error + kd * diff_error
-                    last_error = error
+                if M['m00'] == 0:
+                    continue
+                cx = int(M['m10']/M['m00'])
+                #cy = int(M['m01']/M['m00'])
+
+                cv2.line(im2, (cx, 0), (cx, 240), (0, 255, 255), 3)
+
+                # pwm - 80 for left, 78 for right 
+                elapsed_time = time.perf_counter() - time_marker
+                if elapsed_time <= 0:
+                    elapsed_time = 0.0001
+
+                time_marker = time.perf_counter()
+                
+                # error is normalized
+                error = (320 - cx) / 320    
+
+                if not first:
+                    diff_error = (error - last_error) / elapsed_time
+                    total_error += error * elapsed_time
                 else:
-                    pid = getSign(last_error)
+                    first = False
+                    
+                pid = kp * error + ki * total_error + kd * diff_error
+                
+                last_error = error
+
             else:
+                #print(f"we cannot find contours {getSign(last_error)}")
                 pid = getSign(last_error)
 
             left_pwm = base_speed + pid
             right_pwm = base_speed - pid
-            movement.move(clamp(left_pwm, -1, 1), clamp(right_pwm, -1, 1))
 
-        # ==========================================
-        # MODULE B: 50-FRAME SHAPE SCANNER
-        # ==========================================
+            clamped_left_pwm = clamp(left_pwm, -1, 1)
+            clamped_right_pwm = clamp(right_pwm, -1, 1)
+
+            movement.move(clamped_left_pwm, clamped_right_pwm)
+
+            cv2.imshow("contours", im2)
+            
+            if cv2.waitKey(1) == 27:
+                movement.move(0, 0)
+                break
         else:
-            movement.move(0, 0) # Ensure brakes are held
-            
-            gray_shape = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) 
-            blurred_shape = cv2.GaussianBlur(gray_shape, (5, 5), 0)
-            
-            thresh_sym = cv2.adaptiveThreshold(blurred_shape, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 255, 8)
-            kernel = np.ones((3, 3), np.uint8)
-            thresh_sym = cv2.morphologyEx(thresh_sym, cv2.MORPH_CLOSE, kernel)
-            
-            cnts_shape, hierarchy = cv2.findContours(thresh_sym, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-            best_match = None
-            
-            if hierarchy is not None:
-                for i, c in enumerate(cnts_shape):
-                    if cv2.contourArea(c) > 1500:
-                        holes = 0
-                        for j, child_c in enumerate(cnts_shape):
-                            if hierarchy[0][j][3] == i and cv2.contourArea(child_c) > 500: holes += 1
-                                
-                        if holes == 0:
-                            peri = cv2.arcLength(c, True)
-                            approx = cv2.approxPolyDP(c, 0.02 * peri, True)
-                            corners = len(approx)
-                            
-                            hull = cv2.convexHull(c)
-                            hull_area = cv2.contourArea(hull)
-                            area = cv2.contourArea(c)
-                            solidity = area / float(hull_area) if hull_area > 0 else 0
-                            
-                            live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
-                            lowest_diff = 0.10
-                            
-                            for name, master_dna in templates.items():
-                                diff = np.sum(np.abs(live_moments - master_dna))
-                                if diff < lowest_diff:
-                                    lowest_diff = diff
-                                    best_match = name
-                                    
-                            if best_match in ["Plus", "Kite"]:
-                                best_match = "Kite" if corners < 8 else "Plus"
+            # this is unlikely but
+            continue     
+    except (KeyboardInterrupt, Exception) as e:
+        print(f"Error has occured - {e}")
+        break
 
-                            if best_match:
-                                x, y, w, h = cv2.boundingRect(c)
-                                box_area = w * h
-                                extent = area / float(box_area) if box_area > 0 else 0
-                                
-                                if best_match == "Star" and (solidity > 0.6 or corners < 8): best_match = None  
-                                elif best_match == "Octagon" and (corners < 5 or solidity < 0.75): best_match = None
-                                elif best_match == "Kite" and (extent > 0.75 or corners > 5): best_match = None 
-                                elif best_match == "3/4 Circle" and solidity > 0.95: best_match = None
-
-                            if best_match == "Arrow":
-                                if not (6 <= corners <= 9) or solidity < 0.55:
-                                    best_match = None  
-                                else:
-                                    bx, by = x + (w / 2.0), y + (h / 2.0)
-                                    M_shape = cv2.moments(c)
-                                    if M_shape["m00"] != 0:
-                                        cx_s = M_shape["m10"] / M_shape["m00"]
-                                        cy_s = M_shape["m01"] / M_shape["m00"]
-                                        dx, dy = cx_s - bx, cy_s - by
-                                        if abs(dx) > abs(dy): best_match = "Arrow (RIGHT)" if dx > 0 else "Arrow (LEFT)"
-                                        else: best_match = "Arrow (DOWN)" if dy > 0 else "Arrow (UP)"
-
-                            if best_match:
-                                cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                                break 
-
-            # --- GATHER VOTES ---
-            scan_frames += 1
-            if best_match:
-                scan_results.append(best_match)
-                cv2.putText(frame, best_match, (x, y-50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-            
-            cv2.putText(frame, f"SCANNING JUNCTION: {scan_frames}/50", (20, 130), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
-
-            # --- END OF SCAN ---
-            if scan_frames >= 50:
-                if len(scan_results) > 0:
-                    counter = collections.Counter(scan_results)
-                    final_answer = counter.most_common(1)[0][0]
-                    confidence = counter.most_common(1)[0][1]
-                    print(f"==== JUNCTION DECISION: {final_answer} ({confidence}/50 votes) ====")
-                    # TODO: Transmit 'final_answer' over UART/Serial to ESP32 here!
-                else:
-                    print("==== FALSE ALARM: No shape found at junction ====")
-                    
-                print("Resuming PID Line Follower. Enforcing 3-second junction cooldown...")
-                scanning_mode = False
-                cooldown_until = time.perf_counter() + 3.0 
-                first = True
-                last_pid_time = time.perf_counter()
-
-        # ==========================================
-        # DISPLAY & FPS
-        # ==========================================
-        if not scanning_mode and current_time < cooldown_until:
-            cv2.putText(frame, "JUNCTION COOLDOWN ACTIVE", (20, 130), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
-
-        new_frame_time = time.perf_counter()
-        time_diff = new_frame_time - prev_frame_time
-        fps = 1.0 / time_diff if time_diff > 0 else 0.0
-        prev_frame_time = new_frame_time
-
-        cv2.putText(frame, f"FPS: {int(fps)}", (20, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
-
-        cv2.imshow("hello", frame)
-        cv2.imshow("Line Target", im2)
-        
-        if cv2.waitKey(1) == 27:
-            movement.move(0, 0)
-            break
-            
-except (KeyboardInterrupt, Exception) as e:
-    print(f"Error has occurred - {e}")
-
-finally:
-    movement.move(0, 0)
-    movement.pi.stop()
-    picam2.stop()
-    cv2.destroyAllWindows()
+movement.move(0, 0)
+movement.pi.stop()
+picam2.stop()
+picam2.close()
+cv2.destroyAllWindows()

@@ -123,7 +123,7 @@ if __name__ == "__main__":
 
 # Picamera2 init
 picam2 = Picamera2()
-camera_config = picam2.create_video_configuration(main={"size": (480, 480)})
+camera_config = picam2.create_video_configuration(main={"size": (640, 480)})
 picam2.configure(camera_config)
 picam2.start()
 time.sleep(2)
@@ -170,7 +170,7 @@ while True:
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         # line following
-        roi = frame[240:480, :]
+        roi = frame[240:480, 160:480]
 
         imgray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
         # we now try gaussian blur
@@ -184,7 +184,7 @@ while True:
 
         # hierarchy -> [next, previous, first_child, parent]
         contours, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-        im2 = np.zeros((240, 640, 3), dtype=np.uint8)
+        im2 = np.zeros((240, 360, 3), dtype=np.uint8)
         cv2.drawContours(im2, contours, -1, (255, 255, 255), thickness=cv2.FILLED)
         count = 0
         if len(contours) > 0:

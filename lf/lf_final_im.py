@@ -68,6 +68,7 @@ while True:
         # hierarchy -> [next, previous, first_child, parent]
         contours, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         im2 = np.zeros((240, 640, 3), dtype=np.uint8)
+        cv2.drawContours(im2, contours, -1, (255, 255, 255), thickness=cv2.FILLED)
         
         if len(contours) > 0:
             contour_areas = [cv2.contourArea(cnt) for cnt in contours]

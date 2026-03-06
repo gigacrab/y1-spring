@@ -74,6 +74,7 @@ while True:
     try: 
         
         frame = picam2.capture_array()
+        cv2.imshow("hello", frame)
 
         # line following
         roi = frame[0:240, :]

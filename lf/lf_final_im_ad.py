@@ -92,7 +92,7 @@ while True:
                     if c_approx_arc != 0: smoothness = c_arc / c_approx_arc 
                     if smoothness > 0.95:
                         filtered_contours.append(c)
-                        print(c_area)
+                        #print(c_area)
                         filtered_contour_areas.append(c_area)
                     
                     '''
@@ -103,7 +103,7 @@ while True:
                     if solidity > 0.85:
                         filtered_contours.append(c)
                         filtered_contour_areas.append(c_area)'''
-            print(len(filtered_contours))
+            #print(len(filtered_contours))
             
             # here we have the ACTUAL contours, if none, maximum error
             if len(filtered_contours) > 0:
@@ -143,6 +143,8 @@ while True:
                 print(f"we cannot find contours {getSign(last_error)}")
                 pid = getSign(last_error)
 
+
+            print(error)
             left_pwm = base_speed + pid
             right_pwm = base_speed - pid
 

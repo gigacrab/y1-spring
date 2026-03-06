@@ -114,8 +114,8 @@ while True:
                 time.sleep(1)
                 time_cool = time.perf_counter()
                 flag = True
-
-            if (time.perf_counter - time_cool) > 2:
+            current_time = time.perf_counter()
+            if (current_time - time_cool) > 2:
                 flag = False
                 
             # here we have the ACTUAL contours, if none, maximum error

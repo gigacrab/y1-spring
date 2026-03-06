@@ -111,7 +111,8 @@ while True:
 
             if not flag and count >= 2 and count <= 4:
                 movement.move(0, 0)
-                time.sleep(1)
+                movement.move(-0.5, -0.5)
+                time.sleep(0.01)
                 hello = picam2.capture_array()
                 cv2.imshow("hello", hello)
                 for _ in range(100):

@@ -85,7 +85,7 @@ while True:
         kernel = np.ones((3, 3), np.uint8)
         thresh_shape = cv2.morphologyEx(thresh_shape, cv2.MORPH_CLOSE, kernel)
         
-        cnts, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        cnts, hierarchy = cv2.findContours(thresh_shape, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         
         # check shape
         for i, c in enumerate(cnts):

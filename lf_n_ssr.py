@@ -211,21 +211,63 @@ try:
                                 elif best_match == "3/4 Circle" and solidity > 0.95: best_match = None
 
                             if best_match == "Arrow":
-                                if not (6 <= corners <= 9) or solidity < 0.55:
-                                    best_match = None  
-                                else:
-                                    bx, by = x + (w / 2.0), y + (h / 2.0)
-                                    M_shape = cv2.moments(c)
-                                    if M_shape["m00"] != 0:
-                                        cx_s = M_shape["m10"] / M_shape["m00"]
-                                        cy_s = M_shape["m01"] / M_shape["m00"]
-                                        dx, dy = cx_s - bx, cy_s - by
-                                        if abs(dx) > abs(dy): best_match = "Arrow (RIGHT)" if dx > 0 else "Arrow (LEFT)"
-                                        else: best_match = "Arrow (DOWN)" if dy > 0 else "Arrow (UP)"
+                            if not (6 <= corners <= 9) or solidity < 0.55:
+                                best_match = None  
+                            else:
+                                bx, by = x + (w / 2.0), y + (h / 2.0)
+                                M_shape = cv2.moments(c)
+                                if M_shape["m00"] != 0:
+                                    cx_s = M_shape["m10"] / M_shape["m00"]
+                                    cy_s = M_shape["m01"] / M_shape["m00"]
+                                    dx, dy = cx_s - bx, cy_s - by
+                                    if abs(dx) > abs(dy): best_match = "Arrow (RIGHT)" if dx > 0 else "Arrow (LEFT)"
+                                    else: best_match = "Arrow (DOWN)" if dy > 0 else "Arrow (UP)"
 
+                        # ==========================================
+                        # THE BOX GATEKEEPER & PROXIMITY SENSOR
+                        # ==========================================
+                        if best_match:
+                            x, y, w, h = cv2.boundingRect(c)
+                            shape_cx = x + (w / 2.0)
+                            shape_cy = y + (h / 2.0)
+                            shape_footprint = w * h
+                            
+                            is_in_close_box = False
+                            
+                            # Scan all contours again to find the Box enclosing our shape
+                            for b_cnt in cnts_shape:
+                                bx, by, bw, bh = cv2.boundingRect(b_cnt)
+                                box_footprint = bw * bh
+                                
+                                # 1. Is this contour physically larger than the shape?
+                                if box_footprint > (shape_footprint * 1.5):
+                                    
+                                    # 2. Is the shape completely inside this contour?
+                                    if bx < shape_cx < (bx + bw) and by < shape_cy < (by + bh):
+                                        
+                                        # 3. Is it a 4-cornered Box?
+                                        b_peri = cv2.arcLength(b_cnt, True)
+                                        b_approx = cv2.approxPolyDP(b_cnt, 0.04 * b_peri, True)
+                                        
+                                        if len(b_approx) == 4:
+                                            # 4. PROXIMITY SENSOR: Is the box close enough to stop?
+                                            # ---> TUNE THIS NUMBER: Higher = robot drives closer before stopping! <---
+                                            if box_footprint > 25000: 
+                                                is_in_close_box = True
+                                                
+                                                # Draw a BLUE box around the container to prove it locked on
+                                                cv2.rectangle(frame, (bx, by), (bx+bw, by+bh), (255, 0, 0), 3) 
+                                                break
+                                                
+                            if not is_in_close_box:
+                                # Shape is either not in a box, or the box is too far away!
+                                # Throw the match in the trash and keep driving.
+                                best_match = None 
+                                
                             if best_match:
+                                # If it survived the gatekeeper, draw the Green shape box and trigger the brakes!
                                 cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                                break 
+                                break
 
             # --- THE CONSENSUS STATE MACHINE ---
             if not scanning_mode and best_match:

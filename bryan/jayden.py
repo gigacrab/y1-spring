@@ -237,6 +237,8 @@ try:
         # ---------------------------------------
         
         count += 1
+        print(f"per {time.perf_counter()}")
+        print(f"tim {time_marker}")
         if (time.perf_counter() - time_marker) >= 1:
             print(f"FPS: {count}")
             time_marker = time.perf_counter()

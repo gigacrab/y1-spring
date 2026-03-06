@@ -111,17 +111,20 @@ while True:
 
             if not flag and count >= 2 and count <= 4:
                 movement.move(0, 0)
-                movement.move(-0.5, -0.5)
+                clamped_left_pwm = clamp(-left_pwm, -1, 1)
+                clamped_right_pwm = clamp(-right_pwm, -1, 1)
+
+                movement.move(clamped_left_pwm, clamped_right_pwm)
                 time.sleep(0.3)
                 movement.move(0, 0)
                 time.sleep(0.2)
                 hello = picam2.capture_array()
                 cv2.imshow("hello", hello)
-                cv2.imshow("real", frame)
+                #cv2.imshow("real", frame)
                 for _ in range(100):
                     cv2.waitKey(10)
                 # do checking
-                time.sleep(10)
+                time.sleep(2)
                 time_cool = time.perf_counter()
                 first = True
                 flag = True

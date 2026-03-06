@@ -146,8 +146,8 @@ try:
         # ==========================================
         # MODULE B: FRONTAL LOBE (SHAPE SCANNER)
         # ==========================================
-        roi_top = frame[0:240, :]
-        gray_shape = cv2.cvtColor(roi_top, cv2.COLOR_BGR2GRAY)
+        # RESTORED TO FULL FRAME: So it doesn't chop shapes in half!
+        gray_shape = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         blurred_shape = cv2.GaussianBlur(gray_shape, (5, 5), 0)
         
         thresh_sym = cv2.adaptiveThreshold(blurred_shape, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 255, 8)
@@ -214,6 +214,36 @@ try:
                             cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
                             cv2.putText(frame, best_match, (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
                             break 
+
+        # ==========================================
+        # DISPLAY & THE "STOP AND STARE" BRAKES
+        # ==========================================
+        new_frame_time = time.perf_counter()
+        time_diff = new_frame_time - prev_frame_time
+        fps = 1.0 / time_diff if time_diff > 0 else 0.0
+        prev_frame_time = new_frame_time
+
+        cv2.putText(frame, f"FPS: {int(fps)}", (20, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
+        
+        cv2.imshow("Robot View", frame)
+        cv2.imshow("Line Follower Data", im2)
+
+        # --- THE STOP AND STARE PROTOCOL ---
+        if best_match:
+            print(f"SHAPE DETECTED: {best_match}! Slamming brakes!")
+            movement.move(0, 0) # KILL MOTORS IMMEDIATELY
+            
+            # Freeze the screen for 2 seconds so you can verify it
+            cv2.waitKey(2000) 
+            
+            # CRITICAL: Reset the PID stopwatch so it doesn't explode when it wakes up!
+            last_pid_time = time.perf_counter()
+            first = True 
+        else:
+            # Normal driving check
+            if cv2.waitKey(1) == 27:
+                movement.move(0, 0)
+                break
 
         # ==========================================
         # DISPLAY & FPS

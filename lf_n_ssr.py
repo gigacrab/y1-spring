@@ -5,7 +5,7 @@ import time
 import movement
 import sys
 import os
-import collections # <--- NEW: Required for the Consensus Voting!
+import collections
 
 os.environ["OPENCV_LOG_LEVEL"] = "ERROR"
 os.environ["QT_QPA_PLATFORM"] = "xcb" 
@@ -224,54 +224,23 @@ try:
                                         else: best_match = "Arrow (DOWN)" if dy > 0 else "Arrow (UP)"
 
                             # ==========================================
-                            # THE BOX GATEKEEPER & PROXIMITY SENSOR
+                            # THE PROXIMITY SENSOR (SIMPLIFIED)
                             # ==========================================
                             if best_match:
                                 x, y, w, h = cv2.boundingRect(c)
-                                shape_cx = x + (w / 2.0)
-                                shape_cy = y + (h / 2.0)
                                 shape_footprint = w * h
                                 
-                                is_in_close_box = False
-                                
-                                # Scan all contours again to find the Box enclosing our shape
-                                for b_cnt in cnts_shape:
-                                    bx, by, bw, bh = cv2.boundingRect(b_cnt)
-                                    box_footprint = bw * bh
-                                    
-                                    # 1. Is this contour physically larger than the shape?
-                                    if box_footprint > (shape_footprint * 1.5):
-                                        
-                                        # 2. Is the shape completely inside this contour?
-                                        if bx < shape_cx < (bx + bw) and by < shape_cy < (by + bh):
-                                            
-                                            # 3. Is it a 4-cornered Box?
-                                            b_peri = cv2.arcLength(b_cnt, True)
-                                            b_approx = cv2.approxPolyDP(b_cnt, 0.04 * b_peri, True)
-                                            
-                                            if len(b_approx) == 4:
-                                                # 4. PROXIMITY SENSOR: Is the box close enough to stop?
-                                                # ---> TUNE THIS NUMBER: Higher = robot drives closer before stopping! <---
-                                                if box_footprint > 25000: 
-                                                    is_in_close_box = True
-                                                    
-                                                    # Draw a BLUE box around the container to prove it locked on
-                                                    cv2.rectangle(frame, (bx, by), (bx+bw, by+bh), (255, 0, 0), 3) 
-                                                    break
-                                                    
-                                if not is_in_close_box:
-                                    # Shape is either not in a box, or the box is too far away!
-                                    # Throw the match in the trash and keep driving.
+                                # ---> TUNE THIS NUMBER <---
+                                # If the shape itself is smaller than 8000 pixels, it is too far away.
+                                if shape_footprint < 8000:
                                     best_match = None 
-                                    
+                                
                                 if best_match:
-                                    # If it survived the gatekeeper, draw the Green shape box and trigger the brakes!
                                     cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                                    break
+                                    break 
 
             # --- THE CONSENSUS STATE MACHINE ---
             if not scanning_mode and best_match:
-                # 1. First blurry glimpse detected! Hit brakes and start scanning.
                 print(f"Motion trigger: {best_match}. Initiating 50-frame consensus scan...")
                 scanning_mode = True
                 scan_frames = 0
@@ -279,17 +248,14 @@ try:
                 movement.move(0, 0)
 
             elif scanning_mode:
-                # 2. We are currently stopped and gathering votes!
                 scan_frames += 1
                 if best_match:
                     scan_results.append(best_match)
                     cv2.putText(frame, best_match, (x, y-50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
                 
-                # Visual Indicator of scanning progress
                 cv2.putText(frame, f"GATHERING VOTES: {scan_frames}/50", (20, 130), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
 
                 if scan_frames >= 50:
-                    # 3. 50 frames collected. Calculate the winner!
                     if len(scan_results) > 0:
                         counter = collections.Counter(scan_results)
                         final_answer = counter.most_common(1)[0][0]
@@ -301,17 +267,13 @@ try:
                     else:
                         print("==== FALSE ALARM: Shape lost during scan ====")
                         
-                    # ==========================================
-                    # THE COOLDOWN PROTOCOL (Safe PID Resume)
-                    # ==========================================
                     print("Resuming PID Line Follower. Blinding shape scanner for 3 seconds...")
                     scanning_mode = False
-                    cooldown_until = time.perf_counter() + 3.0 # Ignores shapes for 3 seconds!
+                    cooldown_until = time.perf_counter() + 3.0 
                     first = True
                     last_pid_time = time.perf_counter()
 
         else:
-            # We are driving away from a shape. Draw cooldown status.
             cv2.putText(frame, "COOLDOWN (IGNORING SHAPES)", (20, 130), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
 
         # ==========================================

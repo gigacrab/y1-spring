@@ -7,7 +7,7 @@ import sys
 import os
 
 def shape_rec(frame):
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
     gray_processed = clahe.apply(gray)  # FIX: Apply lighting fix BEFORE Phase 1!
     blurred = cv2.GaussianBlur(gray_processed, (5, 5), 0)
     

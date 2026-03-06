@@ -103,7 +103,7 @@ while True:
                         filtered_contours.append(c)
                         filtered_contour_areas.append(c_area)'''
             print(len(filtered_contours))
-            print(filtered_contour_areas[0])
+            if filtered_contour_areas[0] is not None: print(filtered_contour_areas[0])
             
             # here we have the ACTUAL contours, if none, maximum error
             if len(filtered_contours) > 0:

@@ -104,6 +104,7 @@ while True:
 
             # areas between 7500 to 40000 are accepted
             for i, cnt_a in enumerate(contour_areas):
+                print(cnt_a)
                 if cnt_a >= 8500 and cnt_a <= 40000:
                     filtered_contours.append(contours[i])
                     filtered_contour_areas.append(contour_areas[i])
@@ -137,7 +138,6 @@ while True:
                 if elapsed_time <= 0:
                     elapsed_time = 0.0001
 
-                print(elapsed_time)
                 time_marker = time.perf_counter()
                 
                 # error is normalized

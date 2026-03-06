@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from picamera2 import Picamera2
 import time
+import psutil
 import os
 
 os.environ["DISPLAY"] = ":0"
@@ -72,6 +73,7 @@ picam2.start()
 time.sleep(2)
 print("Hybrid Master Brain Ready! Scanning the whole room...")
 
+prev_frame_time = 0
 try:
     while True:
         frame = picam2.capture_array()
@@ -207,6 +209,21 @@ try:
             cv2.putText(frame, f"MATCH: {best_match}", (20, 50), 
                         cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 3)
 
+        new_frame_time = time.perf_counter()
+        
+        # 1. Calculate FPS
+        # Protect against divide-by-zero errors if the loop runs infinitely fast
+        time_diff = new_frame_time - prev_frame_time
+        if time_diff > 0:
+            fps = 1.0 / time_diff
+        else:
+            fps = 0.0
+        prev_frame_time = new_frame_time
+
+        # 3. Draw the stats on the screen in Yellow
+        cv2.putText(frame, f"FPS: {int(fps)}", (20, 90), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
+        
         cv2.imshow("Robot View", frame)
         
         # --- YOUR CUSTOM DEBUG VISUALIZATION ---

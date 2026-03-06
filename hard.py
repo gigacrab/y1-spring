@@ -159,6 +159,7 @@ while True:
 
         if best_match is not None:
             print(f"Best match is {best_match}")
+            
         else:
             # line following
             roi = frame[240:480, :]

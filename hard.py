@@ -77,7 +77,7 @@ while True:
         cv2.imshow("hello", frame)
 
         # line following
-        roi = frame[0:240, :]
+        roi = frame[240:480, :]
 
         #cv2.imshow("raw", im)
         imgray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)

@@ -61,30 +61,37 @@ camera_config = picam2.create_video_configuration(main={"size": (640, 480)})
 picam2.configure(camera_config)
 picam2.start()
 time.sleep(2)
-print("Consensus Engine Online. Driving and Scanning...")
+print("Junction Scanner Online. Driving...")
 
-# PID Variables
+# PID & STATE VARIABLES
 error = 0
 total_error = 0
 last_error = 0
 diff_error = 0
 first = True
-prev_frame_time = 0
-last_pid_time = time.perf_counter()
 
-# STATE MACHINE VARIABLES
 scanning_mode = False
 scan_frames = 0
 scan_results = []
 cooldown_until = 0
 
+last_pid_time = time.perf_counter()
+prev_frame_time = time.perf_counter()
+
 try: 
     while True: 
+        # === THE MASTER STOPWATCH ===
+        current_time = time.perf_counter()
+        elapsed_time = current_time - last_pid_time
+        if elapsed_time <= 0: elapsed_time = 0.0001
+        last_pid_time = current_time 
+
         frame = picam2.capture_array()
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        im2 = np.zeros((240, 640, 3), dtype=np.uint8)
         
         # ==========================================
-        # MODULE A: LIZARD BRAIN (LINE FOLLOWER)
+        # MODULE A: LINE FOLLOWER & JUNCTION TRIGGER
         # ==========================================
         if not scanning_mode:
             roi_bottom = frame[240:480, :]
@@ -94,50 +101,61 @@ try:
             ret, thresh_line = cv2.threshold(imgray_line, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
             contours_line, _ = cv2.findContours(thresh_line, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
             
-            im2 = np.zeros((240, 640, 3), dtype=np.uint8)
-            
+            count = 0
+            filtered_contours = []
+            filtered_contour_areas = []
+
             if len(contours_line) > 0:
                 contour_areas = [cv2.contourArea(cnt) for cnt in contours_line]
-                filtered_contours = []
-                filtered_contour_areas = []
 
                 for i, cnt_a in enumerate(contour_areas):
+                    if cnt_a > 1000:
+                        count += 1
                     if cnt_a >= 8500 and cnt_a <= 40000:
                         filtered_contours.append(contours_line[i])
                         filtered_contour_areas.append(contour_areas[i])
+            
+            # --- JUNCTION DETECTED! TRIGGER THE SCANNER ---
+            if count >= 2 and count <= 4 and current_time > cooldown_until:
+                print(f"Junction Detected (Count: {count})! Initiating Active Braking...")
                 
-                if len(filtered_contours) > 0 and ret < 180:
-                    if len(filtered_contours) > 1:
-                        zipped_pairs = zip(filtered_contour_areas, filtered_contours)
-                        sorted_pairs = sorted(zipped_pairs, reverse=True)
-                        _, sorted_contours = zip(*sorted_pairs)
-                        line_contour = sorted_contours[0]
-                        cv2.drawContours(im2, sorted_contours[1:], -1, (255, 255, 255), thickness=cv2.FILLED)
-                    else:
-                        line_contour = filtered_contours[0]
+                movement.move(-0.3, -0.3) 
+                time.sleep(0.15) 
+                movement.move(0, 0)
+                time.sleep(0.1) 
+                
+                print("Camera settled. Starting 50-frame consensus scan...")
+                scanning_mode = True
+                scan_frames = 0
+                scan_results = []
+                continue # Skip the PID math this frame, we are stopped!
+
+            # --- NORMAL PID LINE FOLLOWING ---
+            if len(filtered_contours) > 0 and ret < 180:
+                if len(filtered_contours) > 1:
+                    zipped_pairs = zip(filtered_contour_areas, filtered_contours)
+                    sorted_pairs = sorted(zipped_pairs, reverse=True)
+                    _, sorted_contours = zip(*sorted_pairs)
+                    line_contour = sorted_contours[0]
+                    cv2.drawContours(im2, sorted_contours[1:], -1, (255, 255, 255), thickness=cv2.FILLED)
+                else:
+                    line_contour = filtered_contours[0]
+                
+                cv2.drawContours(im2, [line_contour], -1, (0, 255, 0), thickness=cv2.FILLED)
+
+                M = cv2.moments(line_contour)
+                if M['m00'] != 0:
+                    cx = int(M['m10']/M['m00'])
+                    cv2.line(im2, (cx, 0), (cx, 240), (0, 255, 255), 3)
                     
-                    cv2.drawContours(im2, [line_contour], -1, (0, 255, 0), thickness=cv2.FILLED)
+                    error = (320 - cx) / 320    
+                    total_error += error * elapsed_time
 
-                    M = cv2.moments(line_contour)
-                    if M['m00'] != 0:
-                        cx = int(M['m10']/M['m00'])
-                        cv2.line(im2, (cx, 0), (cx, 240), (0, 255, 255), 3)
-
-                        current_time = time.perf_counter()
-                        elapsed_time = current_time - last_pid_time
-                        if elapsed_time <= 0: elapsed_time = 0.0001
-                        last_pid_time = current_time 
+                    if not first: diff_error = (error - last_error) / elapsed_time
+                    else: first = False
                         
-                        error = (320 - cx) / 320    
-                        total_error += error * elapsed_time
-
-                        if not first: diff_error = (error - last_error) / elapsed_time
-                        else: first = False
-                            
-                        pid = kp * error + ki * total_error + kd * diff_error
-                        last_error = error
-                    else:
-                        pid = getSign(last_error)
+                    pid = kp * error + ki * total_error + kd * diff_error
+                    last_error = error
                 else:
                     pid = getSign(last_error)
             else:
@@ -145,22 +163,15 @@ try:
 
             left_pwm = base_speed + pid
             right_pwm = base_speed - pid
+            movement.move(clamp(left_pwm, -1, 1), clamp(right_pwm, -1, 1))
 
-            clamped_left_pwm = clamp(left_pwm, -1, 1)
-            clamped_right_pwm = clamp(right_pwm, -1, 1)
-
-            movement.move(clamped_left_pwm, clamped_right_pwm)
+        # ==========================================
+        # MODULE B: 50-FRAME SHAPE SCANNER
+        # ==========================================
         else:
-            # WE ARE IN SCANNING MODE. HOLD BRAKES!
-            movement.move(0, 0)
-            im2 = np.zeros((240, 640, 3), dtype=np.uint8)
-
-        # ==========================================
-        # MODULE B: FRONTAL LOBE (SHAPE SCANNER)
-        # ==========================================
-        # Only look for shapes if we are NOT in cooldown!
-        if time.perf_counter() > cooldown_until:
-            gray_shape = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) # FULL FRAME to prevent chopping!
+            movement.move(0, 0) # Ensure brakes are held
+            
+            gray_shape = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) 
             blurred_shape = cv2.GaussianBlur(gray_shape, (5, 5), 0)
             
             thresh_sym = cv2.adaptiveThreshold(blurred_shape, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 255, 8)
@@ -173,7 +184,6 @@ try:
             if hierarchy is not None:
                 for i, c in enumerate(cnts_shape):
                     if cv2.contourArea(c) > 1500:
-                        
                         holes = 0
                         for j, child_c in enumerate(cnts_shape):
                             if hierarchy[0][j][3] == i and cv2.contourArea(child_c) > 500: holes += 1
@@ -223,74 +233,41 @@ try:
                                         if abs(dx) > abs(dy): best_match = "Arrow (RIGHT)" if dx > 0 else "Arrow (LEFT)"
                                         else: best_match = "Arrow (DOWN)" if dy > 0 else "Arrow (UP)"
 
-                            # ==========================================
-                            # THE PROXIMITY SENSOR (SIMPLIFIED)
-                            # ==========================================
                             if best_match:
-                                x, y, w, h = cv2.boundingRect(c)
-                                shape_footprint = w * h
-                                
-                                # ---> TUNE THIS NUMBER <---
-                                # If the shape itself is smaller than 8000 pixels, it is too far away.
-                                if shape_footprint < 15000:
-                                    best_match = None 
-                                
-                                if best_match:
-                                    cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                                    break 
+                                cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+                                break 
 
-            # --- THE CONSENSUS STATE MACHINE ---
-            if not scanning_mode and best_match:
-                print(f"Motion trigger: {best_match}. Initiating Active Braking!")
-                
-                # 1. ACTIVE BRAKING: Throw it in reverse to cancel momentum!
-                # Tweak the speed (-0.3) and the sleep time (0.15) to make it reverse more or less.
-                movement.move(-0.3, -0.3) 
-                time.sleep(0.2) 
-                
-                # 2. Full stop.
-                movement.move(0, 0)
-                
-                # 3. Wait a microsecond for the camera chassis to stop wobbling from the brake
-                time.sleep(0.1) 
-                
-                print("Camera settled. Starting 50-frame consensus scan...")
-                scanning_mode = True
-                scan_frames = 0
-                scan_results = []
+            # --- GATHER VOTES ---
+            scan_frames += 1
+            if best_match:
+                scan_results.append(best_match)
+                cv2.putText(frame, best_match, (x, y-50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+            
+            cv2.putText(frame, f"SCANNING JUNCTION: {scan_frames}/50", (20, 130), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
 
-            elif scanning_mode:
-                scan_frames += 1
-                if best_match:
-                    scan_results.append(best_match)
-                    cv2.putText(frame, best_match, (x, y-50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-                
-                cv2.putText(frame, f"GATHERING VOTES: {scan_frames}/50", (20, 130), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
-
-                if scan_frames >= 50:
-                    if len(scan_results) > 0:
-                        counter = collections.Counter(scan_results)
-                        final_answer = counter.most_common(1)[0][0]
-                        confidence = counter.most_common(1)[0][1]
-                        
-                        print(f"==== FINAL DECISION: {final_answer} ({confidence}/50 votes) ====")
-                        # TODO: Transmit 'final_answer' over UART/Serial to ESP32 here!
-
-                    else:
-                        print("==== FALSE ALARM: Shape lost during scan ====")
-                        
-                    print("Resuming PID Line Follower. Blinding shape scanner for 3 seconds...")
-                    scanning_mode = False
-                    cooldown_until = time.perf_counter() + 3.0 
-                    first = True
-                    last_pid_time = time.perf_counter()
-
-        else:
-            cv2.putText(frame, "COOLDOWN (IGNORING SHAPES)", (20, 130), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
+            # --- END OF SCAN ---
+            if scan_frames >= 50:
+                if len(scan_results) > 0:
+                    counter = collections.Counter(scan_results)
+                    final_answer = counter.most_common(1)[0][0]
+                    confidence = counter.most_common(1)[0][1]
+                    print(f"==== JUNCTION DECISION: {final_answer} ({confidence}/50 votes) ====")
+                    # TODO: Transmit 'final_answer' over UART/Serial to ESP32 here!
+                else:
+                    print("==== FALSE ALARM: No shape found at junction ====")
+                    
+                print("Resuming PID Line Follower. Enforcing 3-second junction cooldown...")
+                scanning_mode = False
+                cooldown_until = time.perf_counter() + 3.0 
+                first = True
+                last_pid_time = time.perf_counter()
 
         # ==========================================
         # DISPLAY & FPS
         # ==========================================
+        if not scanning_mode and current_time < cooldown_until:
+            cv2.putText(frame, "JUNCTION COOLDOWN ACTIVE", (20, 130), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
+
         new_frame_time = time.perf_counter()
         time_diff = new_frame_time - prev_frame_time
         fps = 1.0 / time_diff if time_diff > 0 else 0.0
@@ -298,8 +275,8 @@ try:
 
         cv2.putText(frame, f"FPS: {int(fps)}", (20, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
 
-        cv2.imshow("Robot View", frame)
-        cv2.imshow("Line Follower Data", im2)
+        cv2.imshow("hello", frame)
+        cv2.imshow("Line Target", im2)
         
         if cv2.waitKey(1) == 27:
             movement.move(0, 0)

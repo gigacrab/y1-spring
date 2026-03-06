@@ -86,7 +86,7 @@ while True:
                     filtered_contour_areas.append(contour_areas[i])
             
             # here we have the ACTUAL contours, if none, maximum error
-            if len(filtered_contours) > 0 and ret < 180:
+            if len(filtered_contours) > 0:
                 if len(filtered_contours) > 1:
                     zipped_pairs = zip(filtered_contour_areas, filtered_contours)
                     # this sorts by the first element

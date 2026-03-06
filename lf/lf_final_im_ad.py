@@ -88,7 +88,8 @@ while True:
                     epsilon = 0.2 * c_arc
                     c_approx = cv2.approxPolyDP(c, epsilon, True)
                     c_approx_arc = cv2.arcLength(c_approx, True)
-                    smoothness = c_arc / c_approx_arc 
+                    
+                    if c_approx_arc != 0: smoothness = c_arc / c_approx_arc 
                     if smoothness > 0.8:
                         filtered_contours.append(c)
                         filtered_contour_areas.append(c_area)

@@ -171,7 +171,7 @@ try:
                         if geom_match:
                             best_match = geom_match
                             x, y, w, h = cv2.boundingRect(c)
-                            cv2.rectangle(thresh, (x, y), (x+w, y+h), (0, 255, 0), 2)
+                            cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
                             break 
 
         # ==========================================
@@ -207,10 +207,11 @@ try:
         # DISPLAY RESULTS & DEBUG WINDOW
         # ==========================================
         if best_match:
-            cv2.putText(thresh, f"MATCH: {best_match}", (20, 50), 
+            cv2.putText(frame, f"MATCH: {best_match}", (20, 50), 
                         cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 3)
 
-        cv2.imshow("Robot View", thresh)
+        cv2.imshow("Robot View", frame)
+        cv2.imshow("thresh", thresh)
         
         '''
         # --- YOUR CUSTOM DEBUG VISUALIZATION ---

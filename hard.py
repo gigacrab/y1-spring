@@ -74,9 +74,6 @@ while True:
 
         frame = picam2.capture_array()
 
-        
-            
-        
         # line following
         roi = frame[240:480, :]
 
@@ -96,7 +93,7 @@ while True:
         contours, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         im2 = np.zeros((240, 640, 3), dtype=np.uint8)
         cv2.drawContours(im2, contours, -1, (255, 255, 255), thickness=cv2.FILLED)
-        
+        count = 0
         if len(contours) > 0:
             contour_areas = [cv2.contourArea(cnt) for cnt in contours]
             filtered_contours = []
@@ -104,11 +101,17 @@ while True:
 
             # areas between 7500 to 40000 are accepted
             for i, cnt_a in enumerate(contour_areas):
-                print(cnt_a)
+                if cnt_a > 1000:
+                    count += 1
                 if cnt_a >= 8500 and cnt_a <= 40000:
                     filtered_contours.append(contours[i])
                     filtered_contour_areas.append(contour_areas[i])
+            print(count)
+
+            if count >= 2 and count <= 4:
             
+                movement.move(0, 0)
+                time.sleep(1)
             # here we have the ACTUAL contours, if none, maximum error
             if len(filtered_contours) > 0 and ret < 180:
                 if len(filtered_contours) > 1:

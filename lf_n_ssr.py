@@ -207,7 +207,7 @@ try:
                                 
                                 if best_match == "Star" and (solidity > 0.6 or corners < 8): best_match = None  
                                 elif best_match == "Octagon" and (corners < 5 or solidity < 0.75): best_match = None
-                                elif best_match == "Kite" and extent > 0.75: best_match = None 
+                                elif best_match == "Kite" and (extent > 0.75 or corners > 5): best_match = None 
                                 elif best_match == "3/4 Circle" and solidity > 0.95: best_match = None
 
                             if best_match == "Arrow":
@@ -230,7 +230,7 @@ try:
             # --- THE CONSENSUS STATE MACHINE ---
             if not scanning_mode and best_match:
                 # 1. First blurry glimpse detected! Hit brakes and start scanning.
-                print(f"Motion trigger: {best_match}. Initiating 10-frame consensus scan...")
+                print(f"Motion trigger: {best_match}. Initiating 50-frame consensus scan...")
                 scanning_mode = True
                 scan_frames = 0
                 scan_results = []
@@ -241,45 +241,32 @@ try:
                 scan_frames += 1
                 if best_match:
                     scan_results.append(best_match)
-                    cv2.putText(frame, best_match, (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                    cv2.putText(frame, best_match, (x, y-50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
                 
                 # Visual Indicator of scanning progress
-                cv2.putText(frame, f"GATHERING VOTES: {scan_frames}/10", (20, 130), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
+                cv2.putText(frame, f"GATHERING VOTES: {scan_frames}/50", (20, 130), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
 
-                if scan_frames >= 100:
-                    # 3. 10 frames collected. Calculate the winner!
+                if scan_frames >= 50:
+                    # 3. 50 frames collected. Calculate the winner!
                     if len(scan_results) > 0:
                         counter = collections.Counter(scan_results)
                         final_answer = counter.most_common(1)[0][0]
                         confidence = counter.most_common(1)[0][1]
                         
-                        print(f"==== FINAL DECISION: {final_answer} ({confidence}/10 votes) ====")
+                        print(f"==== FINAL DECISION: {final_answer} ({confidence}/50 votes) ====")
                         # TODO: Transmit 'final_answer' over UART/Serial to ESP32 here!
-
-                        # ==========================================
-                        # THE OVERSHOOT PROTOCOL
-                        # ==========================================
-                        print("Executing blind overshoot...")
-                        
-                        # Force both motors to drive straight forward
-                        clamped_left = clamp(base_speed, -1, 1)
-                        clamped_right = clamp(base_speed, -1, 1)
-                        movement.move(clamped_left, clamped_right)
-                        
-                        # HOW FAR TO OVERSHOOT: 
-                        # The robot will drive blindly forward for 1.0 seconds. 
-                        # Change this number to make it drive further or shorter!
-                        time.sleep(1.0) 
-                        
-                        print("Overshoot complete. Stopping robot.")
-                        break # This instantly breaks the while loop and triggers the 'finally' shutdown block!
 
                     else:
                         print("==== FALSE ALARM: Shape lost during scan ====")
-                        # If it was a false alarm, just resume normal driving
-                        scanning_mode = False
-                        first = True
-                        last_pid_time = time.perf_counter()
+                        
+                    # ==========================================
+                    # THE COOLDOWN PROTOCOL (Safe PID Resume)
+                    # ==========================================
+                    print("Resuming PID Line Follower. Blinding shape scanner for 3 seconds...")
+                    scanning_mode = False
+                    cooldown_until = time.perf_counter() + 3.0 # Ignores shapes for 3 seconds!
+                    first = True
+                    last_pid_time = time.perf_counter()
 
         else:
             # We are driving away from a shape. Draw cooldown status.

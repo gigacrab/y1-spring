@@ -110,6 +110,8 @@ def clamp(value, min, max):
 def getSign(n):
     return (n > 0) - (n < 0)
 
+cooldown = 2
+
 # __main__ is the script that was passed to execute
 # config from day 1 - 0.4 1.4 0.01 0.2
 if __name__ == "__main__":
@@ -118,6 +120,7 @@ if __name__ == "__main__":
         kp = float(sys.argv[2])
         ki = float(sys.argv[3])
         kd = float(sys.argv[4])
+        cooldown = float(sys.argv[5])
     else:
         raise Exception("Didn't input appropriate variables")
 
@@ -220,7 +223,7 @@ while True:
                     flag = True
                     time_cool = time.perf_counter()
             current_time = time.perf_counter()
-            if (current_time - time_cool) > 2:
+            if (current_time - time_cool) > cooldown:
                 flag = False
                 
             # here we have the ACTUAL contours, if none, maximum error

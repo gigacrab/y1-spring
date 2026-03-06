@@ -170,7 +170,7 @@ while True:
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         # line following
-        roi = frame[240:480, 640]
+        roi = frame[240:480, :]
 
         imgray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
         # we now try gaussian blur

@@ -107,7 +107,7 @@ while True:
                 if cnt_a >= 8500 and cnt_a <= 40000:
                     filtered_contours.append(contours[i])
                     filtered_contour_areas.append(contour_areas[i])
-            print(count)
+            #print(count)
 
             if not flag and count >= 2 and count <= 4:
                 movement.move(0, 0)

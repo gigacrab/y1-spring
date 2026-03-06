@@ -109,7 +109,6 @@ while True:
             print(count)
 
             if count >= 2 and count <= 4:
-            
                 movement.move(0, 0)
                 time.sleep(1)
             # here we have the ACTUAL contours, if none, maximum error

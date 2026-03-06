@@ -106,8 +106,10 @@ while True:
                 if cnt_a >= 8500 and cnt_a <= 40000:
                     filtered_contours.append(contours[i])
                     filtered_contour_areas.append(contour_areas[i])
-            
+            print(count)
+
             if count >= 2 and count <= 4:
+            
                 movement.move(0, 0)
             # here we have the ACTUAL contours, if none, maximum error
             if len(filtered_contours) > 0 and ret < 180:

@@ -74,7 +74,6 @@ while True:
     try: 
         
         frame = picam2.capture_array()
-        cv2.imshow("hello", frame)
 
         # line following
         roi = frame[240:480, :]
@@ -111,8 +110,9 @@ while True:
             print(count)
 
             if not flag and count >= 2 and count <= 4:
-                time.sleep(0.1)
                 movement.move(0, 0)
+                hello = picam2.capture_array()
+                cv2.imshow("hello", hello)
                 time.sleep(10)
                 time_cool = time.perf_counter()
                 first = True

@@ -113,6 +113,7 @@ while True:
                 movement.move(0, 0)
                 movement.move(-0.5, -0.5)
                 time.sleep(0.01)
+                movement.move(0, 0)
                 hello = picam2.capture_array()
                 cv2.imshow("hello", hello)
                 cv2.imshow("real", frame)

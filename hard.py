@@ -137,6 +137,7 @@ while True:
                 if elapsed_time <= 0:
                     elapsed_time = 0.0001
 
+                print(elapsed_time)
                 time_marker = time.perf_counter()
                 
                 # error is normalized

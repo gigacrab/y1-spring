@@ -67,13 +67,14 @@ for name, filename in template_files_npy.items():
     except FileNotFoundError:
         print(f"Warning: Missing DNA file {filename}")
 
-
+time_marker = time.perf_counter()
 while True: 
     try: 
-        time_marker = time.perf_counter()
+        
 
         frame = picam2.capture_array()
 
+        
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         gray_processed = clahe.apply(gray)  # FIX: Apply lighting fix BEFORE Phase 1!
         blurred = cv2.GaussianBlur(gray_processed, (5, 5), 0)
@@ -159,7 +160,6 @@ while True:
 
         if best_match is not None:
             print(f"Best match is {best_match}")
-            
         
         # line following
         roi = frame[240:480, :]
@@ -220,13 +220,16 @@ while True:
                 elapsed_time = time.perf_counter() - time_marker
                 if elapsed_time <= 0:
                     elapsed_time = 0.0001
+
+                print(elapsed_time)
+                time_marker = time.perf_counter()
                 
                 # error is normalized
                 error = (320 - cx) / 320    
-                total_error += error * 0.1
+                total_error += error * 0.02
 
                 if not first:
-                    diff_error = (error - last_error) / 0.1
+                    diff_error = (error - last_error) / 0.02
                 else:
                     first = False
                     

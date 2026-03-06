@@ -111,6 +111,7 @@ while True:
             if count >= 2 and count <= 4:
             
                 movement.move(0, 0)
+                time.sleep(1)
             # here we have the ACTUAL contours, if none, maximum error
             if len(filtered_contours) > 0 and ret < 180:
                 if len(filtered_contours) > 1:

@@ -246,7 +246,7 @@ try:
                 # Visual Indicator of scanning progress
                 cv2.putText(frame, f"GATHERING VOTES: {scan_frames}/10", (20, 130), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
 
-                if scan_frames >= 10:
+                if scan_frames >= 100:
                     # 3. 10 frames collected. Calculate the winner!
                     if len(scan_results) > 0:
                         counter = collections.Counter(scan_results)
@@ -255,14 +255,31 @@ try:
                         
                         print(f"==== FINAL DECISION: {final_answer} ({confidence}/10 votes) ====")
                         # TODO: Transmit 'final_answer' over UART/Serial to ESP32 here!
+
+                        # ==========================================
+                        # THE OVERSHOOT PROTOCOL
+                        # ==========================================
+                        print("Executing blind overshoot...")
+                        
+                        # Force both motors to drive straight forward
+                        clamped_left = clamp(base_speed, -1, 1)
+                        clamped_right = clamp(base_speed, -1, 1)
+                        movement.move(clamped_left, clamped_right)
+                        
+                        # HOW FAR TO OVERSHOOT: 
+                        # The robot will drive blindly forward for 1.0 seconds. 
+                        # Change this number to make it drive further or shorter!
+                        time.sleep(1.0) 
+                        
+                        print("Overshoot complete. Stopping robot.")
+                        break # This instantly breaks the while loop and triggers the 'finally' shutdown block!
+
                     else:
                         print("==== FALSE ALARM: Shape lost during scan ====")
-
-                    # 4. Exit scan, trigger cooldown, and resume PID driving safely
-                    scanning_mode = False
-                    cooldown_until = time.perf_counter() + 3.0 # Blind shape scanner for 3 seconds to drive past!
-                    first = True
-                    last_pid_time = time.perf_counter()
+                        # If it was a false alarm, just resume normal driving
+                        scanning_mode = False
+                        first = True
+                        last_pid_time = time.perf_counter()
 
         else:
             # We are driving away from a shape. Draw cooldown status.

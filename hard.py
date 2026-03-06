@@ -68,10 +68,11 @@ for name, filename in template_files_npy.items():
         print(f"Warning: Missing DNA file {filename}")
 
 time_marker = time.perf_counter()
+time_cool = 0
+flag = False
 while True: 
     try: 
         
-
         frame = picam2.capture_array()
 
         # line following
@@ -108,9 +109,15 @@ while True:
                     filtered_contour_areas.append(contour_areas[i])
             print(count)
 
-            if count >= 2 and count <= 4:
+            if not flag and count >= 2 and count <= 4:
                 movement.move(0, 0)
                 time.sleep(1)
+                time_cool = time.perf_counter()
+                flag = True
+
+            if time.perf_counter - time_cool > 2:
+                flag = False
+                
             # here we have the ACTUAL contours, if none, maximum error
             if len(filtered_contours) > 0 and ret < 180:
                 if len(filtered_contours) > 1:

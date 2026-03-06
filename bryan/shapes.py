@@ -24,6 +24,7 @@ FLANN_INDEX_LSH = 6
 index_params = dict(algorithm=FLANN_INDEX_LSH, table_number=6, key_size=12, multi_probe_level=1)
 search_params = dict(checks=20) 
 flann = cv2.FlannBasedMatcher(index_params, search_params)
+clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
 
 # loading ORB features into a dictionary
 template_features = {}
@@ -72,6 +73,7 @@ try:
         frame = picam2.capture_array()
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        gray = clahe.apply(gray)
         blurred = cv2.GaussianBlur(gray, (5, 5), 0)
         
         best_match = None
@@ -141,8 +143,17 @@ try:
                 cv2.imshow("holes", im2)
                 if holes == 1:
                     # check for shapes!
+                    peri = cv2.arcLength(c, True)
+                    approx = cv2.approxPolyDP(c, 0.02 * peri, True)
+                    corners = len(approx)
+                    
+                    hull = cv2.convexHull(c)
+                    hull_area = cv2.contourArea(hull)
+                    area = cv2.contourArea(c)
+                    solidity = area / float(hull_area) if hull_area > 0 else 0
+                    
                     live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
-                    lowest_diff = 0.05 
+                    lowest_diff = 0.1
                     geom_match = None
                     
                     for name, master_dna in templates_npy.items():
@@ -150,69 +161,57 @@ try:
                         if diff < lowest_diff:
                             lowest_diff = diff
                             geom_match = name
-                            
                     if geom_match in ["Plus", "Kite"]:
-                        peri = cv2.arcLength(c, True)
-                        approx = cv2.approxPolyDP(c, 0.02 * peri, True)
-                        corners = len(approx)
                         geom_match = "Kite" if corners < 8 else "Plus"
-                    
+                    if geom_match:
+                        # Calculate 'extent' to defeat the QR Square
+                        x, y, w, h = cv2.boundingRect(c)
+                        box_area = w * h
+                        extent = area / float(box_area) if box_area > 0 else 0
+
+                        if geom_match == "Star":
+                            # Rejects chunky squares!
+                            if solidity > 0.6 or corners < 8:
+                                geom_match = None
+                        elif geom_match == "Octagon":
+                            # FLICKER FIX: Relaxed corners to 5 to forgive camera blur!
+                            if corners < 5 or solidity < 0.75:
+                                geom_match = None
+                        elif geom_match == "Kite":
+                            # THE EXTENT SHIELD: A QR square fills the box (Extent > 0.75).
+                            if extent > 0.75:
+                                geom_match = None # It's a QR block! Reject!
+                        elif geom_match == "3/4 Circle":
+                            # FLICKER FIX: Accept 5-7 corners to forgive camera blur!
+                            if solidity > 0.95:
+                                geom_match = None
                     if geom_match == "Arrow":
-                        peri = cv2.arcLength(c, True)
-                        approx = cv2.approxPolyDP(c, 0.02 * peri, True)
-                        if len(approx) > 9: 
-                            geom_match = None
-                        if geom_match == "Arrow":
+                        if not (6 <= corners <= 9) or solidity < 0.55:
+                            geom_match = None  
+                        else:
                             x, y, w, h = cv2.boundingRect(c)
+                            bx = x + (w / 2.0)
+                            by = y + (h / 2.0)
                             
-                            # 1. Create a perfect digital silhouette of the arrow
-                            mask = np.zeros((h, w), dtype=np.uint8)
-                            cv2.drawContours(mask, [c - [x, y]], -1, 255, -1)
-                            
-                            # 2. Grab the extreme 15% edges of all four sides
-                            margin_x = max(1, int(w * 0.15))
-                            margin_y = max(1, int(h * 0.15))
-                            
-                            top_edge = mask[:margin_y, :]
-                            bottom_edge = mask[-margin_y:, :]
-                            left_edge = mask[:, :margin_x]
-                            right_edge = mask[:, -margin_x:]
-                            
-                            # 3. Weigh the ink on all four edges
-                            # An arrow has 3 sharp points (low mass) and 1 flat tail (high mass)!
-                            masses = {
-                                "Arrow (UP)": cv2.countNonZero(top_edge),   # If Top is the heavy tail, it points DOWN
-                                "Arrow (DOWN)": cv2.countNonZero(bottom_edge),  # If Bottom is the heavy tail, it points UP
-                                "Arrow (LEFT)": cv2.countNonZero(left_edge), # If Left is the heavy tail, it points RIGHT
-                                "Arrow (RIGHT)": cv2.countNonZero(right_edge)  # If Right is the heavy tail, it points LEFT
-                            }
-                            
-                            # 4. The arrow points in the opposite direction of the heaviest edge!
-                            geom_match = max(masses, key=masses.get)
-                    # --------------------------------
-                    if geom_match in ["Star", "Kite"]:
-                        # Draw a rotating box that perfectly hugs the shape
-                        rect = cv2.minAreaRect(c)
-                        w_rect, h_rect = rect[1]
-                        
-                        if w_rect != 0 and h_rect != 0:
-                            # Divide the long side by the short side
-                            aspect_ratio = max(w_rect, h_rect) / min(w_rect, h_rect)
-                            
-                            # A QR Code block is a perfect square (ratio ~ 1.0)
-                            # A Kite is stretched out (ratio usually > 1.3)
-                            if aspect_ratio < 1.15:
-                                geom_match = None  # It's a square! Reject it and let ORB scan!
-                    # --------------------------------
+                            M = cv2.moments(c)
+                            if M["m00"] != 0:
+                                cx = M["m10"] / M["m00"]
+                                cy = M["m01"] / M["m00"]
+                                dx = cx - bx
+                                dy = cy - by
+                                
+                                if abs(dx) > abs(dy):
+                                    geom_match = "Arrow (RIGHT)" if dx > 0 else "Arrow (LEFT)"
+                                else:
+                                    geom_match = "Arrow (DOWN)" if dy > 0 else "Arrow (UP)"
 
                     if geom_match:
                         best_match = geom_match
                         x, y, w, h = cv2.boundingRect(c)
                         cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                        break
+                        break 
                 else:
-                    gray_processed = cv2.equalizeHist(blurred)
-                    kp_frame, des_frame = orb.detectAndCompute(gray_processed, None)
+                    kp_frame, des_frame = orb.detectAndCompute(gray, None)
                     max_good_matches = 0
                     
                     if des_frame is not None and len(des_frame) >= 2:
@@ -227,7 +226,6 @@ try:
                                         if m.distance < 0.75 * n.distance:
                                             good_matches.append(m)
                                 
-                                # Danger is strict, Fingerprint is loose
                                 if label == "Danger": required_matches = 8
                                 elif label == "Fingerprint": required_matches = 15
                                 else: required_matches = 12
@@ -235,6 +233,7 @@ try:
                                 if len(good_matches) >= required_matches and len(good_matches) > max_good_matches:
                                     max_good_matches = len(good_matches)
                                     best_match = label
+
         if best_match:
             cv2.putText(frame, f"MATCH: {best_match}", (20, 50), 
                         cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 3)

@@ -212,12 +212,14 @@ while True:
                 movement.move(0, 0)
                 # do checking
             
-                print(f"The shape is {shape_rec(hello)}")
+                prediction = shape_rec(hello)
+                print(f"The shape is {prediction}")
                 
                 
                 time_cool = time.perf_counter()
                 first = True
-                flag = True
+                if prediction.lower != "unknown":
+                    flag = True
             current_time = time.perf_counter()
             if (current_time - time_cool) > 2:
                 flag = False

@@ -206,14 +206,14 @@ while True:
                 movement.move(-0.5, -0.5)
                 time.sleep(0.3)
                 movement.move(0, 0)
-                time.sleep(0.2)
+                time.sleep(1)
                 hello = picam2.capture_array()
                 cv2.imshow("hello", hello)
                 #cv2.imshow("real", frame)
                 for _ in range(100):
                     cv2.waitKey(10)
                 # do checking
-                time.sleep(2)
+                #time.sleep(2)
                 print(f"The shape is {shape_rec(hello)}")
                 time_cool = time.perf_counter()
                 first = True
@@ -255,10 +255,10 @@ while True:
                 
                 # error is normalized
                 error = (320 - cx) / 320    
-                total_error += error * elapsed_time
 
                 if not first:
                     diff_error = (error - last_error) / elapsed_time
+                    total_error += error * elapsed_time
                 else:
                     first = False
                     

@@ -70,19 +70,22 @@ while True:
         kernel = np.ones((3, 3), np.uint8)
         thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
         
-        cnts, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        im2 = np.zeros((480, 640, 3), dtype=np.uint8)
-        cv2.drawContours(im2, cnts, -1, (255, 255, 255), thickness=cv2.FILLED)
+        cnts_shape, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+        thresh_roi = thresh[240:480, :]
+        cnts_line, hierarchy = cv2.findContours(thresh_roi, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        im2 = np.zeros((240, 640, 3), dtype=np.uint8)
+        cv2.drawContours(im2, cnts_line, -1, (255, 255, 255), thickness=cv2.FILLED)
         
-        if len(cnts) > 0:
-            contour_areas = [cv2.contourArea(cnt) for cnt in cnts]
+        if len(cnts_line) > 0:
+            contour_areas = [cv2.contourArea(cnt) for cnt in cnts_line]
             filtered_contours = []
             filtered_contour_areas = []
 
             # areas between 7500 to 40000 are accepted
             for i, cnt_a in enumerate(contour_areas):
-                if cnt_a >= 15000 and cnt_a <= 80000:
-                    filtered_contours.append(cnts[i])
+                if cnt_a >= 8500 and cnt_a <= 40000:
+                    filtered_contours.append(cnts_line[i])
                     filtered_contour_areas.append(contour_areas[i])
             
             # here we have the ACTUAL contours, if none, maximum error

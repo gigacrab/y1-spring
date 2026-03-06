@@ -206,12 +206,12 @@ while True:
             if not flag and count >= 2 and count <= 4:
                 movement.move(0, 0)
                 movement.move(-0.5, -0.5)
-                time.sleep(0.3)
+                time.sleep(0.25)
                 movement.move(0, 0)
                 time.sleep(1)
                 hello = picam2.capture_array()
                 movement.move(0.5, 0.5)
-                time.sleep(0.3)
+                time.sleep(0.25)
                 movement.move(0, 0)
                 # do checking
             

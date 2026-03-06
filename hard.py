@@ -16,14 +16,13 @@ def shape_rec(frame):
     # ==========================================
     # PHASE 1: GEOMETRY FIRST
     # ==========================================
-    thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 201, 8)
-
+    thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 255, 8)
     
     kernel = np.ones((3, 3), np.uint8)
     thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
     
-    cnts, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    cv2.imshow("thresh", thresh)
+    cnts, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
     for i, c in enumerate(cnts):
         if cv2.contourArea(c) > 1500: 
             peri = cv2.arcLength(c, True)
@@ -167,20 +166,21 @@ while True:
     try: 
         
         frame = picam2.capture_array()
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         # line following
         roi = frame[240:480, :]
 
+        #cv2.imshow("raw", im)
         imgray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
         # we now try gaussian blur
         imgray = cv2.GaussianBlur(imgray, (5,5), 0)
-
+        #cv2.imshow("gray", imgray)
         # 0 - values above this, assigned 255, the Otsu method adjusts according to lighting
         # however the Otsu method wasn't that good because it'd always find a region of threshold
         # also idc about the ret
         ret, thresh = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
         #_, thresh = cv2.threshold(imgray, 127, 255, cv2.THRESH_BINARY_INV)
+        #cv2.imshow("thresh", thresh)
 
         # hierarchy -> [next, previous, first_child, parent]
         contours, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
@@ -194,7 +194,7 @@ while True:
 
             # areas between 7500 to 40000 are accepted
             for i, cnt_a in enumerate(contour_areas):
-                if cnt_a > 2500:
+                if cnt_a > 1000:
                     count += 1
                 if cnt_a >= 8500 and cnt_a <= 40000:
                     filtered_contours.append(contours[i])
@@ -205,12 +205,14 @@ while True:
                 movement.move(-0.5, -0.5)
                 time.sleep(0.3)
                 movement.move(0, 0)
-                time.sleep(1)
+                time.sleep(0.2)
                 hello = picam2.capture_array()
+                cv2.imshow("hello", hello)
+                #cv2.imshow("real", frame)
                 for _ in range(100):
                     cv2.waitKey(10)
                 # do checking
-                #time.sleep(2)
+                time.sleep(2)
                 print(f"The shape is {shape_rec(hello)}")
                 time_cool = time.perf_counter()
                 first = True
@@ -252,10 +254,10 @@ while True:
                 
                 # error is normalized
                 error = (320 - cx) / 320    
+                total_error += error * elapsed_time
 
                 if not first:
                     diff_error = (error - last_error) / elapsed_time
-                    total_error += error * elapsed_time
                 else:
                     first = False
                     

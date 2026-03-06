@@ -246,7 +246,7 @@ try:
                 # 1. ACTIVE BRAKING: Throw it in reverse to cancel momentum!
                 # Tweak the speed (-0.3) and the sleep time (0.15) to make it reverse more or less.
                 movement.move(-0.3, -0.3) 
-                time.sleep(1) 
+                time.sleep(0.5) 
                 
                 # 2. Full stop.
                 movement.move(0, 0)

@@ -78,9 +78,8 @@ while True:
         cv2.drawContours(im2, cnts_line, -1, (255, 255, 255), thickness=cv2.FILLED)
         
         if len(cnts_line) > 0:
-            target_cnt = []
-
-            max_area = 0
+            filtered_contours = []
+            filtered_contour_areas = []
 
             for i, c in enumerate(cnts_line):
                 c_area = cv2.contourArea(c)
@@ -91,9 +90,10 @@ while True:
                     c_approx_arc = cv2.arcLength(c_approx, True)
                     
                     if c_approx_arc != 0: smoothness = c_arc / c_approx_arc 
-                    if smoothness > 0.97:
-                        if c_area > max_area:
-                            target_cnt = c
+                    if smoothness > 0.95:
+                        filtered_contours.append(c)
+                        #print(c_area)
+                        filtered_contour_areas.append(c_area)
                     
                     '''
                     c_hull = cv2.convexHull(c)
@@ -103,11 +103,12 @@ while True:
                     if solidity > 0.85:
                         filtered_contours.append(c)
                         filtered_contour_areas.append(c_area)'''
+            #print(len(filtered_contours))
             
             # here we have the ACTUAL contours, if none, maximum error
-            if target_cnt != []:
+            if len(filtered_contours) > 0:
                 
-                line_contour = target_cnt
+                line_contour = filtered_contours[0]
                 
                 cv2.drawContours(im2, [line_contour], -1, (0, 255, 0), thickness=cv2.FILLED)
 
@@ -142,6 +143,8 @@ while True:
                 print(f"we cannot find contours {getSign(last_error)}")
                 pid = getSign(last_error)
 
+
+            print(error)
             left_pwm = base_speed + pid
             right_pwm = base_speed - pid
 

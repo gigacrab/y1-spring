@@ -219,15 +219,9 @@ try:
         else:
             fps = 0.0
         prev_frame_time = new_frame_time
-        
-        # 2. Calculate RAM usage for this specific Python script
-        process = psutil.Process(os.getpid())
-        ram_mb = process.memory_info().rss / (1024 * 1024) # Convert bytes to MB
 
         # 3. Draw the stats on the screen in Yellow
         cv2.putText(frame, f"FPS: {int(fps)}", (20, 90), 
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
-        cv2.putText(frame, f"RAM: {int(ram_mb)} MB", (20, 130), 
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
         
         cv2.imshow("Robot View", frame)

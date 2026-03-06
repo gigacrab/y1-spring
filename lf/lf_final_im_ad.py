@@ -91,7 +91,7 @@ while True:
                     c_approx_arc = cv2.arcLength(c_approx, True)
                     
                     if c_approx_arc != 0: smoothness = c_arc / c_approx_arc 
-                    if smoothness > 0.97:
+                    if smoothness > 0.95:
                         if c_area > max_area:
                             target_cnt = c
                     
@@ -151,7 +151,9 @@ while True:
             movement.move(clamped_left_pwm, clamped_right_pwm)
 
             cv2.imshow("contours", im2)
-            
+
+            print(error)
+                        
             if cv2.waitKey(1) == 27:
                 movement.move(0, 0)
                 break

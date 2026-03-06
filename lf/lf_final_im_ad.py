@@ -92,6 +92,7 @@ while True:
                     if c_approx_arc != 0: smoothness = c_arc / c_approx_arc 
                     if smoothness > 0.97:
                         filtered_contours.append(c)
+                        print(c_area)
                         filtered_contour_areas.append(c_area)
                     
                     '''
@@ -103,7 +104,6 @@ while True:
                         filtered_contours.append(c)
                         filtered_contour_areas.append(c_area)'''
             print(len(filtered_contours))
-            if filtered_contour_areas[0] is not None: print(filtered_contour_areas[0])
             
             # here we have the ACTUAL contours, if none, maximum error
             if len(filtered_contours) > 0:

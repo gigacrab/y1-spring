@@ -83,7 +83,7 @@ while True:
 
             for i, c in enumerate(cnts_line):
                 c_area = cv2.contourArea(c)
-                if c_area >= 10000 and c_area <= 40000:
+                if c_area >= 11000 and c_area <= 40000:
                     c_arc = cv2.arcLength(c, True)
                     epsilon = 0.2 * c_arc
                     c_approx = cv2.approxPolyDP(c, epsilon, True)

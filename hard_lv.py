@@ -115,7 +115,7 @@ cooldown = 2
 # __main__ is the script that was passed to execute
 # config from day 1 - 0.4 1.4 0.01 0.2
 if __name__ == "__main__":
-    if len(sys.argv) == 5:
+    if len(sys.argv) == 6:
         base_speed = float(sys.argv[1])
         kp = float(sys.argv[2])
         ki = float(sys.argv[3])

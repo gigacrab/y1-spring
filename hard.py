@@ -115,7 +115,7 @@ while True:
                 time_cool = time.perf_counter()
                 flag = True
 
-            if time.perf_counter - time_cool > 2:
+            if (time.perf_counter - time_cool) > 2:
                 flag = False
                 
             # here we have the ACTUAL contours, if none, maximum error

@@ -232,7 +232,7 @@ try:
                                 
                                 # ---> TUNE THIS NUMBER <---
                                 # If the shape itself is smaller than 8000 pixels, it is too far away.
-                                if shape_footprint < 8000:
+                                if shape_footprint < 15000:
                                     best_match = None 
                                 
                                 if best_match:
@@ -241,11 +241,23 @@ try:
 
             # --- THE CONSENSUS STATE MACHINE ---
             if not scanning_mode and best_match:
-                print(f"Motion trigger: {best_match}. Initiating 50-frame consensus scan...")
+                print(f"Motion trigger: {best_match}. Initiating Active Braking!")
+                
+                # 1. ACTIVE BRAKING: Throw it in reverse to cancel momentum!
+                # Tweak the speed (-0.3) and the sleep time (0.15) to make it reverse more or less.
+                movement.move(-0.3, -0.3) 
+                time.sleep(0.15) 
+                
+                # 2. Full stop.
+                movement.move(0, 0)
+                
+                # 3. Wait a microsecond for the camera chassis to stop wobbling from the brake
+                time.sleep(0.1) 
+                
+                print("Camera settled. Starting 50-frame consensus scan...")
                 scanning_mode = True
                 scan_frames = 0
                 scan_results = []
-                movement.move(0, 0)
 
             elif scanning_mode:
                 scan_frames += 1

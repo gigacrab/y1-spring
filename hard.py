@@ -114,6 +114,7 @@ while True:
                 movement.move(-0.5, -0.5)
                 time.sleep(0.2)
                 movement.move(0, 0)
+                time.sleep(1)
                 time_cool = time.perf_counter()
                 time_marker = time.perf_counter()
                 flag = True

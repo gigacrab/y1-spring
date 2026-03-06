@@ -113,7 +113,7 @@ while True:
                 movement.move(0, 0)
                 time.sleep(1)
                 time_cool = time.perf_counter()
-                time_marker = time.perf_counter()
+                time_marker = time.perf_counter() - 0.01
                 flag = True
             current_time = time.perf_counter()
             if (current_time - time_cool) > 2:

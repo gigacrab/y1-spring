@@ -116,10 +116,12 @@ while True:
                 movement.move(0, 0)
                 time.sleep(0.2)
                 hello = picam2.capture_array()
+                cv2.imshow("hello", hello)
+                #cv2.imshow("real", frame)
                 for _ in range(100):
                     cv2.waitKey(10)
                 # do checking
-                time.sleep(10)
+                time.sleep(2)
                 time_cool = time.perf_counter()
                 first = True
                 flag = True

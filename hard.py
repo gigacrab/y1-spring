@@ -76,7 +76,7 @@ while True:
         frame = picam2.capture_array()
 
         # line following
-        roi = frame[240:480, :]
+        roi = frame[0:240, :]
 
         #cv2.imshow("raw", im)
         imgray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
@@ -113,6 +113,7 @@ while True:
                 movement.move(0, 0)
                 time.sleep(1)
                 time_cool = time.perf_counter()
+                time_marker = time.perf_counter()
                 flag = True
             current_time = time.perf_counter()
             if (current_time - time_cool) > 2:

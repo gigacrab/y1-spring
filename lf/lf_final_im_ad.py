@@ -84,23 +84,24 @@ while True:
             for i, c in enumerate(cnts_line):
                 c_area = cv2.contourArea(c)
                 if c_area >= 8500 and c_area <= 40000:
-                    '''c_arc = cv2.arcLength(c, True)
+                    c_arc = cv2.arcLength(c, True)
                     epsilon = 0.2 * c_arc
                     c_approx = cv2.approxPolyDP(c, epsilon, True)
                     c_approx_arc = cv2.arcLength(c_approx, True)
                     
                     if c_approx_arc != 0: smoothness = c_arc / c_approx_arc 
-                    if smoothness > 0.95:
+                    if smoothness > 0.97:
                         filtered_contours.append(c)
-                        filtered_contour_areas.append(c_area)'''
+                        filtered_contour_areas.append(c_area)
                     
+                    '''
                     c_hull = cv2.convexHull(c)
                     c_hull_area = cv2.contourArea(c_hull)
                     solidity = c_area / c_hull_area
 
                     if solidity > 0.85:
                         filtered_contours.append(c)
-                        filtered_contour_areas.append(c_area)
+                        filtered_contour_areas.append(c_area)'''
             print(len(filtered_contours))
             
             # here we have the ACTUAL contours, if none, maximum error

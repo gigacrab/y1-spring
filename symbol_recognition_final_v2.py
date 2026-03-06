@@ -2,7 +2,6 @@ import cv2
 import numpy as np
 from picamera2 import Picamera2
 import time
-import psutil
 import os
 
 os.environ["DISPLAY"] = ":0"

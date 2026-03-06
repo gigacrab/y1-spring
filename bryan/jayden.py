@@ -74,6 +74,7 @@ picam2.start()
 time.sleep(2)
 print("Hybrid Master Brain Ready! Scanning the whole room...")
 
+prev_frame_time = 0
 try:
     while True:
         time_marker = time.perf_counter()
@@ -236,15 +237,17 @@ try:
         '''
         # ---------------------------------------
         
-        count += 1
-       # print(f"per {time.perf_counter()}")
-        #print(f"tim {time_marker}")
-        print(f"tru {((time.perf_counter() - time_marker) >= 1)}")
-        if ((time.perf_counter() - time_marker) >= 1):
-            print(f"FPS: {count}")
-            print("hi")
-            time_marker = time.perf_counter()
-            count = 0
+        new_frame_time = time.perf_counter()
+        
+        # 1. Calculate FPS
+        # Protect against divide-by-zero errors if the loop runs infinitely fast
+        time_diff = new_frame_time - prev_frame_time
+        if time_diff > 0:
+            fps = 1.0 / time_diff
+        else:
+            fps = 0.0
+        prev_frame_time = new_frame_time
+        print(f"FPS: {fps}")
 
         if cv2.waitKey(1) & 0xFF == ord('q'): break
         if cv2.getWindowProperty("Robot View", cv2.WND_PROP_VISIBLE) < 1: break

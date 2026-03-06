@@ -210,10 +210,11 @@ while True:
                 for _ in range(100):
                     cv2.waitKey(10)
                 # do checking
-                #time.sleep(2)
+                time.sleep(1)
                 print(f"The shape is {shape_rec(hello)}")
                 time_cool = time.perf_counter()
                 first = True
+                last_error = 0
                 flag = True
             current_time = time.perf_counter()
             if (current_time - time_cool) > 2:

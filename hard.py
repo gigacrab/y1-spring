@@ -77,7 +77,7 @@ while True:
         cv2.imshow("hello", frame)
 
         # line following
-        roi = frame[0:240, :]
+        roi = frame[240:480, :]
 
         #cv2.imshow("raw", im)
         imgray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
@@ -113,7 +113,7 @@ while True:
             if not flag and count >= 2 and count <= 4:
                 time.sleep(0.1)
                 movement.move(0, 0)
-                time.sleep(5)
+                time.sleep(10)
                 time_cool = time.perf_counter()
                 first = True
                 flag = True

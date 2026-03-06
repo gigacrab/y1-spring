@@ -73,9 +73,9 @@ picam2.start()
 time.sleep(2)
 print("Hybrid Master Brain Ready! Scanning the whole room...")
 
+prev_frame_time = 0
 try:
     while True:
-        prev_frame_time = 0
         frame = picam2.capture_array()
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)

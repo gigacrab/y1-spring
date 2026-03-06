@@ -90,7 +90,7 @@ while True:
                     c_approx_arc = cv2.arcLength(c_approx, True)
                     
                     if c_approx_arc != 0: smoothness = c_arc / c_approx_arc 
-                    if smoothness > 0.97:
+                    if smoothness > 0.95:
                         filtered_contours.append(c)
                         print(c_area)
                         filtered_contour_areas.append(c_area)

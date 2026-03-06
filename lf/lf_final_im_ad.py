@@ -78,15 +78,21 @@ while True:
         cv2.drawContours(im2, cnts_line, -1, (255, 255, 255), thickness=cv2.FILLED)
         
         if len(cnts_line) > 0:
-            contour_areas = [cv2.contourArea(cnt) for cnt in cnts_line]
             filtered_contours = []
             filtered_contour_areas = []
 
-            # areas between 7500 to 40000 are accepted
-            for i, cnt_a in enumerate(contour_areas):
-                if cnt_a >= 8500 and cnt_a <= 40000:
-                    filtered_contours.append(cnts_line[i])
-                    filtered_contour_areas.append(contour_areas[i])
+            for i, c in enumerate(cnts_line):
+                c_area = cv2.contourArea(c)
+                if c_area >= 8500 and c_area <= 40000:
+                    c_arc = cv2.arcLength(c)
+                    epsilon = 0.2 * c_arc
+                    c_approx = cv2.approxPolyDP(c, epsilon, True)
+                    c_approx_arc = cv2.arcLength(c_approx, True)
+                    smoothness = c_arc / c_approx_arc 
+                    if smoothness > 0.8:
+                        filtered_contours.append(cnts_line[i])
+                        filtered_contour_areas.append(contour_areas[i])
+            print(len(filtered_contours))
             
             # here we have the ACTUAL contours, if none, maximum error
             if len(filtered_contours) > 0:

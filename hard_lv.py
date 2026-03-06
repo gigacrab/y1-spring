@@ -215,11 +215,10 @@ while True:
                 prediction = shape_rec(hello)
                 print(f"The shape is {prediction}")
                 
-                
-                time_cool = time.perf_counter()
                 first = True
                 if prediction.lower != "unknown":
                     flag = True
+                    time_cool = time.perf_counter()
             current_time = time.perf_counter()
             if (current_time - time_cool) > 2:
                 flag = False

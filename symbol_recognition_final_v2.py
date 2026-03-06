@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from picamera2 import Picamera2
 import time
+import psutil
 import os
 
 os.environ["DISPLAY"] = ":0"
@@ -74,6 +75,7 @@ print("Hybrid Master Brain Ready! Scanning the whole room...")
 
 try:
     while True:
+        prev_frame_time = 0
         frame = picam2.capture_array()
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -207,6 +209,27 @@ try:
             cv2.putText(frame, f"MATCH: {best_match}", (20, 50), 
                         cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 3)
 
+        new_frame_time = time.perf_counter()
+        
+        # 1. Calculate FPS
+        # Protect against divide-by-zero errors if the loop runs infinitely fast
+        time_diff = new_frame_time - prev_frame_time
+        if time_diff > 0:
+            fps = 1.0 / time_diff
+        else:
+            fps = 0.0
+        prev_frame_time = new_frame_time
+        
+        # 2. Calculate RAM usage for this specific Python script
+        process = psutil.Process(os.getpid())
+        ram_mb = process.memory_info().rss / (1024 * 1024) # Convert bytes to MB
+
+        # 3. Draw the stats on the screen in Yellow
+        cv2.putText(frame, f"FPS: {int(fps)}", (20, 90), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
+        cv2.putText(frame, f"RAM: {int(ram_mb)} MB", (20, 130), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
+        
         cv2.imshow("Robot View", frame)
         
         # --- YOUR CUSTOM DEBUG VISUALIZATION ---

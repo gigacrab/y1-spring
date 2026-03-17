@@ -209,13 +209,13 @@ while True:
                 time.sleep(0.25)
                 movement.move(0, 0)
                 time.sleep(1)
-                hello = picam2.capture_array()
+                frame2 = picam2.capture_array()
                 movement.move(0.5, 0.5)
                 time.sleep(0.25)
                 movement.move(0, 0)
                 # do checking
             
-                prediction = shape_rec(hello)
+                prediction = shape_rec(frame2)
                 print(f"The shape is {prediction}")
                 
                 first = True

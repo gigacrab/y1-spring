@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 # ===== SETTINGS =====
-IMAGE_PATH = "./pictures-bryan/springprj-symbols.png"   # change this
+IMAGE_PATH = "./pictures-bryan/springprj-symbol.png"   # change this
 AREA_THRESHOLD = 1500
 
 # ===== LOAD IMAGE =====

@@ -172,6 +172,8 @@ try:
             cv2.imshow("Threshold", thresh)
             cv2.imshow("Geometry Debug", output)
 
+            break
+
         while cv2.waitKey(1) != ord('n'):
             pass
 

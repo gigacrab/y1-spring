@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 # ===== SETTINGS =====
-IMAGE_PATH = "./pictures-bryan/springprj-shapes.png"   # change this
+IMAGE_PATH = "./pictures-bryan/springprj-symbols.png"   # change this
 AREA_THRESHOLD = 1500
 
 # ===== LOAD IMAGE =====
@@ -40,7 +40,7 @@ for c in contours:
 
     # ===== POLYGON APPROX =====
     peri = cv2.arcLength(c, True)
-    approx = cv2.approxPolyDP(c, 0.02 * peri, True)
+    approx = cv2.approxPolyDP(c, 0.01 * peri, True)
     corners = len(approx)
 
     # ===== AXIS-ALIGNED BOUNDING BOX (for display only) =====
@@ -64,6 +64,18 @@ for c in contours:
     hull_area = cv2.contourArea(hull)
     solidity = area / hull_area if hull_area > 0 else 0
 
+    # circularity
+    # lets try using approx for peri
+    peri_approx = cv2.arcLength(approx, True)
+    circularity = (4 * np.pi * area) / (peri_approx * peri_approx) 
+
+    ellipse = cv2.fitEllipse(c)
+    
+    (center, axes, angle) = ellipse
+    a, b = axes[0]/2, axes[1]/2  # major and minor radius
+    ellipse_area = np.pi * a * b
+    hard34 = area / ellipse_area
+
     # ===== DRAW =====
     cv2.drawContours(output, [approx], -1, (0, 255, 0), 2)
 
@@ -76,10 +88,12 @@ for c in contours:
     cv2.drawContours(output, [box], 0, (255, 255, 0), 2)
 
     # ===== TEXT INFO =====
-    text = f"C:{corners} E:{extent_rot:.2f} S:{solidity:.2f} AR:{aspect_ratio:.2f}"
+    text = f"C:{corners} E:{extent_rot:.2f} S:{solidity:.2f} AR:{aspect_ratio:.2f}, C:{circularity:.2f}"
     cv2.putText(output, text, (x, y - 10),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                (0, 0, 0), 2)
+                cv2.FONT_HERSHEY_SIMPLEX, 0.4,
+                (0, 0, 0), 1)
+    cv2.ellipse(output,ellipse,(0,0,255),2)
+    print(f"{corners}, {extent_rot}, {solidity}, {aspect_ratio}, {circularity}, {hard34}")
 
 # ===== SHOW =====
 cv2.imshow("Threshold", thresh)

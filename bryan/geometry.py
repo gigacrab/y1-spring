@@ -24,7 +24,7 @@ try:
             blur, 255,
             cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
             cv2.THRESH_BINARY_INV,
-            51, 5 # blocksize 51, must be odd
+            255, 8 # blocksize 51, must be odd
             # C 5 - value to minus from obtained threshold
         )
 

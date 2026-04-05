@@ -1,39 +1,48 @@
 import os
-os.environ['QT_QPA_FONTDIR'] = '/usr/share/fonts'
+# Suppress Qt font warnings (cosmetic only, doesn't affect detection)
+os.environ['QT_LOGGING_RULES'] = '*=false'
+
 import cv2
 import numpy as np
 from picamera2 import Picamera2
 import time
 
+
 # ─────────────────────────────────────────────────────────────────────────────
-# SPECIAL SYMBOL DETECTOR
-# Runs once per frame BEFORE the per-contour geometric loop.
-# These three symbols cannot be classified from a single contour — they are
-# identified by counting how many contours of a particular kind exist together.
+# SPECIAL SYMBOL DETECTION
 #
-# Why frame-level instead of per-contour?
-#   • Fingerprint = 5–6 separate open arc strokes (no nesting, just siblings)
-#   • QR Code     = 3 near-perfect solid finder squares side by side
-#   • Recycle     = 3 near-identical bent arrows at the same hierarchy level
+# The key insight: these three symbols can't be identified from a single
+# contour's geometry. They're recognised by the *pattern of multiple contours
+# appearing together* — arcs for fingerprint, finder squares for QR, bent
+# arrows for recycle.
 #
-# All three reuse data the main loop already computes, so the extra cost is
-# just one extra iteration over the already-found contour list.
+# The previous version only checked top-level contours, which worked on the
+# raw reference images. In real life the symbols sit on a card, making them
+# grandchildren in the hierarchy — so we need to check whatever level we're
+# currently examining, not just the top level.
+#
+# Solution: split into two functions.
+#   check_special_in_group() — pure geometry check on any list of indices
+#   detect_special_symbols() — calls the above with top-level indices
+#                              (used as a pre-scan before the per-contour loop)
+# The container logic inside the main loop calls check_special_in_group()
+# directly with its grandchild list, catching symbols that are on cards.
 # ─────────────────────────────────────────────────────────────────────────────
-def detect_special_symbols(cnts, hrchy, min_area):
+
+def check_special_in_group(cnts, hrchy, indices, min_area):
+    """
+    Given any list of contour indices, count characteristic features and
+    return a label if a special symbol pattern is detected, else None.
+    This works at any hierarchy depth — top-level, grandchildren, etc.
+    """
     arc_count    = 0   # fingerprint: elongated open strokes
     square_count = 0   # QR icon:     near-perfect solid squares
     arrow_count  = 0   # recycle:     medium-polygon bent arrows
 
-    for i, c in enumerate(cnts):
+    for i in indices:
+        c    = cnts[i]
         area = cv2.contourArea(c)
-
-        # Individual symbol components can be smaller than the full MIN_AREA,
-        # so use a looser threshold just for this scan
         if area < min_area * 0.3:
-            continue
-
-        # All three special symbols consist only of top-level contours
-        if hrchy[0][i][3] != -1:
             continue
 
         rect = cv2.minAreaRect(c)
@@ -45,28 +54,26 @@ def detect_special_symbols(cnts, hrchy, min_area):
         hull_a   = cv2.contourArea(cv2.convexHull(c))
         solidity = area / hull_a if hull_a > 0 else 0
         corners  = len(cv2.approxPolyDP(c, 0.01 * cv2.arcLength(c, True), True))
+        has_child = hrchy[0][i][2] != -1
 
-        # ── Fingerprint arc ──────────────────────────────────────────────────
-        # Each arc is an elongated open stroke: high AR, ≤12 corners (this
-        # specifically excludes recycle's 14-corner arrows), and no child
-        # contour (it is a solid filled stroke, not a hollow shape).
-        if ar > 1.5 and corners <= 12 and solidity > 0.3 and hrchy[0][i][2] == -1:
+        # Fingerprint arc: elongated (AR > 1.5), simple shape (<=12 corners to
+        # exclude recycle's 14-corner arrows), no hollow interior (no child).
+        if ar > 1.5 and corners <= 12 and solidity > 0.3 and not has_child:
             arc_count += 1
 
-        # ── QR Code finder square ────────────────────────────────────────────
-        # The three finder squares are essentially ideal filled rectangles:
-        # exactly 4 corners, AR very close to 1.0, and solidity = 1.0.
+        # QR finder square: 4 corners, almost perfectly square, fully solid.
+        # cv2.contourArea doesn't subtract child holes, so the outer dark
+        # square's area is the full square area, giving solidity ~1.0.
         if corners == 4 and ar < 1.15 and solidity > 0.9:
             square_count += 1
 
-        # ── Recycle arrow ────────────────────────────────────────────────────
-        # Each bent arrow has ~14 corners (the curved body + arrowhead),
-        # moderate AR from the curve, and medium solidity.
+        # Recycle arrow: the bent body + arrowhead creates ~14 corners,
+        # the curve gives moderate AR, and partial fill gives medium solidity.
         if 10 <= corners <= 18 and 1.4 <= ar <= 2.2 and 0.55 <= solidity <= 0.80:
             arrow_count += 1
 
-    # Priority matters: recycle arrows also pass the arc_count condition
-    # (AR > 1.5), so check recycle FIRST to avoid a false "Fingerprint".
+    # Recycle must be checked before fingerprint: recycle arrows (AR ~1.75)
+    # also satisfy the arc condition (AR > 1.5), so order prevents false hits.
     if arrow_count >= 3:
         return "Recycle"
     if arc_count >= 4:
@@ -74,6 +81,15 @@ def detect_special_symbols(cnts, hrchy, min_area):
     if square_count >= 3:
         return "QR Code"
     return None
+
+
+def detect_special_symbols(cnts, hrchy, min_area):
+    """
+    Frame-level pre-scan using only top-level contours.
+    Catches special symbols shown directly without a surrounding card border.
+    """
+    top_level = [i for i in range(len(cnts)) if hrchy[0][i][3] == -1]
+    return check_special_in_group(cnts, hrchy, top_level, min_area)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -84,7 +100,7 @@ picam2.configure(picam2.create_video_configuration(main={"size": (640, 480)}))
 picam2.start()
 time.sleep(2)
 
-MIN_AREA        = 3000
+MIN_AREA         = 3000
 MAX_ASPECT_RATIO = 1.6
 prev_frame_time  = 0
 
@@ -104,15 +120,14 @@ try:
 
         kernel = np.ones((3, 3), np.uint8)
         closed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
-
         cnts, hrchy = cv2.findContours(closed, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         pred = ""
 
         # ─────────────────────────────────────────────────────────────────────
-        # STAGE 1 — Special symbol check (frame-level)
-        # If any of the three special symbols is detected, annotate the frame,
-        # display it, and skip the per-contour geometric loop entirely.
+        # STAGE 1 — Frame-level special symbol pre-scan (no card border)
+        # If the symbol is held up directly without a surrounding card, the
+        # components are top-level and this catches them immediately.
         # ─────────────────────────────────────────────────────────────────────
         if cnts:
             special = detect_special_symbols(cnts, hrchy, MIN_AREA)
@@ -122,33 +137,30 @@ try:
                             cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 200, 255), 2)
                 cv2.imshow("Threshold", thresh)
                 cv2.imshow("Geometry Debug", output)
-                print(f"Special symbol: {pred}\n")
+                print(f"Special (no card): {pred}\n")
                 if cv2.waitKey(1) == ord('q'):
                     break
-                continue  # ← skip the geometric loop for this frame
+                continue
 
         # ─────────────────────────────────────────────────────────────────────
-        # STAGE 2 — Per-contour geometric classification (unchanged logic)
+        # STAGE 2 — Per-contour geometric classification
         # ─────────────────────────────────────────────────────────────────────
         for i, c in enumerate(cnts):
             area = cv2.contourArea(c)
             if area < MIN_AREA:
                 continue
 
-            # Only process top-level contours here; children are either
-            # handled via the container logic below, or skipped entirely.
-            # FIX: the original code was missing this guard, which would
-            # cause sel_c to remain None and crash on arcLength().
+            # Only process top-level contours here — children are handled via
+            # the container logic below, not as independent classification targets.
             if hrchy[0][i][3] != -1:
                 continue
 
-            sel_c             = None
-            w_rot, h_rot      = 0, 0
-            aspect_ratio      = 0
+            sel_c              = None
+            w_rot, h_rot       = 0, 0
+            aspect_ratio       = 0
             ellipse_area_ratio = 0
-            min_rect          = None
-
-            child_idx = hrchy[0][i][2]
+            min_rect           = None
+            child_idx          = hrchy[0][i][2]
 
             # ── Container check ───────────────────────────────────────────────
             if child_idx != -1:
@@ -166,22 +178,49 @@ try:
                     aspect_ratio = max(w_rot, h_rot) / min(w_rot, h_rot)
 
                     if extent > 0.85:
-                        # Search all grandchildren for the largest valid shape
+                        # Collect all grandchild indices first
+                        grandchild_indices = []
+                        gchild_idx = hrchy[0][child_idx][2]
+                        while gchild_idx != -1:
+                            grandchild_indices.append(gchild_idx)
+                            gchild_idx = hrchy[0][gchild_idx][0]
+
+                        # ── KEY FIX ───────────────────────────────────────────
+                        # Check grandchildren for special symbols BEFORE trying
+                        # to find a single geometric shape among them.
+                        # The old code skipped this entirely — it only checked
+                        # top-level contours in Stage 1, so symbols on cards
+                        # (whose components are grandchildren) were never caught.
+                        special = check_special_in_group(
+                            cnts, hrchy, grandchild_indices, MIN_AREA
+                        )
+                        if special:
+                            pred = special
+                            box  = np.intp(cv2.boxPoints(min_rect))
+                            cv2.drawContours(output, [box], 0, (0, 200, 255), 2)
+                            cv2.putText(
+                                output, pred,
+                                (int(min_rect[0][0] - min_rect[1][0] / 2),
+                                 int(min_rect[0][1] - 10 - min_rect[1][1] / 2)),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 200, 255), 2
+                            )
+                            print(f"Special (on card): {pred}")
+                            break  # found our symbol, stop checking other contours
+
+                        # No special symbol — find the largest single grandchild
+                        # to classify as a geometric shape
                         largest_gc      = None
                         largest_gc_area = 0
-                        gchild_idx      = hrchy[0][child_idx][2]
-                        sel_i           = i
                         total_area      = 0
+                        sel_i           = i
 
-                        while gchild_idx != -1:
-                            gc_curr  = cnts[gchild_idx]
-                            gc_area  = cv2.contourArea(gc_curr)
+                        for gc_idx in grandchild_indices:
+                            gc_area = cv2.contourArea(cnts[gc_idx])
                             total_area += gc_area
                             if gc_area > MIN_AREA and gc_area > largest_gc_area:
-                                largest_gc      = gc_curr
+                                largest_gc      = cnts[gc_idx]
                                 largest_gc_area = gc_area
-                                sel_i           = gchild_idx
-                            gchild_idx = hrchy[0][gchild_idx][0]
+                                sel_i           = gc_idx
 
                         if largest_gc is not None:
                             sel_c    = largest_gc
@@ -191,12 +230,10 @@ try:
                                 continue
                             print(f"Contained shape for: {sel_i}")
                         elif total_area > MIN_AREA:
-                            # The interior is complex but has no single classifiable
-                            # grandchild — these are the fingerprint/QR patterns.
-                            # Stage 1 already handles them; just skip here.
+                            # Complex interior, no single classifiable shape
                             continue
 
-            # ── Fallback: no container pattern, classify the contour itself ──
+            # ── Fallback: no container, classify the contour itself ───────────
             if sel_c is None:
                 min_rect     = cv2.minAreaRect(c)
                 w_rot, h_rot = min_rect[1]
@@ -205,8 +242,11 @@ try:
                 aspect_ratio = max(w_rot, h_rot) / min(w_rot, h_rot)
                 if aspect_ratio > MAX_ASPECT_RATIO:
                     continue
-                sel_c = c   # FIX: was missing — caused NoneType crash on arcLength
+                sel_c = c   # was missing in original — caused NoneType crash
                 print(f"No container, took: {i} instead")
+
+            if sel_c is None:
+                continue
 
             # ── Feature extraction ────────────────────────────────────────────
             peri         = cv2.arcLength(sel_c, True)
@@ -218,14 +258,12 @@ try:
             hull      = cv2.convexHull(sel_c)
             hull_area = cv2.contourArea(hull)
             solidity  = cv2.contourArea(sel_c) / hull_area if hull_area > 0 else 0
-            extent    = cv2.contourArea(sel_c) / (w_rot * h_rot) if w_rot * h_rot > 0 else 0
+            extent    = cv2.contourArea(sel_c) / (w_rot * h_rot) \
+                        if w_rot * h_rot > 0 else 0
 
             # ── Classification ────────────────────────────────────────────────
             if solidity < 0.70:
-                if solidity < 0.55 and extent < 0.40:
-                    pred = "Star"
-                else:
-                    pred = "Arrow"
+                pred = "Star" if (solidity < 0.55 and extent < 0.40) else "Arrow"
             elif corners == 4:
                 pred = "Trapezium" if extent < 0.80 else "Kite"
             elif aspect_ratio > 1.3:
@@ -254,15 +292,16 @@ try:
             box = np.intp(cv2.boxPoints(min_rect))
             cv2.drawContours(output, [sel_c], -1, (0, 255, 0), 2)
             cv2.drawContours(output, [box], 0, (255, 0, 0), 2)
-            cv2.putText(output, pred,
-                        (int(min_rect[0][0] - min_rect[1][0] / 2),
-                         int(min_rect[0][1] - 10 - min_rect[1][1] / 2)),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+            cv2.putText(
+                output, pred,
+                (int(min_rect[0][0] - min_rect[1][0] / 2),
+                 int(min_rect[0][1] - 10 - min_rect[1][1] / 2)),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2
+            )
 
-            # ── FPS ───────────────────────────────────────────────────────────
-            new_frame_time = time.perf_counter()
-            time_diff      = new_frame_time - prev_frame_time
-            fps            = 1.0 / time_diff if time_diff > 0 else 0.0
+            new_frame_time  = time.perf_counter()
+            time_diff       = new_frame_time - prev_frame_time
+            fps             = 1.0 / time_diff if time_diff > 0 else 0.0
             prev_frame_time = new_frame_time
 
             child_area_dbg = cv2.contourArea(cnts[child_idx]) if child_idx != -1 else 0
@@ -270,7 +309,6 @@ try:
                   f"S:{solidity:.2f} E:{extent:.2f} R:{ellipse_area_ratio:.2f} "
                   f"A:{area:.2f} AC:{child_area_dbg:.0f}")
 
-        # Display outside the loop so it updates once per frame, not per contour
         cv2.imshow("Threshold", thresh)
         cv2.imshow("Geometry Debug", output)
 

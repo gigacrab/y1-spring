@@ -182,8 +182,8 @@ try:
         
         
 
-        if cv2.waitKey(1) == ord('q'):
-            break
+        while cv2.waitKey(1) != ord('n'):
+            pass
             
         print("\n")
 

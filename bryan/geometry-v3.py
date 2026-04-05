@@ -35,6 +35,7 @@ try:
         pred = ""
 
         total_c = len(cnts)
+        print(f"Number of contours: {total_c}")
 
         # should already have hierarchy if a contour exists
         for i, c in enumerate(cnts):

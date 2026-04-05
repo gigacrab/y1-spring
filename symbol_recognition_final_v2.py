@@ -111,6 +111,9 @@ try:
         kernel = np.ones((3, 3), np.uint8)
         thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
         '''
+        # ==========================================
+        # PHASE 1: GEOMETRY FIRST
+        # ==========================================
         # 1. Use your fast, small block size to get crisp (but hollow) outlines
         thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, block_size, 8)
         

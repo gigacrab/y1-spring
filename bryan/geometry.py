@@ -98,7 +98,7 @@ try:
                         '''
 
             # ===== Aspect ratio check (fallback) =====
-            if not selected:
+            if not selected and hrchy[0][i][3] == -1:
                 rect = cv2.minAreaRect(sel_c)
                 w_rot, h_rot = rect[1]
                 if w_rot == 0 or h_rot == 0:

@@ -123,6 +123,9 @@ try:
                     continue
                 selected = True
                 print(f"hello for {i}")
+
+            if not selected:
+                continue
             
             # ===== Now process selected_contour normally =====
             peri = cv2.arcLength(sel_c, True)

@@ -25,7 +25,7 @@ try:
             blur, 255,
             cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
             cv2.THRESH_BINARY_INV,
-            51, 7
+            51, 8
         )
 
         kernel = np.ones((3, 3), np.uint8)

@@ -178,9 +178,11 @@ try:
             box = np.intp(box)
             cv2.drawContours(output, [sel_c], -1, (0, 255, 0), 2)
             cv2.drawContours(output, [box], 0, (255, 0, 0), 2)
-            cv2.putText(output, f"{hrchy[0][i][3]}",#f"C:{corners} AR:{aspect_ratio:.2f} S:{solidity:.2f} E:{extent:.2f} R:{ellipse_area_ratio:.2f} A:{area:.2f}",
-                        (int(rect[0][0]-rect[1][0]/2), int(rect[0][1]-10-rect[1][1]/2)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 2)
+            #cv2.putText(output, f"{hrchy[0][i][3]}",#f"C:{corners} AR:{aspect_ratio:.2f} S:{solidity:.2f} E:{extent:.2f} R:{ellipse_area_ratio:.2f} A:{area:.2f}",
+            #            (int(rect[0][0]-rect[1][0]/2), int(rect[0][1]-10-rect[1][1]/2)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 2)
             
+            cv2.putText(output, f"{pred}", 0, 20, cv2.FONT_HERSHEY_SIMPLEX, 5, (0,0,0), 2)
+
             cv2.imshow("Threshold", thresh)
             cv2.imshow("Geometry Debug", output)
 
@@ -191,9 +193,6 @@ try:
             print(f"{i} hr:{hrchy[0][i]}, a:{cv2.contourArea(c)}")
         '''
         
-
-        while cv2.waitKey(1) != ord('n'):
-            pass
         print("\n")
 
 except KeyboardInterrupt:

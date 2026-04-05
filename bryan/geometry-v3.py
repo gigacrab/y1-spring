@@ -165,8 +165,6 @@ try:
 
             new_frame_time = time.perf_counter()
         
-            # 1. Calculate FPS
-            # Protect against divide-by-zero errors if the loop runs infinitely fast
             time_diff = new_frame_time - prev_frame_time
             if time_diff > 0:
                 fps = 1.0 / time_diff
@@ -174,7 +172,7 @@ try:
                 fps = 0.0
             prev_frame_time = new_frame_time
 
-            print(f"FPS:{fps} P:{hrchy[0][i]} C:{corners} AR:{aspect_ratio:.2f} S:{solidity:.2f} E:{extent:.2f} R:{ellipse_area_ratio:.2f} A:{area:.2f} AC:{cv2.contourArea(cnts[hrchy[0][i][2]])}")        
+            print(f"FPS:{fps:.2f} P:{hrchy[0][i]} C:{corners} AR:{aspect_ratio:.2f} S:{solidity:.2f} E:{extent:.2f} R:{ellipse_area_ratio:.2f} A:{area:.2f} AC:{cv2.contourArea(cnts[hrchy[0][i][2]])}")        
 
         if cv2.waitKey(1) == ord('q'):
             break

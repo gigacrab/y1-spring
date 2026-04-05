@@ -62,7 +62,7 @@ try:
                     rect_area = w_rot * h_rot
                     extent = area / rect_area if rect_area > 0 else 0
 
-                    if extent > 0.75:  # parent is rectangle-like, confirms it's a container
+                    if extent > 0.85:  # parent is rectangle-like, confirms it's a container
                         # Find largest valid grandchild instead of assuming first
                         best_gc = None
                         best_gc_area = 0

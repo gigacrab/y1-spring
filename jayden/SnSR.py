@@ -53,12 +53,18 @@ def check_special_in_group(cnts, hrchy, indices, min_area):
         ar       = max(w, h) / min(w, h)
         hull_a   = cv2.contourArea(cv2.convexHull(c))
         solidity = area / hull_a if hull_a > 0 else 0
-        corners  = len(cv2.approxPolyDP(c, 0.01 * cv2.arcLength(c, True), True))
+        perimeter = cv2.arcLength(c, True)
+        if perimeter == 0:
+            continue
+            
+        corners   = len(cv2.approxPolyDP(c, 0.01 * perimeter, True))
         has_child = hrchy[0][i][2] != -1
+        
+        # Calculate thinness to catch curved lines regardless of bounding box shape
+        thinness = area / (perimeter ** 2)
 
-        # Fingerprint arc: elongated (AR > 1.5), simple shape (<=12 corners to
-        # exclude recycle's 14-corner arrows), no hollow interior (no child).
-        if ar > 1.5 and corners <= 12 and solidity > 0.3 and not has_child:
+        # Fingerprint arc: Thin line, complex curve (>8 corners), no child
+        if thinness < 0.035 and corners > 8 and not has_child:
             arc_count += 1
 
         # QR finder square: 4 corners, almost perfectly square, fully solid.

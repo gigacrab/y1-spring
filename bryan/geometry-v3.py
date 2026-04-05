@@ -97,8 +97,6 @@ try:
                                 continue
 
                 if sel_c is None:
-                    if i == total_c - 1:
-                        print("I give up")
                     min_rect = cv2.minAreaRect(c)
                     w_rot, h_rot = min_rect[1]
                     if w_rot == 0 or h_rot == 0:
@@ -185,7 +183,7 @@ try:
         if cv2.waitKey(1) == ord('q'):
             break
             
-        print("\n")
+        print("One frame\n")
 
 except KeyboardInterrupt:
     pass

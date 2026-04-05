@@ -9,7 +9,7 @@ picam2.start()
 time.sleep(2)
 
 # constants
-MIN_AREA = 1500
+MIN_AREA = 3000
 MAX_ASPECT_RATIO = 1.6
 
 try:

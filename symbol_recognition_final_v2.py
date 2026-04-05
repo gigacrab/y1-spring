@@ -105,11 +105,23 @@ try:
         # ==========================================
         # PHASE 1: GEOMETRY FIRST
         # ==========================================
+        '''
         thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, block_size, 8)
         
         kernel = np.ones((3, 3), np.uint8)
         thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+        '''
+        # Increase the 'C' value slightly (from 8 to 12) to kill background static
+        thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, block_size, 12)
         
+        # 1. Use a much bigger 'brush' (7x7) to connect broken lines
+        kernel = np.ones((7, 7), np.uint8) 
+        
+        # 2. DILATE first to artificially thicken the thin hollow outlines
+        thresh = cv2.dilate(thresh, kernel, iterations=1)
+        
+        # 3. THEN CLOSE to fill in the hollow center of the shapes
+        thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
         cnts, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         
         if hierarchy is not None:

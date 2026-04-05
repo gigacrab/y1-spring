@@ -66,221 +66,150 @@ picam2 = Picamera2()
 picam2.configure(picam2.create_video_configuration(main={"size": (640, 480)}))
 picam2.start()
 time.sleep(2)
-
-# --- DEBUG FLAGS: turn these on/off as needed ---
-DEBUG_PRINT_CONTOURS = True   # prints hierarchy table to terminal
-DEBUG_PRINT_HU       = True   # prints Hu Moments scores to terminal
-DEBUG_PRINT_ORB      = True   # prints ORB match counts to terminal
-DEBUG_WINDOW         = True   # shows the 2x2 debug window
-
-print("Hybrid Master Brain Ready!")
-
+print("Hybrid Master Brain Ready! Scanning the whole room...")
 try:
     while True:
         frame = picam2.capture_array()
-        gray  = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-
+        
         best_match = None
-        frame_area = frame.shape[0] * frame.shape[1]  # calculate ONCE per frame
 
         # ==========================================
-        # PHASE 1: GEOMETRY
+        # PHASE 1: GEOMETRY FIRST (With the "Holes" Gatekeeper)
         # ==========================================
-        thresh = cv2.adaptiveThreshold(blurred, 255,
-                     cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                     cv2.THRESH_BINARY_INV, 151, 10)
-
+        thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 151, 10)
+        
+        # CRITICAL FIX: We changed RETR_EXTERNAL to RETR_TREE so the robot can look INSIDE the shapes!
         cnts, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
+        
         if hierarchy is not None:
-
-            # --- DEBUG: Print contour hierarchy table ONCE per frame ---
-            if DEBUG_PRINT_CONTOURS:
-                print(f"\n{'='*60}")
-                print(f"{'ID':>4} | {'Area':>7} | {'Parent':>6} | {'Child':>5} | Note")
-                print(f"{'-'*60}")
-                for i, c in enumerate(cnts):
-                    area = cv2.contourArea(c)
-                    if area < 500:
-                        continue
-                    parent = hierarchy[0][i][3]
-                    child  = hierarchy[0][i][2]
-                    
-                    # Annotate what each contour likely is
-                    if area > frame_area * 0.8:
-                        note = "SKIP (too large)"
-                    elif area < 1500:
-                        note = "SKIP (too small)"
-                    elif parent == -1 and child != -1:
-                        note = ">>> IS BOX (skipped)"
-                    elif parent != -1:
-                        note = "*** SYMBOL CANDIDATE"
-                    else:
-                        note = ""
-                    
-                    print(f"{i:>4} | {area:>7.0f} | {parent:>6} | {child:>5} | {note}")
-
             for i, c in enumerate(cnts):
                 area = cv2.contourArea(c)
-
-                # Size filter
+                frame_area = frame.shape[0] * frame.shape[1]
                 if area < 1500 or area > frame_area * 0.8:
                     continue
-
                 parent_index = hierarchy[0][i][3]
                 first_child  = hierarchy[0][i][2]
 
-                # Box filter
-                is_box = (parent_index == -1 and first_child != -1)
+                is_box = (parent_index == -1 and first_child != -1)  # No parent (external contour) but has a child (internal contour)
                 if is_box:
-                    continue
-
-                # Holes filter
+                    continue  # Skip contours that are likely just the green targeting box from the capture tool
                 holes = 0
                 for j, child_c in enumerate(cnts):
                     if hierarchy[0][j][3] == i and cv2.contourArea(child_c) > 200:
                         holes += 1
-
+                # IF THE SHAPE IS COMPLETELY SOLID (0 HOLES), IT'S A BASIC GEOMETRY SHAPE!
                 if holes == 0:
                     live_moments = cv2.HuMoments(cv2.moments(c)).flatten()
-                    lowest_diff  = 0.05
-                    geom_match   = None
-
-                    # --- DEBUG: Print ALL Hu Moment scores ---
-                    if DEBUG_PRINT_HU:
-                        print(f"\n  [HU] Contour {i} | area={area:.0f} | holes={holes}")
-                        for name, master_dna in templates_npy.items():
-                            diff = np.sum(np.abs(live_moments - master_dna))
-                            bar  = '█' * int(min(diff * 200, 40))  # visual bar
-                            tick = " ✓" if diff < lowest_diff else ""
-                            print(f"    {name:20s}: {diff:.4f} {bar}{tick}")
-
+                    lowest_diff = 0.05 
+                    geom_match = None
+                    
                     for name, master_dna in templates_npy.items():
                         diff = np.sum(np.abs(live_moments - master_dna))
                         if diff < lowest_diff:
                             lowest_diff = diff
-                            geom_match  = name
-
-                    # ... your existing Plus/Kite/Arrow/Star logic unchanged ...
+                            geom_match = name
+                            
                     if geom_match in ["Plus", "Kite"]:
-                        peri   = cv2.arcLength(c, True)
+                        peri = cv2.arcLength(c, True)
                         approx = cv2.approxPolyDP(c, 0.02 * peri, True)
                         corners = len(approx)
                         geom_match = "Kite" if corners < 8 else "Plus"
-
+                    
                     if geom_match == "Arrow":
-                        peri   = cv2.arcLength(c, True)
+                        peri = cv2.arcLength(c, True)
                         approx = cv2.approxPolyDP(c, 0.02 * peri, True)
-                        if len(approx) > 9:
+                        if len(approx) > 9: 
                             geom_match = None
                         if geom_match == "Arrow":
                             x, y, w, h = cv2.boundingRect(c)
+                            
+                            # 1. Create a perfect digital silhouette of the arrow
                             mask = np.zeros((h, w), dtype=np.uint8)
                             cv2.drawContours(mask, [c - [x, y]], -1, 255, -1)
+                            
+                            # 2. Grab the extreme 15% edges of all four sides
                             margin_x = max(1, int(w * 0.15))
                             margin_y = max(1, int(h * 0.15))
+                            
+                            top_edge = mask[:margin_y, :]
+                            bottom_edge = mask[-margin_y:, :]
+                            left_edge = mask[:, :margin_x]
+                            right_edge = mask[:, -margin_x:]
+                            
+                            # 3. Weigh the ink on all four edges
+                            # An arrow has 3 sharp points (low mass) and 1 flat tail (high mass)!
                             masses = {
-                                "Arrow (UP)":    cv2.countNonZero(mask[:margin_y, :]),
-                                "Arrow (DOWN)":  cv2.countNonZero(mask[-margin_y:, :]),
-                                "Arrow (LEFT)":  cv2.countNonZero(mask[:, :margin_x]),
-                                "Arrow (RIGHT)": cv2.countNonZero(mask[:, -margin_x:])
+                                "Arrow (UP)": cv2.countNonZero(top_edge),   # If Top is the heavy tail, it points DOWN
+                                "Arrow (DOWN)": cv2.countNonZero(bottom_edge),  # If Bottom is the heavy tail, it points UP
+                                "Arrow (LEFT)": cv2.countNonZero(left_edge), # If Left is the heavy tail, it points RIGHT
+                                "Arrow (RIGHT)": cv2.countNonZero(right_edge)  # If Right is the heavy tail, it points LEFT
                             }
-                            if DEBUG_PRINT_HU:
-                                print(f"    [ARROW] masses: {masses}")
+                            
+                            # 4. The arrow points in the opposite direction of the heaviest edge!
                             geom_match = max(masses, key=masses.get)
-
+                    # --------------------------------
                     if geom_match == "Star":
+                        # Draw a rotating box that perfectly hugs the shape
                         rect = cv2.minAreaRect(c)
                         w_rect, h_rect = rect[1]
+                        
                         if w_rect != 0 and h_rect != 0:
+                            # Divide the long side by the short side
                             aspect_ratio = max(w_rect, h_rect) / min(w_rect, h_rect)
-                            if DEBUG_PRINT_HU:
-                                print(f"    [STAR] aspect_ratio={aspect_ratio:.3f} ({'REJECT' if aspect_ratio < 1.15 else 'KEEP'})")
+                            
+                            # A QR Code block is a perfect square (ratio ~ 1.0)
+                            # A Kite is stretched out (ratio usually > 1.3)
                             if aspect_ratio < 1.15:
-                                geom_match = None
+                                geom_match = None  # It's a square! Reject it and let ORB scan!
+                    # --------------------------------
 
                     if geom_match:
                         best_match = geom_match
                         x, y, w, h = cv2.boundingRect(c)
                         cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                        break
+                        break 
 
         # ==========================================
-        # PHASE 2: ORB
+        # PHASE 2: ORB SCANNER (Catches all complex/hollow symbols)
         # ==========================================
         if best_match is None:
             gray_processed = cv2.equalizeHist(blurred)
             kp_frame, des_frame = orb.detectAndCompute(gray_processed, None)
             max_good_matches = 0
-
+            
             if des_frame is not None and len(des_frame) >= 2:
-
-                # --- DEBUG: Print ORB scores ---
-                if DEBUG_PRINT_ORB:
-                    print(f"\n  [ORB] Keypoints in frame: {len(des_frame)}")
-
                 for label, (kp_template, des_template) in template_features.items():
                     if des_template is not None:
                         matches = flann.knnMatch(des_template, des_frame, k=2)
-                        good_matches = [m for m_n in matches
-                                        if len(m_n) == 2
-                                        for m, n in [m_n]
-                                        if m.distance < 0.75 * n.distance]
-
-                        required = 8 if label == "Danger" else 15 if label == "Fingerprint" else 12
-                        status   = "✓ PASS" if len(good_matches) >= required else "✗"
-
-                        if DEBUG_PRINT_ORB:
-                            filled = int((len(good_matches) / required) * 20)
-                            bar    = '█' * min(filled, 20) + '░' * (20 - min(filled, 20))
-                            print(f"    {label:15s}: [{bar}] {len(good_matches):3d}/{required} {status}")
-
-                        if len(good_matches) >= required and len(good_matches) > max_good_matches:
+                        
+                        good_matches = []
+                        for m_n in matches:
+                            if len(m_n) == 2:
+                                m, n = m_n
+                                if m.distance < 0.75 * n.distance:
+                                    good_matches.append(m)
+                        
+                        # Danger is strict, Fingerprint is loose
+                        if label == "Danger": required_matches = 8
+                        elif label == "Fingerprint": required_matches = 15
+                        else: required_matches = 12
+                        
+                        if len(good_matches) >= required_matches and len(good_matches) > max_good_matches:
                             max_good_matches = len(good_matches)
                             best_match = label
 
         # ==========================================
-        # DISPLAY
+        # DISPLAY RESULTS
         # ==========================================
         if best_match:
-            cv2.putText(frame, f"MATCH: {best_match}", (20, 50),
+            cv2.putText(frame, f"MATCH: {best_match}", (20, 50), 
                         cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 3)
 
         cv2.imshow("Robot View", frame)
-
-        # --- DEBUG WINDOW ---
-        if DEBUG_WINDOW:
-            debug_contours = frame.copy()
-            debug_thresh   = cv2.cvtColor(thresh, cv2.COLOR_GRAY2BGR)
-
-            # All contours red, valid-sized ones green with area label
-            cv2.drawContours(debug_contours, cnts, -1, (0, 0, 255), 1)
-            for i, c in enumerate(cnts):
-                area = cv2.contourArea(c)
-                if area > 1500:
-                    # Colour code by type
-                    parent = hierarchy[0][i][3] if hierarchy is not None else -1
-                    child  = hierarchy[0][i][2] if hierarchy is not None else -1
-                    if parent == -1 and child != -1:
-                        colour = (0, 165, 255)   # orange = box
-                    elif parent != -1:
-                        colour = (0, 255, 0)     # green = symbol candidate
-                    else:
-                        colour = (255, 255, 0)   # yellow = other
-
-                    cv2.drawContours(debug_contours, [c], -1, colour, 2)
-                    x, y, w, h = cv2.boundingRect(c)
-                    cv2.putText(debug_contours, f"{area:.0f}",
-                                (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX,
-                                0.4, colour, 1)
-
-            top      = np.hstack([frame, debug_thresh])
-            bottom   = np.hstack([debug_contours, debug_thresh.copy()])
-            combined = np.vstack([top, bottom])
-            combined = cv2.resize(combined, (1280, 720))
-            cv2.imshow("DEBUG", combined)
-
+        
+        # --- SAFE QUIT ---
         if cv2.waitKey(1) & 0xFF == ord('q'): break
         if cv2.getWindowProperty("Robot View", cv2.WND_PROP_VISIBLE) < 1: break
 

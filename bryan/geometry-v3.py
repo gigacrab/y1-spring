@@ -11,6 +11,8 @@ time.sleep(2)
 MIN_AREA = 3000
 MAX_ASPECT_RATIO = 1.6
 
+prev_frame_time = 0
+
 try:
     while True:
         frame = picam2.capture_array()
@@ -37,8 +39,7 @@ try:
             if area < MIN_AREA:
                 continue
 
-            sel_c = c
-            selected = False
+            sel_c = None
             w_rot, h_rot = 0, 0
             aspect_ratio = 0
             ellipse_area_ratio = 0
@@ -46,67 +47,60 @@ try:
             child_idx = hrchy[0][i][2]
 
             # check if it has a child, and is at hierarchy 0
-            if child_idx != -1 and hrchy[0][i][3] == -1:
-                child_area = cv2.contourArea(cnts[child_idx])
-                hollow_ratio = child_area / area if area > 0 else 0
+            if hrchy[0][i][3] == -1:
+                if child_idx != -1:
+                    child_area = cv2.contourArea(cnts[child_idx])
+                    hollow_ratio = child_area / area if area > 0 else 0
 
-                if hollow_ratio > 0.85:
-                    print(f"Hollow container: {i}")
+                    if hollow_ratio > 0.85:
+                        print(f"Hollow container at: {i}")
 
-                    rect = cv2.minAreaRect(c)
-                    w_rot, h_rot = rect[1]
+                        min_rect = cv2.minAreaRect(c)
+                        w_rot, h_rot = min_rect[1]
+                        if w_rot == 0 or h_rot == 0:
+                            continue
+                        rect_area = w_rot * h_rot
+                        extent = area / rect_area if rect_area > 0 else 0
+                        aspect_ratio = max(w_rot, h_rot) / min(w_rot, h_rot)
+
+                        if extent > 0.85:  # parent is rectangle-like, confirms it's a container
+                            # Find largest valid grandchild instead of assuming first
+                            largest_gc = None
+                            largest_gc_area = 0
+                            gchild_idx = hrchy[0][child_idx][2]  # first grandchild
+                            sel_i = i
+                            total_area = 0
+
+                            while gchild_idx != -1:
+                                gc_curr = cnts[gchild_idx]
+                                gc_area = cv2.contourArea(gc_curr)
+                                total_area += gc_area
+                                if gc_area > MIN_AREA and gc_area > largest_gc_area:
+                                    largest_gc = gc_curr
+                                    largest_gc_area = gc_area
+                                    sel_i = gchild_idx
+                                gchild_idx = hrchy[0][gchild_idx][0]  # next sibling
+
+                            if largest_gc is not None:
+                                sel_c = largest_gc
+                                min_rect = cv2.minAreaRect(sel_c)
+                                w_rot, h_rot = min_rect[1]
+                                if w_rot == 0 or h_rot == 0:
+                                    continue
+                                print(f"Contained shape for: {sel_i}")
+                            # to not recognize fingerprint and QR
+                            elif total_area > MIN_AREA:
+                                continue
+
+                if sel_c is None:
+                    min_rect = cv2.minAreaRect(c)
+                    w_rot, h_rot = min_rect[1]
                     if w_rot == 0 or h_rot == 0:
                         continue
-                    rect_area = w_rot * h_rot
-                    extent = area / rect_area if rect_area > 0 else 0
                     aspect_ratio = max(w_rot, h_rot) / min(w_rot, h_rot)
-
-                    if extent > 0.85:  # parent is rectangle-like, confirms it's a container
-                        # Find largest valid grandchild instead of assuming first
-                        best_gc = None
-                        best_gc_area = 0
-                        gchild_idx = hrchy[0][child_idx][2]  # first grandchild
-                        index = i
-                        total_area = 0
-                        incr = -1
-
-                        while gchild_idx != -1:
-                            gc_candidate = cnts[gchild_idx]
-                            gc_area = cv2.contourArea(gc_candidate)
-                            total_area += gc_area
-                            if gc_area > MIN_AREA and gc_area > best_gc_area:
-                                best_gc = gc_candidate
-                                best_gc_area = gc_area
-                                index = gchild_idx
-                                incr += 1
-                            gchild_idx = hrchy[0][gchild_idx][0]  # next sibling
-
-                        if best_gc is not None:
-                            rect = cv2.minAreaRect(best_gc)
-                            w_rot, h_rot = rect[1]
-                            if w_rot == 0 or h_rot == 0:
-                                continue
-                            sel_c = best_gc
-                            selected = True
-                            print(f"container for {index}, {incr}")
-
-                        elif total_area > MIN_AREA:
-                            continue
-
-            # ===== Aspect ratio check (fallback) =====
-            if not selected and hrchy[0][i][3] == -1:
-                rect = cv2.minAreaRect(sel_c)
-                w_rot, h_rot = rect[1]
-                if w_rot == 0 or h_rot == 0:
-                    continue
-                aspect_ratio = max(w_rot, h_rot) / min(w_rot, h_rot)
-                if aspect_ratio > MAX_ASPECT_RATIO:
-                    continue
-                selected = True
-                print(f"hello for {i}")
-
-            if not selected:
-                continue
+                    if aspect_ratio > MAX_ASPECT_RATIO:
+                        continue
+                    print(f"No container, took: {i} instead")
             
             # ===== Now process selected_contour normally =====
             peri = cv2.arcLength(sel_c, True)
@@ -121,14 +115,6 @@ try:
 
             # Rotated extent
             extent = cv2.contourArea(sel_c) / (w_rot * h_rot) if w_rot*h_rot > 0 else 0
-
-            # Determine concave ones first - arrow and star via solidity (arrow has larger extent and solidity)
-            # 4 corners - kite and trapezium (kite has larger extent)
-            # 1.44 aspect ratio - major segment
-            # 8 corners - octagon
-            # 12 corners and aspect ratio around 1.006 (1.176 is ¾ circle) - plus
-            # [calc ellipse area ratio]
-            # Ellipse area ratio - 0.75 for ¾ circle and 1.00 for danger
 
             if solidity < 0.70:
                 if solidity < 0.55 and extent < 0.40:
@@ -163,26 +149,30 @@ try:
             
             print(f"Prediction: {pred}")
             
-            # ===== DRAW / DEBUG =====
-            box = cv2.boxPoints(rect)
+            '''
+            box = cv2.boxPoints(min_rect)
             box = np.intp(box)
             cv2.drawContours(output, [sel_c], -1, (0, 255, 0), 2)
             cv2.drawContours(output, [box], 0, (255, 0, 0), 2)
             cv2.putText(output, f"{pred}",#f"C:{corners} AR:{aspect_ratio:.2f} S:{solidity:.2f} E:{extent:.2f} R:{ellipse_area_ratio:.2f} A:{area:.2f}",
-                        (int(rect[0][0]-rect[1][0]/2), int(rect[0][1]-10-rect[1][1]/2)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 2)
-            
-
-            
+                        (int(min_rect[0][0]-min_rect[1][0]/2), int(min_rect[0][1]-10-min_rect[1][1]/2)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 2)
+                        
             cv2.imshow("Threshold", thresh)
             cv2.imshow("Geometry Debug", output)
+            '''
 
-            print(f"P:{hrchy[0][i]} C:{corners} AR:{aspect_ratio:.2f} S:{solidity:.2f} E:{extent:.2f} R:{ellipse_area_ratio:.2f} A:{area:.2f} AC:{cv2.contourArea(cnts[hrchy[0][i][2]])}")
-
-        '''
-        for i, c in enumerate(cnts):
-            print(f"{i} hr:{hrchy[0][i]}, a:{cv2.contourArea(c)}")
-        '''
+            new_frame_time = time.perf_counter()
         
+            # 1. Calculate FPS
+            # Protect against divide-by-zero errors if the loop runs infinitely fast
+            time_diff = new_frame_time - prev_frame_time
+            if time_diff > 0:
+                fps = 1.0 / time_diff
+            else:
+                fps = 0.0
+            prev_frame_time = new_frame_time
+
+            print(f"P:{hrchy[0][i]} C:{corners} AR:{aspect_ratio:.2f} S:{solidity:.2f} E:{extent:.2f} R:{ellipse_area_ratio:.2f} A:{area:.2f} AC:{cv2.contourArea(cnts[hrchy[0][i][2]])}")        
 
         if cv2.waitKey(1) == ord('q'):
             break
@@ -193,7 +183,7 @@ except KeyboardInterrupt:
     pass
 except Exception as e:
     print(f"Error: {e}")
-    raise  # re-raise so you see the full traceback
-finally:
-    cv2.destroyAllWindows()
-    picam2.stop()
+    raise
+
+cv2.destroyAllWindows()
+picam2.stop()

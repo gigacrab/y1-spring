@@ -8,7 +8,7 @@ picam2.configure(picam2.create_video_configuration(main={"size": (640, 480)}))
 picam2.start()
 time.sleep(2)
 
-MIN_AREA = 3000
+MIN_AREA = 1500
 MAX_ASPECT_RATIO = 1.6
 
 prev_frame_time = 0

@@ -39,7 +39,7 @@ try:
 
             sel_c = c
             selected = False
-            w_rot, h_rot = 0, 0 
+            w_rot, h_rot = 0, 0
             aspect_ratio = 0
             ellipse_area_ratio = 0
 
@@ -52,13 +52,14 @@ try:
 
                 if hollow_ratio > 0.85:
                     print(f"Hollow container: {i}")
+
                     rect = cv2.minAreaRect(c)
                     w_rot, h_rot = rect[1]
                     if w_rot == 0 or h_rot == 0:
                         continue
                     rect_area = w_rot * h_rot
                     extent = area / rect_area if rect_area > 0 else 0
-                    aspect_ratio = max(w_rot, h_rot) / min(w_rot, h_rot) if min(w_rot, h_rot) > 0 else 0
+                    aspect_ratio = max(w_rot, h_rot) / min(w_rot, h_rot)
 
                     if extent > 0.85:  # parent is rectangle-like, confirms it's a container
                         # Find largest valid grandchild instead of assuming first
@@ -175,10 +176,10 @@ try:
 
             print(f"P:{hrchy[0][i]} C:{corners} AR:{aspect_ratio:.2f} S:{solidity:.2f} E:{extent:.2f} R:{ellipse_area_ratio:.2f} A:{area:.2f} AC:{cv2.contourArea(cnts[hrchy[0][i][2]])}")
 
-        '''
+        
         for i, c in enumerate(cnts):
             print(f"{i} hr:{hrchy[0][i]}, a:{cv2.contourArea(c)}")
-        '''
+        
         
 
         if cv2.waitKey(1) == ord('q'):

@@ -120,7 +120,7 @@ try:
                 if aspect_ratio > MAX_ASPECT_RATIO:
                     continue
                 selected = True
-                print(f"container for {i}")
+                print(f"hello for {i}")
             
             # ===== Now process selected_contour normally =====
             peri = cv2.arcLength(sel_c, True)

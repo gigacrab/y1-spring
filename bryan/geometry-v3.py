@@ -176,6 +176,9 @@ try:
             child_area_debug = cv2.contourArea(cnts[hrchy[0][i][2]]) if hrchy[0][i][2] != -1 else -1
             print(f"FPS:{fps:.2f} P:{hrchy[0][i]} C:{corners} AR:{aspect_ratio:.2f} S:{solidity:.2f} E:{extent:.2f} R:{ellipse_area_ratio:.2f} A:{area:.2f} AC:{child_area_debug}")        
 
+        for i, c in enumerate(cnts):
+            print(f"{i} hr:{hrchy[0][i]}, a:{cv2.contourArea(c)}")
+
         if cv2.waitKey(1) == ord('q'):
             break
             

@@ -63,7 +63,7 @@ try:
                     extent = area / rect_area if rect_area > 0 else 0
                     aspect_ratio = max(w_rot, h_rot) / min(w_rot, h_rot) if min(w_rot, h_rot) > 0 else 0
 
-                    if extent > 0.85 and aspect_ratio < 1.3:  # parent is rectangle-like, confirms it's a container
+                    if extent > 0.85:  # parent is rectangle-like, confirms it's a container
                         # Find largest valid grandchild instead of assuming first
                         best_gc = None
                         best_gc_area = 0
@@ -173,7 +173,7 @@ try:
             cv2.imshow("Threshold", thresh)
             cv2.imshow("Geometry Debug", output)
 
-            print(f"P:{hrchy[0][i][3]} C:{corners} AR:{aspect_ratio:.2f} S:{solidity:.2f} E:{extent:.2f} R:{ellipse_area_ratio:.2f} A:{area:.2f}")
+            print(f"P:{hrchy[0][i][3]} C:{corners} AR:{aspect_ratio:.2f} S:{solidity:.2f} E:{extent:.2f} R:{ellipse_area_ratio:.2f} A:{area:.2f} AC:{cv2.contourArea(cnts[hrchy[0][i][2]])}")
 
         while cv2.waitKey(1) != ord('n'):
             pass

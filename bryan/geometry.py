@@ -49,12 +49,14 @@ try:
             aspect_ratio = 0
             ellipse_area_ratio = 0
 
+            '''
             if hrchy[0][i][3] == -1:
                 hello = hrchy[0][i][2]
                 if hello != -1:
                     while hrchy[0][hello][0] != -1:
                         print(f"hr:{hrchy[0][hello]}{cv2.contourArea(cnts[hrchy[0][i][0]])}")
                         hello = hrchy[0][hello][0]
+            '''
 
             # ===== Container check =====
             child_idx = hrchy[0][i][2]

@@ -183,7 +183,7 @@ try:
         if cv2.waitKey(1) == ord('q'):
             break
             
-        print("One frame\n")
+        print("------\n")
 
 except KeyboardInterrupt:
     pass

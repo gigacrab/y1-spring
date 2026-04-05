@@ -186,6 +186,7 @@ try:
 
         while cv2.waitKey(1) != ord('n'):
             pass
+        print("\n")
 
 except KeyboardInterrupt:
     pass

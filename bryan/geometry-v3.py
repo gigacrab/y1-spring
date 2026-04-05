@@ -68,8 +68,10 @@ try:
                         gchild_idx = hrchy[0][child_idx][2]  # first grandchild
                         index = i
                         total_area = 0
+                        incr = -1
 
                         while gchild_idx != -1:
+                            
                             gc_candidate = cnts[gchild_idx]
                             gc_area = cv2.contourArea(gc_candidate)
                             total_area += gc_area
@@ -77,6 +79,7 @@ try:
                                 best_gc = gc_candidate
                                 best_gc_area = gc_area
                                 index = gchild_idx
+                                incr += 1
                             gchild_idx = hrchy[0][gchild_idx][0]  # next sibling
 
                         if best_gc is not None:
@@ -86,7 +89,7 @@ try:
                                 continue
                             sel_c = best_gc
                             selected = True
-                            print(f"container for {index}")
+                            print(f"container for {index}, {incr}")
 
                         elif total_area > MIN_AREA:
                             continue
@@ -176,14 +179,14 @@ try:
 
             print(f"P:{hrchy[0][i]} C:{corners} AR:{aspect_ratio:.2f} S:{solidity:.2f} E:{extent:.2f} R:{ellipse_area_ratio:.2f} A:{area:.2f} AC:{cv2.contourArea(cnts[hrchy[0][i][2]])}")
 
-        
+        '''
         for i, c in enumerate(cnts):
             print(f"{i} hr:{hrchy[0][i]}, a:{cv2.contourArea(c)}")
-        
+        '''
         
 
-        while cv2.waitKey(1) != ord('n'):
-            pass
+        if cv2.waitKey(1) == ord('q'):
+            break
             
         print("\n")
 

@@ -61,8 +61,9 @@ try:
                         continue
                     rect_area = w_rot * h_rot
                     extent = area / rect_area if rect_area > 0 else 0
+                    aspect_ratio = max(w_rot, h_rot) / min(w_rot, h_rot) if min(w_rot, h_rot) > 0 else 0
 
-                    if extent > 0.85:  # parent is rectangle-like, confirms it's a container
+                    if extent > 0.85 and aspect_ratio < 1.3:  # parent is rectangle-like, confirms it's a container
                         # Find largest valid grandchild instead of assuming first
                         best_gc = None
                         best_gc_area = 0
@@ -167,7 +168,7 @@ try:
             cv2.drawContours(output, [sel_c], -1, (0, 255, 0), 2)
             cv2.drawContours(output, [box], 0, (255, 0, 0), 2)
             cv2.putText(output, f"{hrchy[0][i][3]}",#f"C:{corners} AR:{aspect_ratio:.2f} S:{solidity:.2f} E:{extent:.2f} R:{ellipse_area_ratio:.2f} A:{area:.2f}",
-                        (int(rect[0][0]), int(rect[0][1]-10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1)
+                        (int(rect[0][0]), int(rect[0][1]-10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 2)
             
             cv2.imshow("Threshold", thresh)
             cv2.imshow("Geometry Debug", output)

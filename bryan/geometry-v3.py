@@ -33,6 +33,9 @@ try:
         cnts, hrchy = cv2.findContours(closed, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         pred = ""
+
+        total_c = len(cnts)
+
         # should already have hierarchy if a contour exists
         for i, c in enumerate(cnts):
             area = cv2.contourArea(c)
@@ -103,6 +106,8 @@ try:
                     print(f"No container, took: {i} instead")
             
             if sel_c is None:
+                if i == total_c - 1:
+                    print("I give up")
                 continue
 
             peri = cv2.arcLength(sel_c, True)

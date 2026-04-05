@@ -3,6 +3,8 @@ import numpy as np
 from picamera2 import Picamera2
 import time
 
+# border checks not so good
+
 picam2 = Picamera2()
 picam2.configure(picam2.create_video_configuration(main={"size": (640, 480)}))
 picam2.start()
@@ -46,6 +48,12 @@ try:
             w_rot, h_rot = 0, 0 
             aspect_ratio = 0
             ellipse_area_ratio = 0
+
+            if hrchy[0][i][3] == -1:
+                hello = hrchy[0][i][2]
+                if hello != -1:
+                    while hrchy[0][hello][0] != -1:
+                        print(cv2.contourArea(cnts[hrchy[0][i][0]]))
 
             # ===== Container check =====
             child_idx = hrchy[0][i][2]

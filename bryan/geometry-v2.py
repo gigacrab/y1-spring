@@ -175,7 +175,9 @@ try:
                 circle_area = np.pi * radius * radius
                 ellipse_area_ratio = cv2.contourArea(sel_c) / circle_area if circle_area > 0 else 0
 
-                if ellipse_area_ratio < 0.8:
+                if ellipse_area_ratio < 0.65:
+                    pred = "Press Button"
+                elif ellipse_area_ratio < 0.8:
                     pred = "3/4 Circle"
                 elif ellipse_area_ratio < 1.05:
                     pred = "Danger"

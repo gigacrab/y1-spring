@@ -101,7 +101,9 @@ try:
                     if aspect_ratio > MAX_ASPECT_RATIO:
                         continue
                     print(f"No container, took: {i} instead")
-            
+            else:
+                continue
+
             # ===== Now process selected_contour normally =====
             peri = cv2.arcLength(sel_c, True)
             approx = cv2.approxPolyDP(sel_c, 0.01 * peri, True)

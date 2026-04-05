@@ -79,7 +79,7 @@ def shape_detect(i, c, cnts, hrchy):
             sel_c = c
             print(f"No container, took: {i} instead")
 
-        return sel_c, w_rot, h_rot, min_rect
+        return sel_c, w_rot, h_rot, min_rect, area
 
 picam2 = Picamera2()
 picam2.configure(picam2.create_video_configuration(main={"size": (640, 480)}))
@@ -122,7 +122,7 @@ try:
                     print("I give up")
                 continue
 
-            sel_c, w_rot, h_rot, min_rect = result
+            sel_c, w_rot, h_rot, min_rect, area = result
 
             peri = cv2.arcLength(sel_c, True)
             approx = cv2.approxPolyDP(sel_c, 0.01 * peri, True)

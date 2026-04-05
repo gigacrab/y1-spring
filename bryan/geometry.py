@@ -58,7 +58,7 @@ try:
 
             # ===== Container check =====
             child_idx = hrchy[0][i][2]
-            if child_idx != -1:
+            if child_idx != -1 and hrchy[0][i][3] == -1:
                 child_area = cv2.contourArea(cnts[child_idx])
                 hollow_ratio = child_area / area if area > 0 else 0
 

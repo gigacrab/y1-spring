@@ -79,6 +79,7 @@ try:
                         best_gc = None
                         best_gc_area = 0
                         gchild_idx = hrchy[0][child_idx][2]  # first grandchild
+                        index = i
 
                         while gchild_idx != -1:
                             gc_candidate = cnts[gchild_idx]
@@ -86,6 +87,7 @@ try:
                             if gc_area > MIN_AREA and gc_area > best_gc_area:
                                 best_gc = gc_candidate
                                 best_gc_area = gc_area
+                                index = gchild_idx
                             gchild_idx = hrchy[0][gchild_idx][0]  # next sibling
 
                         if best_gc is not None:
@@ -95,7 +97,7 @@ try:
                                 continue
                             sel_c = best_gc
                             selected = True
-                            print(f"container for {i}")
+                            print(f"container for {index}")
                         '''
                         gchild_idx = hrchy[0][child_idx][2]
                         if gchild_idx != -1:

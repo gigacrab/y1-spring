@@ -63,6 +63,8 @@ try:
                 hollow_ratio = child_area / area if area > 0 else 0
 
                 if hollow_ratio > 0.9:
+
+                    print(f"hollow {i}")
                     # Also verify the parent looks like a rectangle via extent
                     rect = cv2.minAreaRect(c)
                     w_rot, h_rot = rect[1]

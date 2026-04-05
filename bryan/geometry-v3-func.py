@@ -113,12 +113,14 @@ try:
         total_c = len(cnts)
         print(f"Number of contours: {total_c}")
 
+        shapes = []
+
         # should already have hierarchy if a contour exists
         for i, c in enumerate(cnts):
             result = shape_detect(i, c, cnts, hrchy)
 
             if result is None:
-                if i == total_c - 1:
+                if i == total_c - 1 and len(shapes) == 0:
                     print("I give up")
                 continue
 
@@ -172,6 +174,7 @@ try:
                     pred = "No Idea" # this is so unlikely
             
             print(f"Prediction: {pred}")
+            shapes.append(pred)
             
             '''
             box = cv2.boxPoints(min_rect)

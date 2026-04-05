@@ -100,7 +100,7 @@ try:
                             selected = True
                             print(f"container for {index}")
 
-                        if total_area > MIN_AREA:
+                        elif total_area > MIN_AREA:
                             continue
                         '''
                         gchild_idx = hrchy[0][child_idx][2]

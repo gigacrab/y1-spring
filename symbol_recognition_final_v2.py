@@ -111,18 +111,22 @@ try:
         kernel = np.ones((3, 3), np.uint8)
         thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
         '''
-        # Increase the 'C' value slightly (from 8 to 12) to kill background static
-        thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, block_size, 12)
+        # 1. Use your fast, small block size to get crisp (but hollow) outlines
+        thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, block_size, 8)
         
-        # 1. Use a much bigger 'brush' (7x7) to connect broken lines
-        kernel = np.ones((7, 7), np.uint8) 
-        
-        # 2. DILATE first to artificially thicken the thin hollow outlines
-        thresh = cv2.dilate(thresh, kernel, iterations=1)
-        
-        # 3. THEN CLOSE to fill in the hollow center of the shapes
+        # 2. Close any tiny 1-pixel breaks in the lines so our paintbucket doesn't leak
+        kernel = np.ones((3, 3), np.uint8)
         thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
-        cnts, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        
+        # 3. Find ONLY the extreme outer boundaries of those hollow shapes (RETR_EXTERNAL)
+        raw_cnts, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        # 4. Create a blank black canvas and draw those outlines completely FILLED in (thickness=-1)
+        solid_thresh = np.zeros_like(thresh)
+        cv2.drawContours(solid_thresh, raw_cnts, -1, 255, -1)
+        
+        # 5. Now pass this artificially solid image to your Master Brain!
+        cnts, hierarchy = cv2.findContours(solid_thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         
         if hierarchy is not None:
             for i, c in enumerate(cnts):

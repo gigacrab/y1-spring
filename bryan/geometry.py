@@ -53,7 +53,8 @@ try:
                 hello = hrchy[0][i][2]
                 if hello != -1:
                     while hrchy[0][hello][0] != -1:
-                        print(cv2.contourArea(cnts[hrchy[0][i][0]]))
+                        print(f"hr:{hrchy[0][hello]}{cv2.contourArea(cnts[hrchy[0][i][0]])}")
+                        hello = hrchy[0][hello][0]
 
             # ===== Container check =====
             child_idx = hrchy[0][i][2]

@@ -71,7 +71,6 @@ try:
                         incr = -1
 
                         while gchild_idx != -1:
-                            
                             gc_candidate = cnts[gchild_idx]
                             gc_area = cv2.contourArea(gc_candidate)
                             total_area += gc_area

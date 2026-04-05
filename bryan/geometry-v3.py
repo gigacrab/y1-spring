@@ -48,6 +48,7 @@ try:
             w_rot, h_rot = 0, 0
             aspect_ratio = 0
             ellipse_area_ratio = 0
+            min_calc = False
 
             child_idx = hrchy[0][i][2]
 
@@ -61,6 +62,7 @@ try:
                         print(f"Hollow container at: {i}")
 
                         min_rect = cv2.minAreaRect(c)
+                        min_calc = True
                         w_rot, h_rot = min_rect[1]
                         if w_rot == 0 or h_rot == 0:
                             continue
@@ -98,19 +100,16 @@ try:
                                 continue
 
                 if sel_c is None:
-                    min_rect = cv2.minAreaRect(c)
-                    w_rot, h_rot = min_rect[1]
+                    if not min_calc:
+                        min_rect = cv2.minAreaRect(c)
+                        w_rot, h_rot = min_rect[1]
                     if w_rot == 0 or h_rot == 0:
                         continue
                     aspect_ratio = max(w_rot, h_rot) / min(w_rot, h_rot)
                     if aspect_ratio > MAX_ASPECT_RATIO:
                         continue
+                    sel_c = c
                     print(f"No container, took: {i} instead")
-            
-            if sel_c is None:
-                if i == total_c - 1:
-                    print("I give up")
-                continue
 
             peri = cv2.arcLength(sel_c, True)
             approx = cv2.approxPolyDP(sel_c, 0.01 * peri, True)
@@ -120,10 +119,11 @@ try:
             # Convex hull
             hull = cv2.convexHull(sel_c)
             hull_area = cv2.contourArea(hull)
-            solidity = cv2.contourArea(sel_c) / hull_area if hull_area > 0 else 0
+            sel_area = cv2.contourArea(sel_c)
+            solidity = sel_area / hull_area if hull_area > 0 else 0
 
             # Rotated extent
-            extent = cv2.contourArea(sel_c) / (w_rot * h_rot) if w_rot*h_rot > 0 else 0
+            extent = sel_area / (w_rot * h_rot) if w_rot*h_rot > 0 else 0
 
             if solidity < 0.70:
                 if solidity < 0.55 and extent < 0.40:
@@ -145,7 +145,7 @@ try:
                 # Ellipse area ratio
                 (xc, yc), radius = cv2.minEnclosingCircle(sel_c)
                 circle_area = np.pi * radius * radius
-                ellipse_area_ratio = cv2.contourArea(sel_c) / circle_area if circle_area > 0 else 0
+                ellipse_area_ratio = sel_area / circle_area if circle_area > 0 else 0
 
                 if ellipse_area_ratio < 0.65:
                     pred = "Press Button"
@@ -170,7 +170,8 @@ try:
             cv2.imshow("Geometry Debug", output)
             '''
 
-            print(f"FPS:{fps:.2f} P:{hrchy[0][i]} C:{corners} AR:{aspect_ratio:.2f} S:{solidity:.2f} E:{extent:.2f} R:{ellipse_area_ratio:.2f} A:{area:.2f} AC:{cv2.contourArea(cnts[hrchy[0][i][2]])}")        
+            child_area_debug = cv2.contourArea(cnts[hrchy[0][i][2]]) if hrchy[0][i][2] != -1 else -1
+            print(f"FPS:{fps:.2f} P:{hrchy[0][i]} C:{corners} AR:{aspect_ratio:.2f} S:{solidity:.2f} E:{extent:.2f} R:{ellipse_area_ratio:.2f} A:{area:.2f} AC:{child_area_debug}")        
 
         if cv2.waitKey(1) == ord('q'):
             break

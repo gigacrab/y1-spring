@@ -111,6 +111,9 @@ try:
                     sel_c = c
                     print(f"No container, took: {i} instead")
 
+            if sel_c is None:
+                continue
+
             peri = cv2.arcLength(sel_c, True)
             approx = cv2.approxPolyDP(sel_c, 0.01 * peri, True)
             corners = len(approx)

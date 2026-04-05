@@ -95,6 +95,7 @@ try:
                                 continue
                             sel_c = best_gc
                             selected = True
+                            print(f"container for {i}")
                         '''
                         gchild_idx = hrchy[0][child_idx][2]
                         if gchild_idx != -1:
@@ -119,6 +120,7 @@ try:
                 if aspect_ratio > MAX_ASPECT_RATIO:
                     continue
                 selected = True
+                print(f"container for {i}")
             
             # ===== Now process selected_contour normally =====
             peri = cv2.arcLength(sel_c, True)

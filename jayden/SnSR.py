@@ -1,3 +1,5 @@
+import os
+os.environ['QT_QPA_FONTDIR'] = '/usr/share/fonts'
 import cv2
 import numpy as np
 from picamera2 import Picamera2

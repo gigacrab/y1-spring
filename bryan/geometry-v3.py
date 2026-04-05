@@ -1,3 +1,5 @@
+# can't do recycling, fingerprint, QR
+
 import cv2
 import numpy as np 
 from picamera2 import Picamera2
@@ -70,11 +72,11 @@ try:
                         extent = area / rect_area if rect_area > 0 else 0
                         aspect_ratio = max(w_rot, h_rot) / min(w_rot, h_rot)
 
-                        if extent > 0.85:  # parent is rectangle-like, confirms it's a container
+                        if extent > 0.85: # parent is rectangle-like, confirms it's a container
                             # Find largest valid grandchild instead of assuming first
                             largest_gc = None
                             largest_gc_area = 0
-                            gchild_idx = hrchy[0][child_idx][2]  # first grandchild
+                            gchild_idx = hrchy[0][child_idx][2] # first grandchild
                             sel_i = i
                             total_area = 0
 
@@ -86,7 +88,7 @@ try:
                                     largest_gc = gc_curr
                                     largest_gc_area = gc_area
                                     sel_i = gchild_idx
-                                gchild_idx = hrchy[0][gchild_idx][0]  # next sibling
+                                gchild_idx = hrchy[0][gchild_idx][0] # next sibling
 
                             if largest_gc is not None:
                                 sel_c = largest_gc
@@ -95,7 +97,7 @@ try:
                                 if w_rot == 0 or h_rot == 0:
                                     continue
                                 print(f"Contained shape for: {sel_i}")
-                            # to not recognize fingerprint and QR
+                            # to not recognize fingerprint, QR and recycling
                             elif total_area > MIN_AREA:
                                 continue
 
@@ -157,7 +159,7 @@ try:
                 elif ellipse_area_ratio < 1.05:
                     pred = "Danger"
                 else:
-                    pred = "No Idea"
+                    pred = "No Idea" # this is so unlikely
             
             print(f"Prediction: {pred}")
             

@@ -3,14 +3,11 @@ import numpy as np
 from picamera2 import Picamera2
 import time
 
-# border checks not so good
-
 picam2 = Picamera2()
 picam2.configure(picam2.create_video_configuration(main={"size": (640, 480)}))
 picam2.start()
 time.sleep(2)
 
-# constants
 MIN_AREA = 3000
 MAX_ASPECT_RATIO = 1.6
 
@@ -49,23 +46,12 @@ try:
             aspect_ratio = 0
             ellipse_area_ratio = 0
 
-            '''
-            if hrchy[0][i][3] == -1:
-                hello = hrchy[0][i][2]
-                if hello != -1:
-                    while hrchy[0][hello][0] != -1:
-                        print(f"hr:{hrchy[0][hello]}{cv2.contourArea(cnts[hrchy[0][i][0]])}")
-                        hello = hrchy[0][hello][0]
-            '''
-
-            # ===== Container check =====
             child_idx = hrchy[0][i][2]
             if child_idx != -1 and hrchy[0][i][3] == -1:
                 child_area = cv2.contourArea(cnts[child_idx])
                 hollow_ratio = child_area / area if area > 0 else 0
 
                 if hollow_ratio > 0.9:
-
                     print(f"hollow {i}")
                     # Also verify the parent looks like a rectangle via extent
                     rect = cv2.minAreaRect(c)
@@ -82,10 +68,12 @@ try:
                         best_gc_area = 0
                         gchild_idx = hrchy[0][child_idx][2]  # first grandchild
                         index = i
+                        total_area = 0
 
                         while gchild_idx != -1:
                             gc_candidate = cnts[gchild_idx]
                             gc_area = cv2.contourArea(gc_candidate)
+                            total_area += gc_area
                             if gc_area > MIN_AREA and gc_area > best_gc_area:
                                 best_gc = gc_candidate
                                 best_gc_area = gc_area
@@ -100,6 +88,9 @@ try:
                             sel_c = best_gc
                             selected = True
                             print(f"container for {index}")
+
+                        if total_area > MIN_AREA:
+                            continue
                         '''
                         gchild_idx = hrchy[0][child_idx][2]
                         if gchild_idx != -1:

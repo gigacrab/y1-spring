@@ -187,6 +187,8 @@ try:
             cv2.putText(output, f"{pred}",#f"C:{corners} AR:{aspect_ratio:.2f} S:{solidity:.2f} E:{extent:.2f} R:{ellipse_area_ratio:.2f} A:{area:.2f}",
                         (int(rect[0][0]-rect[1][0]/2), int(rect[0][1]-10-rect[1][1]/2)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 2)
             
+
+            
             cv2.imshow("Threshold", thresh)
             cv2.imshow("Geometry Debug", output)
 

@@ -185,7 +185,7 @@ try:
             print(f"P:{hrchy[0][i]} C:{corners} AR:{aspect_ratio:.2f} S:{solidity:.2f} E:{extent:.2f} R:{ellipse_area_ratio:.2f} A:{area:.2f} AC:{cv2.contourArea(cnts[hrchy[0][i][2]])}")
 
         for i, c in enumerate(cnts):
-            print(f"{i+1} hr:{hrchy[0][i]}, a:{cv2.contourArea(c)}")
+            print(f"{i} hr:{hrchy[0][i]}, a:{cv2.contourArea(c)}")
 
         while cv2.waitKey(1) != ord('n'):
             pass

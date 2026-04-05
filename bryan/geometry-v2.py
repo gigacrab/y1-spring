@@ -185,7 +185,7 @@ try:
 
             cv2.imshow("Threshold", thresh)
             cv2.imshow("Geometry Debug", output)
-            time.sleep(2)
+            if cv2.waitKey(1) & 0xFF == ord('q'): break
 
             print(f"P:{hrchy[0][i]} C:{corners} AR:{aspect_ratio:.2f} S:{solidity:.2f} E:{extent:.2f} R:{ellipse_area_ratio:.2f} A:{area:.2f} AC:{cv2.contourArea(cnts[hrchy[0][i][2]])}")
 

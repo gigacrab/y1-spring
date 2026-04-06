@@ -50,16 +50,20 @@ while True:
         time_marker = time.perf_counter()
 
         frame = picam2.capture_array()
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
         roi = frame[240:480, :]
 
         hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+        # Sample a 10x10 patch from the centre of the ROI
+        sample = hsv[110:120, 310:320]
+        print(f"HSV centre sample: {sample.mean(axis=(0,1)).astype(int)}")
         #red:
         red_lower = np.array([111, 49, 8])
-        red_upper = np.array([131, 205, 164])
+        red_upper = np.array([131, 255, 220])
         red_mask = cv2.inRange(hsv, red_lower, red_upper)
         #yellow:
         yellow_lower = np.array([85, 14, 22])
-        yellow_upper = np.array([105, 170, 178])
+        yellow_upper = np.array([105, 250, 220])
         yellow_mask = cv2.inRange(hsv, yellow_lower, yellow_upper)
 
         combined_colour_mask = cv2.bitwise_or(red_mask, yellow_mask)
@@ -109,51 +113,52 @@ while True:
                 
                 cv2.drawContours(im2, [line_contour], -1, (0, 255, 0), thickness=cv2.FILLED)
 
-            if line_contour is not None:
-                M = cv2.moments(line_contour)
 
-                if M['m00'] != 0:
-                    cx = int(M['m10']/M['m00'])
-                    cv2.line(im2, (cx, 0), (cx, 240), (0, 255, 255), 3)
+        if line_contour is not None:
+            M = cv2.moments(line_contour)
 
-                    # pwm - 80 for left, 78 for right 
-                    elapsed_time = time.perf_counter() - time_marker
-                    if elapsed_time <= 0:
-                        elapsed_time = 0.0001
-                
-                    # error is normalized
-                    error = (320 - cx) / 320    
-                    total_error += error * elapsed_time
+            if M['m00'] != 0:
+                cx = int(M['m10']/M['m00'])
+                cv2.line(im2, (cx, 0), (cx, 240), (0, 255, 255), 3)
 
-                    if not first:
-                        diff_error = (error - last_error) / elapsed_time
-                    else:
-                        first = False
-                        diff_error = 0
-                    
-                    pid = kp * error + ki * total_error + kd * diff_error
-                    
-                    last_error = error
-
-            else:
-                print(f"we cannot find contours {getSign(last_error)}")
-                pid = getSign(last_error) * 2
-
-            left_pwm = base_speed + pid
-            right_pwm = base_speed - pid
-
-            clamped_left_pwm = clamp(left_pwm, -1, 1)
-            clamped_right_pwm = clamp(right_pwm, -1, 1)
-
-            movement.move(clamped_left_pwm, clamped_right_pwm)
-
-            '''
-            cv2.imshow("contours", im2)
+                # pwm - 80 for left, 78 for right 
+                elapsed_time = time.perf_counter() - time_marker
+                if elapsed_time <= 0:
+                    elapsed_time = 0.0001
             
-            if cv2.waitKey(1) == 27:
-                movement.move(0, 0)
-                break
-            '''
+                # error is normalized
+                error = (320 - cx) / 320    
+                total_error += error * elapsed_time
+
+                if not first:
+                    diff_error = (error - last_error) / elapsed_time
+                else:
+                    first = False
+                    diff_error = 0
+                
+                pid = kp * error + ki * total_error + kd * diff_error
+                
+                last_error = error
+
+        else:
+            print(f"we cannot find contours {getSign(last_error)}")
+            pid = getSign(last_error) * 2
+
+        left_pwm = base_speed + pid
+        right_pwm = base_speed - pid
+
+        clamped_left_pwm = clamp(left_pwm, -1, 1)
+        clamped_right_pwm = clamp(right_pwm, -1, 1)
+
+        movement.move(clamped_left_pwm, clamped_right_pwm)
+
+        '''
+        cv2.imshow("contours", im2)
+        
+        if cv2.waitKey(1) == 27:
+            movement.move(0, 0)
+            break
+        '''
     except (KeyboardInterrupt, Exception) as e:
         print(f"Error has occured - {e}")
         break

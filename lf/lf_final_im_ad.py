@@ -4,6 +4,10 @@ import time
 import numpy as np
 import movement
 import sys
+import os
+os.environ["DISPLAY"] = ":0"
+os.environ["QT_QPA_PLATFORM"] = "xcb"
+os.environ["OPENCV_LOG_LEVEL"] = "ERROR"
 
 def clamp(value, min, max):
     if value > max:

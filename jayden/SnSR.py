@@ -104,7 +104,8 @@ def shape_detect(i, c, cnts, hrchy):
                     elif total_area > MIN_AREA:
                         return None
 
-        if sel_c is None:
+        
+        '''if sel_c is None:
             if not min_calc:
                 min_rect = cv2.minAreaRect(c)
                 w_rot, h_rot = min_rect[1]
@@ -114,7 +115,7 @@ def shape_detect(i, c, cnts, hrchy):
             if aspect_ratio > MAX_ASPECT_RATIO:
                 return None
             sel_c = c
-            print(f"No container, took: {i} instead")
+            print(f"No container, took: {i} instead")'''
 
         return sel_c, w_rot, h_rot, min_rect, area
 
@@ -207,7 +208,7 @@ try:
                 circle_area = np.pi * radius * radius
                 ellipse_area_ratio = sel_area / circle_area if circle_area > 0 else 0
 
-                if ellipse_area_ratio < 0.65:
+                if ellipse_area_ratio < 0.65 and area > 40000:
                     pred = "Press Button"
                 elif ellipse_area_ratio < 0.8:
                     pred = "3/4 Circle"

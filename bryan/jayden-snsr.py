@@ -28,15 +28,15 @@ def check_special_in_group(i, cnts, hrchy):
             w, h = rect[1]
             if w != 0 and h != 0:
                 ar        = max(w, h) / min(w, h)
-                hull_a    = cv2.contourArea(cv2.convexHull(c))
-                solidity  = area / hull_a if hull_a > 0 else 0
+                rect_area = w_rot * h_rot
+                extent = area / rect_area if rect_area > 0 else 0
                 corners   = len(cv2.approxPolyDP(c, 0.01 * cv2.arcLength(c, True), True))
 
-                if ar > 1.5 and corners <= 12 and solidity > 0.3:
+                if ar > 4 or ar > 1.8 and extent < 0.5:
                     arc_count += 1
-                if corners == 4 and ar < 1.15 and solidity > 0.9:
+                if corners == 4 and 0.9 < extent < 1.1 and ar < 1.15:
                     square_count += 1
-                if 10 <= corners <= 18 and 1.4 <= ar <= 2.2 and 0.55 <= solidity <= 0.80:
+                if 12 <= corners <= 18 and 1.5 <= ar <= 2.0 and 0.45 <= extent <= 0.65:
                     arrow_count += 1
 
         child_idx = hrchy[0][child_idx][0] # next sibling
@@ -45,7 +45,7 @@ def check_special_in_group(i, cnts, hrchy):
 
     if arrow_count >= 3:
         return "Recycle"
-    if arc_count >= 4:
+    if arc_count >= 3:
         return "Fingerprint"
     if square_count >= 3:
         return "QR Code"

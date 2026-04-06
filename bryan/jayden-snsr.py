@@ -141,6 +141,7 @@ try:
         print(f"Number of contours: {total_c}")
 
         answer = []
+        containers = []
 
         # should already have hierarchy if a contour exists
         for i, c in enumerate(cnts):
@@ -149,7 +150,7 @@ try:
 
             if result is not None: # found container
                 if isinstance(result, int): # no valid contours
-                    pred = check_special_in_group(result, cnts, hrchy)
+                    containers.append(result)
                 else: # has valid contours
                     sel_c, w_rot, h_rot, min_rect, area = result
 
@@ -199,8 +200,9 @@ try:
                             pred = "Danger"
                         else:
                             pred = "No idea"
-                    
-                    
+
+                    if pred != "No idea":
+                        answer.append(pred)
                 
                     box = cv2.boxPoints(min_rect)
                     box = np.intp(box)
@@ -210,11 +212,15 @@ try:
 
                     #child_area_debug = cv2.contourArea(cnts[hrchy[0][i][2]]) if hrchy[0][i][2] != -1 else -1
                     #print(f"(Single) P:{hrchy[0][i]} C:{corners} AR:{aspect_ratio:.2f} S:{solidity:.2f} E:{extent:.2f} R:{ellipse_area_ratio:.2f} A:{area:.2f} AC:{child_area_debug}")        
-                
-                if pred != "No idea":
-                    answer.append(pred)
+
+            # jumps to here if no containers, then continues for loop
+
+        for container in containers:
+            pred = check_special_in_group(container, cnts, hrchy)
+            if pred != "No idea":
+                answer.append(pred)
             
-            # jumps to here if no containers
+            
         cv2.imshow("Threshold", thresh)
         cv2.imshow("Geometry Debug", output)
             

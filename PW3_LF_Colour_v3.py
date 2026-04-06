@@ -254,7 +254,7 @@ while True:
         cv2.putText(im2, f"STATE: {state}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
         
         # Show what the color mask is seeing (Pixels will be white if red/yellow is detected)
-        cv2.imshow("1. Color Mask (What is Red/Yellow?)", combined_colour_mask)
+        cv2.imshow("1. Color Mask (What is Red/Yellow?)", colour_mask)
         
         # Show the final tracking image with all the lines and boxes
         cv2.imshow("2. Tracking & Math View", im2)

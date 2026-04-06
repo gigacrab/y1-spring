@@ -8,85 +8,6 @@ import time
 MIN_AREA = 3000
 MAX_ASPECT_RATIO = 1.6
 
-def shape_detect(i, c, cnts, hrchy):
-    area = cv2.contourArea(c)
-    if area < MIN_AREA:
-        return None
-
-    sel_c = None
-    w_rot, h_rot = 0, 0
-    aspect_ratio = 0
-    min_calc = False
-
-    child_idx = hrchy[0][i][2]
-
-    # check if it has a child, and is at hierarchy 0
-    if hrchy[0][i][3] == -1:
-        if child_idx != -1:
-            child_area = cv2.contourArea(cnts[child_idx])
-            hollow_ratio = child_area / area if area > 0 else 0
-
-            if hollow_ratio > 0.85:
-                print(f"Hollow container at: {i}")
-
-                min_rect = cv2.minAreaRect(c)
-                min_calc = True
-                w_rot, h_rot = min_rect[1]
-                if w_rot == 0 or h_rot == 0:
-                    return None
-                rect_area = w_rot * h_rot
-                extent = area / rect_area if rect_area > 0 else 0
-                aspect_ratio = max(w_rot, h_rot) / min(w_rot, h_rot)
-
-                if extent > 0.85: # parent is rectangle-like, confirms it's a container
-                    # Find largest valid grandchild instead of assuming first
-                    largest_gc = None
-                    largest_gc_area = 0
-                    gchild_idx = hrchy[0][child_idx][2] # first grandchild
-                    sel_i = i
-                    total_area = 0
-                    
-                    grandchild_indices = []
-                    while gchild_idx != -1:
-                        gc_curr = cnts[gchild_idx]
-                        gc_area = cv2.contourArea(gc_curr)
-                        total_area += gc_area
-                        grandchild_indices.append(gchild_idx)  # collect index
-                        if gc_area > MIN_AREA and gc_area > largest_gc_area:
-                            largest_gc = gc_curr
-                            largest_gc_area = gc_area
-                            sel_i = gchild_idx
-                        gchild_idx = hrchy[0][gchild_idx][0] # next sibling
-
-                    special = check_special_in_group(cnts, hrchy, grandchild_indices, MIN_AREA)
-                    if special is not None:
-                        return special
-
-                    if largest_gc is not None:
-                        sel_c = largest_gc
-                        min_rect = cv2.minAreaRect(sel_c)
-                        w_rot, h_rot = min_rect[1]
-                        if w_rot == 0 or h_rot == 0:
-                            return None
-                        print(f"Contained shape for: {sel_i}")
-                    # to not recognize fingerprint, QR and recycling
-                    elif total_area > MIN_AREA:
-                        return None
-
-        if sel_c is None:
-            if not min_calc:
-                min_rect = cv2.minAreaRect(c)
-                w_rot, h_rot = min_rect[1]
-            if w_rot == 0 or h_rot == 0:
-                return None
-            aspect_ratio = max(w_rot, h_rot) / min(w_rot, h_rot)
-            if aspect_ratio > MAX_ASPECT_RATIO:
-                return None
-            sel_c = c
-            print(f"No container, took: {i} instead")
-
-        return sel_c, w_rot, h_rot, min_rect, area
-
 def check_special_in_group(cnts, hrchy, indices, min_area):
     """
     Given any list of contour indices, count characteristic features and
@@ -189,6 +110,86 @@ def check_special_in_group(cnts, hrchy, indices, min_area):
         return "QR Code"
     return None
 '''
+
+def shape_detect(i, c, cnts, hrchy):
+    area = cv2.contourArea(c)
+    if area < MIN_AREA:
+        return None
+
+    sel_c = None
+    w_rot, h_rot = 0, 0
+    aspect_ratio = 0
+    min_calc = False
+
+    child_idx = hrchy[0][i][2]
+
+    # check if it has a child, and is at hierarchy 0
+    if hrchy[0][i][3] == -1:
+        if child_idx != -1:
+            child_area = cv2.contourArea(cnts[child_idx])
+            hollow_ratio = child_area / area if area > 0 else 0
+
+            if hollow_ratio > 0.85:
+                print(f"Hollow container at: {i}")
+
+                min_rect = cv2.minAreaRect(c)
+                min_calc = True
+                w_rot, h_rot = min_rect[1]
+                if w_rot == 0 or h_rot == 0:
+                    return None
+                rect_area = w_rot * h_rot
+                extent = area / rect_area if rect_area > 0 else 0
+                aspect_ratio = max(w_rot, h_rot) / min(w_rot, h_rot)
+
+                if extent > 0.85: # parent is rectangle-like, confirms it's a container
+                    # Find largest valid grandchild instead of assuming first
+                    largest_gc = None
+                    largest_gc_area = 0
+                    gchild_idx = hrchy[0][child_idx][2] # first grandchild
+                    sel_i = i
+                    total_area = 0
+                    
+                    grandchild_indices = []
+                    while gchild_idx != -1:
+                        gc_curr = cnts[gchild_idx]
+                        gc_area = cv2.contourArea(gc_curr)
+                        total_area += gc_area
+                        grandchild_indices.append(gchild_idx)  # collect index
+                        if gc_area > MIN_AREA and gc_area > largest_gc_area:
+                            largest_gc = gc_curr
+                            largest_gc_area = gc_area
+                            sel_i = gchild_idx
+                        gchild_idx = hrchy[0][gchild_idx][0] # next sibling
+
+                    special = check_special_in_group(cnts, hrchy, grandchild_indices, MIN_AREA)
+                    if special is not None:
+                        return special
+
+                    if largest_gc is not None:
+                        sel_c = largest_gc
+                        min_rect = cv2.minAreaRect(sel_c)
+                        w_rot, h_rot = min_rect[1]
+                        if w_rot == 0 or h_rot == 0:
+                            return None
+                        print(f"Contained shape for: {sel_i}")
+                    # to not recognize fingerprint, QR and recycling
+                    elif total_area > MIN_AREA:
+                        return None
+
+        if sel_c is None:
+            if not min_calc:
+                min_rect = cv2.minAreaRect(c)
+                w_rot, h_rot = min_rect[1]
+            if w_rot == 0 or h_rot == 0:
+                return None
+            aspect_ratio = max(w_rot, h_rot) / min(w_rot, h_rot)
+            if aspect_ratio > MAX_ASPECT_RATIO:
+                return None
+            sel_c = c
+            print(f"No container, took: {i} instead")
+
+        return sel_c, w_rot, h_rot, min_rect, area
+
 picam2 = Picamera2()
 picam2.configure(picam2.create_video_configuration(main={"size": (640, 480)}))
 picam2.start()
@@ -309,10 +310,10 @@ try:
             child_area_debug = cv2.contourArea(cnts[hrchy[0][i][2]]) if hrchy[0][i][2] != -1 else -1
             print(f"FPS:{fps:.2f} P:{hrchy[0][i]} C:{corners} AR:{aspect_ratio:.2f} S:{solidity:.2f} E:{extent:.2f} R:{ellipse_area_ratio:.2f} A:{area:.2f} AC:{child_area_debug}")        
 
-        
+        '''
         for i, c in enumerate(cnts):
             print(f"{i} hr:{hrchy[0][i]}, a:{cv2.contourArea(c)}")
-        
+        '''
             
         if cv2.waitKey(1) == ord('q'):
             break

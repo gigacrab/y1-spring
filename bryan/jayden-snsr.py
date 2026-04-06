@@ -23,7 +23,7 @@ def check_special_in_group(i, cnts, hrchy):
         c    = cnts[child_idx]
         area = cv2.contourArea(c)
         print(f"area: {area}")
-        if area > MIN_AREA * 0.3:
+        if area > MIN_AREA * 0.075:
             rect = cv2.minAreaRect(c)
             w_rot, h_rot = rect[1]
             if w_rot != 0 and h_rot != 0:

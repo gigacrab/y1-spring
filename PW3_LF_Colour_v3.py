@@ -54,7 +54,7 @@ SEARCH_SPEED    = 0.35      # hard-turn PWM offset while searching (tune if need
 # Feature 2 – 90° turn
 ASPECT_THRESHOLD = 3.5      # width/height ratio above which a contour is "horizontal"
 TURN_90_SPEED    = 0.35     # hard-turn PWM offset during the 90° manoeuvre
-TURN_90_LOCKOUT  = 1      # seconds to ignore re-acquisition (prevents instant exit)
+TURN_90_LOCKOUT  = 0.5      # seconds to ignore re-acquisition (prevents instant exit)
 turn_90_start    = None
 turn_90_dir      = "right"
 

@@ -109,7 +109,7 @@ def shape_detect(i, c, cnts, hrchy):
         if sel_c is None:
             return None
         else:
-            return sel_c, w_rot, h_rot, min_rect, area
+            return sel_c, w_rot, h_rot, min_rect, area, child_idx
 
 picam2 = Picamera2()
 picam2.configure(picam2.create_video_configuration(main={"size": (640, 480)}))
@@ -153,7 +153,7 @@ try:
                 if isinstance(result, (int, np.integer)): # no valid contours
                     containers.append(result)
                 else: # has valid contours
-                    sel_c, w_rot, h_rot, min_rect, area = result
+                    sel_c, w_rot, h_rot, min_rect, area, child_idx = result
 
                     peri = cv2.arcLength(sel_c, True)
                     approx = cv2.approxPolyDP(sel_c, 0.01 * peri, True)
@@ -176,11 +176,11 @@ try:
                             pred = "Star"
                         else:
                             # pred = "Arrow"
-                            x, y, w, h = cv2.boundingRect(c)
+                            x, y, w, h = cv2.boundingRect(sel_c)
                             bx = x + (w / 2.0)
                             by = y + (h / 2.0)
                             
-                            M = cv2.moments(c)
+                            M = cv2.moments(sel_c)
                             if M["m00"] != 0:
                                 cx = M["m10"] / M["m00"]
                                 cy = M["m01"] / M["m00"]
@@ -218,7 +218,9 @@ try:
                         else:
                             pred = "No idea"
 
-                    if pred != "No idea":
+                    if pred == "No idea":
+                        containers.append(child_idx)
+                    else:
                         answer.append(pred)
                 
                     box = cv2.boxPoints(min_rect)

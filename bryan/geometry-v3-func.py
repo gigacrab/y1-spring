@@ -7,7 +7,7 @@ import time
 
 MIN_AREA = 3000
 MAX_ASPECT_RATIO = 1.6
-'''
+
 def check_special_in_group(cnts, hrchy, indices, min_area):
     """
     Given any list of contour indices, count characteristic features and
@@ -109,7 +109,7 @@ def check_special_in_group(cnts, hrchy, indices, min_area):
     if square_count >= 3:
         return "QR Code"
     return None
-
+'''
 
 def shape_detect(i, c, cnts, hrchy):
     area = cv2.contourArea(c)

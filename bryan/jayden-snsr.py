@@ -1,4 +1,5 @@
 # it should always show output, while showing final verdict at the end of each frame
+# i changed 8 to 5 for C and may be able to add more tolerance for container area if needed
 
 import cv2
 import numpy as np 

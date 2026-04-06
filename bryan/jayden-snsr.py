@@ -167,6 +167,8 @@ try:
                     sel_area = cv2.contourArea(sel_c)
                     solidity = sel_area / hull_area if hull_area > 0 else 0
 
+                    inner_area_ratio = sel_area / inner_area
+
                     # Rotated extent
                     extent = sel_area / (w_rot * h_rot) if w_rot*h_rot > 0 else 0
 
@@ -192,7 +194,7 @@ try:
                                     pred = "Arrow (RIGHT)" if dx > 0 else "Arrow (LEFT)"
                                 else:
                                     pred = "Arrow (DOWN)" if dy > 0 else "Arrow (UP)"
-                    elif corners == 4 and sel_area > 4000:
+                    elif corners == 4 and inner_area_ratio < 0.45:
                         if extent < 0.80:
                             pred = "Trapezium"
                         else:
@@ -210,7 +212,7 @@ try:
                             
                             if corners == 12 and aspect_ratio < 1.2 and ellipse_area_ratio > 0.9: 
                                 pred = "Plus"
-                            elif ellipse_area_ratio < 0.55:
+                            elif ellipse_area_ratio < 0.55 and inner_area_ratio < 0.6:
                                 pred = "Press Button"
                             elif ellipse_area_ratio < 0.8 and extent < 0.75 and solidity < 0.9:
                                 pred = "3/4 Circle"
@@ -230,8 +232,8 @@ try:
                     cv2.drawContours(output, [box], 0, (255, 0, 0), 2)
                     cv2.putText(output, f"{pred}", (int(min_rect[0][0]-min_rect[1][0]/2), int(min_rect[0][1]-10-min_rect[1][1]/2)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 2)
 
-                    child_area_debug = cv2.contourArea(cnts[hrchy[0][i][2]]) if hrchy[0][i][2] != -1 else -1
-                    print(f"(Single) P:{hrchy[0][i]} C:{corners} AR:{aspect_ratio:.2f} S:{solidity:.2f} E:{extent:.2f} R:{ellipse_area_ratio:.2f} A:{sel_area:.2f} AC:{child_area_debug - inner_area}")        
+                    #child_area_debug = cv2.contourArea(cnts[hrchy[0][i][2]]) if hrchy[0][i][2] != -1 else -1
+                    print(f"(Single) P:{hrchy[0][i]} C:{corners} AR:{aspect_ratio:.2f} S:{solidity:.2f} E:{extent:.2f} R:{ellipse_area_ratio:.2f} A:{sel_area:.2f} AC:na")        
 
             # jumps to here if no containers, then continues for loop
 

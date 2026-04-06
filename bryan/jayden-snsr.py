@@ -90,7 +90,7 @@ def shape_detect(i, c, cnts, hrchy):
                         gc_curr = cnts[gchild_idx]
                         gc_area = cv2.contourArea(gc_curr)
                         total_area += gc_area
-                        if gc_area > MIN_AREA:
+                        if gc_area > MIN_AREA * 0.7:
                             passed += 1
                             if gc_area > largest_gc_area:
                                 largest_gc = gc_curr

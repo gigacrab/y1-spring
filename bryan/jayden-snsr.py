@@ -134,8 +134,7 @@ try:
             51, 8
         )
 
-        kernel = np.ones((3, 3), np.uint8)
-        closed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+        
 
         cnts, hrchy = cv2.findContours(closed, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 

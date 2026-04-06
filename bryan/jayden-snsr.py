@@ -133,7 +133,7 @@ try:
         )
 
         kernel = np.ones((5, 5), np.uint8)
-        closed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+        closed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
 
         cnts, hrchy = cv2.findContours(closed, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -149,7 +149,7 @@ try:
             result = shape_detect(i, c, cnts, hrchy)
 
             if result is not None: # found container
-                if isinstance(result, int): # no valid contours
+                if isinstance(result, (int, np.integer)): # no valid contours
                     containers.append(result)
                 else: # has valid contours
                     sel_c, w_rot, h_rot, min_rect, area = result

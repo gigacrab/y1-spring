@@ -33,7 +33,7 @@ def check_special_in_group(i, cnts, hrchy):
 
                 if ar > 4 or ar > 1.8 and extent < 0.5:
                     arc_count += 1
-                if corners == 4 and 0.9 < extent < 1.1 and ar < 1.15:
+                if corners == 4 and 0.9 < extent < 1.1 and ar < 1.25:
                     square_count += 1
                 if 12 <= corners <= 18 and 1.5 <= ar <= 2.0 and 0.45 <= extent <= 0.65:
                     arrow_count += 1

@@ -62,9 +62,9 @@ while True:
         print(f"HSV centre sample: {sample.mean(axis=(0,1)).astype(int)}")
 
         # ── Colour detection ──────────────────────────────────────────────────
-        red_lower    = np.array([111, 135, 180])
+        red_lower    = np.array([111, 50, 180])
         red_upper    = np.array([131, 185, 230])
-        yellow_lower = np.array([ 85, 205, 220])
+        yellow_lower = np.array([ 85, 100, 205])
         yellow_upper = np.array([105, 255, 255])
 
         combined_colour_mask = cv2.bitwise_or(

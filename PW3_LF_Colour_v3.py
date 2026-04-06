@@ -73,7 +73,7 @@ while True:
         print(f"HSV centre sample: {sample.mean(axis=(0,1)).astype(int)}  state={state}")
 
         # ── Colour mask (unchanged from original) ─────────────────────────────
-        red_mask    = cv2.inRange(hsv, np.array([111, 30,  180]), np.array([131, 185, 230]))
+        red_mask    = cv2.inRange(hsv, np.array([105, 30,  100]), np.array([140, 255, 255]))
         yellow_mask = cv2.inRange(hsv, np.array([ 85, 100, 205]), np.array([105, 255, 255]))
         colour_mask = cv2.bitwise_or(red_mask, yellow_mask)
 

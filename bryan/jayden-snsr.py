@@ -201,8 +201,6 @@ try:
                         pred = "Major Segment"
                     elif corners == 8:
                         pred = "Octagon"
-                    elif corners == 12 and aspect_ratio < 1.2: 
-                        pred = "Plus"
                     else:
                         if sel_area > 6000:
                             # Ellipse area ratio

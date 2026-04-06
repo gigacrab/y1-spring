@@ -211,7 +211,7 @@ try:
                 circle_area = np.pi * radius * radius
                 ellipse_area_ratio = sel_area / circle_area if circle_area > 0 else 0
 
-                if ellipse_area_ratio < 0.65 and area > 40000:
+                if ellipse_area_ratio < 0.65:
                     pred = "Press Button"
                 elif ellipse_area_ratio < 0.8:
                     pred = "3/4 Circle"

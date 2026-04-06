@@ -110,7 +110,7 @@ def shape_detect(i, c, cnts, hrchy):
         if sel_c is None:
             return None
         else:
-            return sel_c, w_rot, h_rot, min_rect, area, child_idx
+            return sel_c, w_rot, h_rot, min_rect, child_area, child_idx
 
 picam2 = Picamera2()
 picam2.configure(picam2.create_video_configuration(main={"size": (640, 480)}))
@@ -154,7 +154,7 @@ try:
                 if isinstance(result, (int, np.integer)): # no valid contours
                     containers.append(result)
                 else: # has valid contours
-                    sel_c, w_rot, h_rot, min_rect, area, child_idx = result
+                    sel_c, w_rot, h_rot, min_rect, inner_area, child_idx = result
 
                     peri = cv2.arcLength(sel_c, True)
                     approx = cv2.approxPolyDP(sel_c, 0.01 * peri, True)
@@ -231,7 +231,7 @@ try:
                     cv2.putText(output, f"{pred}", (int(min_rect[0][0]-min_rect[1][0]/2), int(min_rect[0][1]-10-min_rect[1][1]/2)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 2)
 
                     child_area_debug = cv2.contourArea(cnts[hrchy[0][i][2]]) if hrchy[0][i][2] != -1 else -1
-                    print(f"(Single) P:{hrchy[0][i]} C:{corners} AR:{aspect_ratio:.2f} S:{solidity:.2f} E:{extent:.2f} R:{ellipse_area_ratio:.2f} A:{sel_area:.2f} AC:{child_area_debug}")        
+                    print(f"(Single) P:{hrchy[0][i]} C:{corners} AR:{aspect_ratio:.2f} S:{solidity:.2f} E:{extent:.2f} R:{ellipse_area_ratio:.2f} A:{sel_area:.2f} AC:{child_area_debug - inner_area}")        
 
             # jumps to here if no containers, then continues for loop
 

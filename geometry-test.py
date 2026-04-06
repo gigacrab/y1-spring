@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 # ===== SETTINGS =====
-IMAGE_PATH = "./pictures-bryan/springprj-symbols.png"   # change this
+IMAGE_PATH = "./pictures-bryan/springprj-danger.png"   # change this
 AREA_THRESHOLD = 500
 
 # ===== LOAD IMAGE =====
@@ -20,7 +20,7 @@ thresh = cv2.adaptiveThreshold(
     blur, 255,
     cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
     cv2.THRESH_BINARY_INV,
-    51, 5
+    101, 5
 )
 
 # Morph close (clean noise)

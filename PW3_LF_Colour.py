@@ -109,51 +109,51 @@ while True:
                 
                 cv2.drawContours(im2, [line_contour], -1, (0, 255, 0), thickness=cv2.FILLED)
 
-            if line_contour is not None:
-                M = cv2.moments(line_contour)
+        if line_contour is not None:
+            M = cv2.moments(line_contour)
 
-                if M['m00'] != 0:
-                    cx = int(M['m10']/M['m00'])
-                    cv2.line(im2, (cx, 0), (cx, 240), (0, 255, 255), 3)
+            if M['m00'] != 0:
+                cx = int(M['m10']/M['m00'])
+                cv2.line(im2, (cx, 0), (cx, 240), (0, 255, 255), 3)
 
-                    # pwm - 80 for left, 78 for right 
-                    elapsed_time = time.perf_counter() - time_marker
-                    if elapsed_time <= 0:
-                        elapsed_time = 0.0001
-                
-                    # error is normalized
-                    error = (320 - cx) / 320    
-                    total_error += error * elapsed_time
-
-                    if not first:
-                        diff_error = (error - last_error) / elapsed_time
-                    else:
-                        first = False
-                        diff_error = 0
-                    
-                    pid = kp * error + ki * total_error + kd * diff_error
-                    
-                    last_error = error
-
-            else:
-                print(f"we cannot find contours {getSign(last_error)}")
-                pid = getSign(last_error) * 2
-
-            left_pwm = base_speed + pid
-            right_pwm = base_speed - pid
-
-            clamped_left_pwm = clamp(left_pwm, -1, 1)
-            clamped_right_pwm = clamp(right_pwm, -1, 1)
-
-            movement.move(clamped_left_pwm, clamped_right_pwm)
-
-            '''
-            cv2.imshow("contours", im2)
+                # pwm - 80 for left, 78 for right 
+                elapsed_time = time.perf_counter() - time_marker
+                if elapsed_time <= 0:
+                    elapsed_time = 0.0001
             
-            if cv2.waitKey(1) == 27:
-                movement.move(0, 0)
-                break
-            '''
+                # error is normalized
+                error = (320 - cx) / 320    
+                total_error += error * elapsed_time
+
+                if not first:
+                    diff_error = (error - last_error) / elapsed_time
+                else:
+                    first = False
+                    diff_error = 0
+                
+                pid = kp * error + ki * total_error + kd * diff_error
+                
+                last_error = error
+
+        else:
+            print(f"we cannot find contours {getSign(last_error)}")
+            pid = getSign(last_error) * 2
+
+        left_pwm = base_speed + pid
+        right_pwm = base_speed - pid
+
+        clamped_left_pwm = clamp(left_pwm, -1, 1)
+        clamped_right_pwm = clamp(right_pwm, -1, 1)
+
+        movement.move(clamped_left_pwm, clamped_right_pwm)
+
+        '''
+        cv2.imshow("contours", im2)
+        
+        if cv2.waitKey(1) == 27:
+            movement.move(0, 0)
+            break
+        '''
     except (KeyboardInterrupt, Exception) as e:
         print(f"Error has occured - {e}")
         break

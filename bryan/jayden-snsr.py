@@ -68,7 +68,7 @@ def shape_detect(i, c, cnts, hrchy):
             child_area = cv2.contourArea(cnts[child_idx])
             hollow_ratio = child_area / area if area > 0 else 0
 
-            if hollow_ratio > 0.80:
+            if hollow_ratio > 0.85:
                 print(f"Hollow container at: {i}")
 
                 min_rect = cv2.minAreaRect(c)

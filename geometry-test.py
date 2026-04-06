@@ -20,7 +20,7 @@ thresh = cv2.adaptiveThreshold(
     blur, 255,
     cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
     cv2.THRESH_BINARY_INV,
-    101, 5
+    51, 5
 )
 
 # Morph close (clean noise)

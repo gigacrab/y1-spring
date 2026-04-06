@@ -212,7 +212,7 @@ try:
 
                             if ellipse_area_ratio < 0.55:
                                 pred = "Press Button"
-                            elif ellipse_area_ratio < 0.8:
+                            elif ellipse_area_ratio < 0.8 and extent < 0.75 and solidity < 0.9:
                                 pred = "3/4 Circle"
                             elif ellipse_area_ratio < 1.05:
                                 pred = "Danger"

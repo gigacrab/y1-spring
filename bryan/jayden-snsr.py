@@ -131,7 +131,7 @@ try:
             blur, 255,
             cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
             cv2.THRESH_BINARY_INV,
-            51, 20
+            51, 8
         )
 
         kernel = np.ones((5, 5), np.uint8)

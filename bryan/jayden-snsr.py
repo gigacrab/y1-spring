@@ -130,11 +130,11 @@ try:
             blur, 255,
             cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
             cv2.THRESH_BINARY_INV,
-            65, 8
+            51, 8
         )
 
         kernel = np.ones((3, 3), np.uint8)
-        closed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
+        closed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
 
         cnts, hrchy = cv2.findContours(closed, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 

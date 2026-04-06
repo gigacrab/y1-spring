@@ -84,15 +84,18 @@ def shape_detect(i, c, cnts, hrchy):
                     gchild_idx = hrchy[0][child_idx][2] # first grandchild
                     sel_i = i
                     total_area = 0
+                    passed = 0
 
                     while gchild_idx != -1:
                         gc_curr = cnts[gchild_idx]
                         gc_area = cv2.contourArea(gc_curr)
                         total_area += gc_area
-                        if gc_area > MIN_AREA and gc_area > largest_gc_area:
-                            largest_gc = gc_curr
-                            largest_gc_area = gc_area
-                            sel_i = gchild_idx
+                        if gc_area > MIN_AREA:
+                            passed += 1
+                            if gc_area > largest_gc_area:
+                                largest_gc = gc_curr
+                                largest_gc_area = gc_area
+                                sel_i = gchild_idx
                         gchild_idx = hrchy[0][gchild_idx][0] # next sibling
 
                     if largest_gc is not None:
@@ -103,7 +106,7 @@ def shape_detect(i, c, cnts, hrchy):
                             return None
                         print(f"Contained shape for: {sel_i}")
                     # to not recognize fingerprint, QR and recycling
-                    elif total_area > MIN_AREA:
+                    elif total_area > MIN_AREA or passed >= 3:
                         return child_idx
         
         if sel_c is None:

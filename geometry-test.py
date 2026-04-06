@@ -2,8 +2,8 @@ import cv2
 import numpy as np
 
 # ===== SETTINGS =====
-IMAGE_PATH = "./pictures-bryan/springprj-symbol.png"   # change this
-AREA_THRESHOLD = 1500
+IMAGE_PATH = "./pictures-bryan/springprj-symbols.png"   # change this
+AREA_THRESHOLD = 500
 
 # ===== LOAD IMAGE =====
 img = cv2.imread(IMAGE_PATH)
@@ -25,7 +25,7 @@ thresh = cv2.adaptiveThreshold(
 
 # Morph close (clean noise)
 kernel = np.ones((3, 3), np.uint8)
-thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
 
 # ===== FIND CONTOURS =====
 contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)

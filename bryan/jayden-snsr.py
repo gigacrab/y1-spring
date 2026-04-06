@@ -22,6 +22,7 @@ def check_special_in_group(i, cnts, hrchy):
     while True:
         c    = cnts[child_idx]
         area = cv2.contourArea(c)
+        print(f"area: {area}")
         if area > MIN_AREA * 0.3:
             rect = cv2.minAreaRect(c)
             w, h = rect[1]

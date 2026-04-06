@@ -120,7 +120,14 @@ while True:
         color_is_horizontal = False
         if valid_color_cnt is not None:
             x, y, w, h = cv2.boundingRect(valid_color_cnt)
+            cv2.rectangle(im2, (x, y), (x + w, y + h), (255, 0, 255), 2)
             
+            # Calculate ratio safely
+            ratio = w / h if h > 0 else 0
+            
+            # Print the math above the box
+            cv2.putText(im2, f"W:{w} H:{h} Ratio:{ratio:.1f}", (x, max(y - 10, 20)), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 2)
             # Prevent zero-division/errors, and explicitly check if WIDTH > HEIGHT
             # Also ensure the width is at least 150 pixels so tiny blobs don't trigger turns
             if h > 0 and w > (h * 2.5) and w > 150:
@@ -243,12 +250,19 @@ while True:
         clamped_right_pwm = clamp(right_pwm, -1, 1)
         movement.move(clamped_left_pwm, clamped_right_pwm)
 
-        '''
+        # Print the current state machine status in the top left corner
+        cv2.putText(im2, f"STATE: {state}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+        
+        # Show what the color mask is seeing (Pixels will be white if red/yellow is detected)
+        cv2.imshow("1. Color Mask (What is Red/Yellow?)", combined_colour_mask)
+        
+        # Show the final tracking image with all the lines and boxes
+        cv2.imshow("2. Tracking & Math View", im2)
         cv2.imshow("contours", im2)
         if cv2.waitKey(1) == 27:
             movement.move(0, 0)
             break
-        '''
+        
 
     except (KeyboardInterrupt, Exception) as e:
         print(f"Error has occurred – {e}")

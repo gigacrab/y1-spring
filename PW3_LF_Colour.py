@@ -63,7 +63,7 @@ while True:
         red_mask = cv2.inRange(hsv, red_lower, red_upper)
         #yellow:
         yellow_lower = np.array([85, 14, 22])
-        yellow_upper = np.array([105, 170, 178])
+        yellow_upper = np.array([105, 250, 220])
         yellow_mask = cv2.inRange(hsv, yellow_lower, yellow_upper)
 
         combined_colour_mask = cv2.bitwise_or(red_mask, yellow_mask)

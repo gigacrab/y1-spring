@@ -116,8 +116,11 @@ def shape_detect(i, c, cnts, hrchy):
                 return None
             sel_c = c
             print(f"No container, took: {i} instead")'''
-
-        return sel_c, w_rot, h_rot, min_rect, area
+        
+        if sel_c is None:
+            return None
+        else:
+            return sel_c, w_rot, h_rot, min_rect, area
 
 picam2 = Picamera2()
 picam2.configure(picam2.create_video_configuration(main={"size": (640, 480)}))

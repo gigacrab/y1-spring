@@ -58,7 +58,7 @@ TURN_90_LOCKOUT  = 1      # seconds to ignore re-acquisition (prevents instant e
 turn_90_start    = None
 turn_90_dir      = "right"
 
-
+frame_count = 0
 while True:
     try:
         time_marker = time.perf_counter()
@@ -243,12 +243,30 @@ while True:
         clamped_right_pwm = clamp(right_pwm, -1, 1)
         movement.move(clamped_left_pwm, clamped_right_pwm)
 
-        '''
-        cv2.imshow("contours", im2)
-        if cv2.waitKey(1) == 27:
-            movement.move(0, 0)
-            break
-        '''
+        # ── Debug Display (Frame Skipping for PID Smoothness) ─────────────────
+        frame_count += 1
+        
+        # Only draw and update the screen every 5 loops
+        if frame_count % 5 == 0: 
+            
+            # Draw the purple debug box for the 90-degree turn math
+            if valid_color_cnt is not None:
+                x, y, w, h = cv2.boundingRect(valid_color_cnt)
+                cv2.rectangle(im2, (x, y), (x + w, y + h), (255, 0, 255), 2)
+                ratio = w / h if h > 0 else 0
+                cv2.putText(im2, f"W:{w} H:{h} Ratio:{ratio:.1f}", (x, max(y - 10, 20)), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 2)
+
+            # Print the state machine status
+            cv2.putText(im2, f"STATE: {state}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+            
+            # Show the windows
+            cv2.imshow("1. Color Mask", colour_mask)
+            cv2.imshow("2. Tracking & Math", im2)
+            
+            if cv2.waitKey(1) == 27: # Press ESC to quit
+                movement.move(0, 0)
+                break
 
     except (KeyboardInterrupt, Exception) as e:
         print(f"Error has occurred – {e}")

@@ -155,15 +155,23 @@ while True:
             # ── Normal FOLLOW states ──────────────────────────────────────────
             if color_is_horizontal:
                 # The colour line is making a 90° turn.
-                # Determine left vs right by counting coloured pixels in each half
-                # of the ROI.  More pixels on the left → the line goes left, etc.
-                left_px  = cv2.countNonZero(colour_mask[:, :320])
-                right_px = cv2.countNonZero(colour_mask[:, 320:])
-                turn_90_dir   = "left" if left_px > right_px else "right"
+                # Only count pixels on the FAR edges of the screen to ignore the vertical "stem"
+                left_edge_px  = cv2.countNonZero(colour_mask[:, :150])  # Far left 150 pixels
+                right_edge_px = cv2.countNonZero(colour_mask[:, 490:])  # Far right 150 pixels
+                
+                # If one edge clearly has more pixels, turn that way
+                if left_edge_px > (right_edge_px + 300):
+                    turn_90_dir = "left"
+                elif right_edge_px > (left_edge_px + 300):
+                    turn_90_dir = "right"
+                else:
+                    # Fallback: If it's a perfect "T" intersection, use the Center of Mass (cx)
+                    turn_90_dir = "left" if color_cx < 320 else "right"
+
                 turn_90_start = time.perf_counter()
                 state = STATE_TURN_90
                 print(f"90° TURN detected → turning {turn_90_dir}  "
-                      f"(left_px={left_px}, right_px={right_px})")
+                      f"(left_edge={left_edge_px}, right_edge={right_edge_px}, cx={color_cx})")
 
             elif valid_color_cnt is not None:
                 state = STATE_FOLLOW_COLOR

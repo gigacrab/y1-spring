@@ -50,6 +50,7 @@ while True:
         time_marker = time.perf_counter()
 
         frame = picam2.capture_array()
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
         roi = frame[240:480, :]
 
         hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
@@ -108,6 +109,7 @@ while True:
                     line_contour = filtered_contours[0]
                 
                 cv2.drawContours(im2, [line_contour], -1, (0, 255, 0), thickness=cv2.FILLED)
+
 
         if line_contour is not None:
             M = cv2.moments(line_contour)

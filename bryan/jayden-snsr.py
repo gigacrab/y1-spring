@@ -181,7 +181,7 @@ try:
                             pred = "Trapezium"
                         else:
                             pred = "Kite"
-                    elif aspect_ratio > 1.35:
+                    elif aspect_ratio > 1.40 and solidity > 0.95:
                         pred = "Major Segment"
                     elif corners == 8:
                         pred = "Octagon"

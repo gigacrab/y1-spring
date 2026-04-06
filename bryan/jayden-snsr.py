@@ -22,7 +22,6 @@ def check_special_in_group(i, cnts, hrchy):
     while True:
         c    = cnts[child_idx]
         area = cv2.contourArea(c)
-        print(f"area: {area}")
         if area > MIN_AREA * 0.075:
             rect = cv2.minAreaRect(c)
             w_rot, h_rot = rect[1]
@@ -38,6 +37,8 @@ def check_special_in_group(i, cnts, hrchy):
                     square_count += 1
                 if 12 <= corners <= 18 and 1.5 <= ar <= 2.0 and 0.45 <= extent <= 0.65:
                     arrow_count += 1
+
+            print(f"A:{area}, AR:{ar} E:{extent} corner:{corners}")
 
         child_idx = hrchy[0][child_idx][0] # next sibling
         if child_idx == -1:

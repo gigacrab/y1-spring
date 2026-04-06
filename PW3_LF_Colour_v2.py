@@ -63,9 +63,9 @@ while True:
 
         # ── Colour detection ──────────────────────────────────────────────────
         red_lower    = np.array([111, 135, 180])
-        red_upper    = np.array([131, 175, 220])
+        red_upper    = np.array([131, 185, 230])
         yellow_lower = np.array([ 85, 205, 220])
-        yellow_upper = np.array([105, 240, 255])
+        yellow_upper = np.array([105, 255, 255])
 
         combined_colour_mask = cv2.bitwise_or(
             cv2.inRange(hsv, red_lower,    red_upper),

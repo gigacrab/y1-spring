@@ -5,7 +5,7 @@ import numpy as np
 from picamera2 import Picamera2
 import time
 
-MIN_AREA = 3000
+MIN_AREA = 2500
 MAX_ASPECT_RATIO = 1.6
 
 def check_special_in_group(i, cnts, hrchy):
@@ -188,17 +188,18 @@ try:
                     elif corners == 12 and aspect_ratio < 1.1:
                         pred = "Plus"
                     else:
-                        # Ellipse area ratio
-                        (xc, yc), radius = cv2.minEnclosingCircle(sel_c)
-                        circle_area = np.pi * radius * radius
-                        ellipse_area_ratio = sel_area / circle_area if circle_area > 0 else 0
+                        if sel_area > 6000:
+                            # Ellipse area ratio
+                            (xc, yc), radius = cv2.minEnclosingCircle(sel_c)
+                            circle_area = np.pi * radius * radius
+                            ellipse_area_ratio = sel_area / circle_area if circle_area > 0 else 0
 
-                        if ellipse_area_ratio < 0.55:
-                            pred = "Press Button"
-                        elif ellipse_area_ratio < 0.8:
-                            pred = "3/4 Circle"
-                        elif ellipse_area_ratio < 1.05:
-                            pred = "Danger"
+                            if ellipse_area_ratio < 0.55:
+                                pred = "Press Button"
+                            elif ellipse_area_ratio < 0.8:
+                                pred = "3/4 Circle"
+                            elif ellipse_area_ratio < 1.05:
+                                pred = "Danger"
                         else:
                             pred = "No idea"
 

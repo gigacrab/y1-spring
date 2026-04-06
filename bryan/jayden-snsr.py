@@ -25,9 +25,9 @@ def check_special_in_group(i, cnts, hrchy):
         print(f"area: {area}")
         if area > MIN_AREA * 0.3:
             rect = cv2.minAreaRect(c)
-            w, h = rect[1]
-            if w != 0 and h != 0:
-                ar        = max(w, h) / min(w, h)
+            w_rot, h_rot = rect[1]
+            if w_rot != 0 and h_rot != 0:
+                ar        = max(w_rot, h_rot) / min(w_rot, h_rot)
                 rect_area = w_rot * h_rot
                 extent = area / rect_area if rect_area > 0 else 0
                 corners   = len(cv2.approxPolyDP(c, 0.01 * cv2.arcLength(c, True), True))

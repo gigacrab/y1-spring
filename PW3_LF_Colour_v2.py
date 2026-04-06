@@ -30,7 +30,7 @@ picam2.configure(camera_config)
 picam2.start()
 time.sleep(2)
 
-# ── PID state ────────────────────────────────────────────────────────────────
+# PID state
 error       = 0
 total_error = 0
 last_error  = 0
@@ -38,13 +38,14 @@ diff_error  = 0
 first       = True
 pid         = 0
 
-# ── Memory / state tracking ───────────────────────────────────────────────────
+# Memory / state tracking
 # "following_colour" — robot is on the colour line
 # "search"          — colour line lost, turning to recover black line
 # "following_black" — normal black line following
 robot_state     = "following_black"
 black_line_side = None   # "left" or "right", set whenever both lines visible
 SEARCH_SPEED    = 0.4    # fixed turning magnitude during search mode
+TURN_90_SPEED   = 0.5
 
 while True:
     try:
@@ -75,6 +76,7 @@ while True:
                                            cv2.CHAIN_APPROX_SIMPLE)
         valid_colour_contour = None
         colour_cx            = None
+        colour_is_perpendicular = False
 
         if colour_cnts:
             for cnt in sorted(colour_cnts, key=cv2.contourArea, reverse=True):
@@ -83,6 +85,17 @@ while True:
                     M = cv2.moments(cnt)
                     if M['m00'] != 0:
                         colour_cx = int(M['m10'] / M['m00'])
+                    rect = cv2.minAreaRect(cnt)
+                    rw, rh = rect[1]                 # rotated rect dimensions
+                    if rw > 0 and rh > 0:
+                        longer  = max(rw, rh)
+                        shorter = min(rw, rh)
+                        # ratio > 2.5 means the contour is at least 2.5x
+                        # longer in one axis — a clear perpendicular line.
+                        # Tune this threshold if needed.
+                        if longer / shorter > 2.5 and rw > rh:
+                            colour_is_perpendicular = True
+                    # ─────────────────────────────────────────────────────────
                     break
 
         # ── Black line detection (always computed for memory update) ──────────
@@ -94,6 +107,7 @@ while True:
 
         valid_black_contour = None
         black_cx            = None
+        filtered = []
 
         if black_cnts and ret < 180:
             filtered = [(cv2.contourArea(c), c) for c in black_cnts
@@ -113,8 +127,12 @@ while True:
         # ── State transitions ─────────────────────────────────────────────────
         if robot_state == "following_black":
             if valid_colour_contour is not None:
-                robot_state = "following_colour"
-                print("State → following_colour")
+                if colour_is_perpendicular:
+                    robot_state = "turning_90"     # ← ADD branch
+                    print("State → turning_90 (perpendicular colour line)")
+                else:
+                    robot_state = "following_colour"
+                    print("State → following_colour")
 
         elif robot_state == "following_colour":
             if valid_colour_contour is None:
@@ -134,6 +152,16 @@ while True:
                 first       = True   # reset derivative term to avoid spike
                 total_error = 0
                 print("State → following_black (black line recovered)")
+        elif robot_state == "turning_90":
+            if valid_colour_contour is not None and not colour_is_perpendicular:
+                # The perpendicular line is now running along our direction —
+                # we've turned enough, follow it normally
+                robot_state = "following_colour"
+                print("State → following_colour (turn complete)")
+            elif valid_colour_contour is None and valid_black_contour is None:
+                # Both lines lost mid-turn — keep turning, enter search
+                robot_state = "search"
+                print("State → search (lost both lines during turn)")
 
         # ── Motor commands based on current state ─────────────────────────────
         if robot_state == "search":
@@ -142,7 +170,20 @@ while True:
                 movement.move( SEARCH_SPEED, -SEARCH_SPEED)
             else:
                 movement.move(-SEARCH_SPEED,  SEARCH_SPEED)
-            print(f"Search mode: turning {black_line_side}")
+        elif robot_state == "turning_90":
+            # colour_cx < 320 means the line is to the left, turn left
+            # colour_cx > 320 means the line is to the right, turn right
+            if colour_cx is not None:
+                if colour_cx < 320:
+                    movement.move(-TURN_90_SPEED, TURN_90_SPEED)
+                else:
+                    movement.move( TURN_90_SPEED, -TURN_90_SPEED)
+            else:
+                # colour already gone — use black_line_side as fallback
+                if black_line_side == "right":
+                    movement.move( TURN_90_SPEED, -TURN_90_SPEED)
+                else:
+                    movement.move(-TURN_90_SPEED,  TURN_90_SPEED)
 
         else:
             # Normal PID — use colour cx if following colour, else black cx

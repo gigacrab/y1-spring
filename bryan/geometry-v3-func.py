@@ -45,11 +45,13 @@ def shape_detect(i, c, cnts, hrchy):
                     gchild_idx = hrchy[0][child_idx][2] # first grandchild
                     sel_i = i
                     total_area = 0
-
+                    
+                    grandchild_indices = []
                     while gchild_idx != -1:
                         gc_curr = cnts[gchild_idx]
                         gc_area = cv2.contourArea(gc_curr)
                         total_area += gc_area
+                        grandchild_indices.append(gchild_idx)  # collect index
                         if gc_area > MIN_AREA and gc_area > largest_gc_area:
                             largest_gc = gc_curr
                             largest_gc_area = gc_area

@@ -176,7 +176,7 @@ try:
                             pred = "Star"
                         else:
                             pred = "Arrow"
-                    elif corners == 4:
+                    elif corners == 4 and sel_area > 4000:
                         if extent < 0.80:
                             pred = "Trapezium"
                         else:

@@ -221,7 +221,7 @@ try:
                 answer.append(pred)
             
             
-        cv2.imshow("Threshold", thresh)
+        cv2.imshow("Threshold", closed)
         cv2.imshow("Geometry Debug", output)
             
         '''

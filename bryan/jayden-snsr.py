@@ -5,7 +5,7 @@ import numpy as np
 from picamera2 import Picamera2
 import time
 
-MIN_AREA = 2500
+MIN_AREA = 3000
 MAX_ASPECT_RATIO = 1.6
 
 def check_special_in_group(i, cnts, hrchy):
@@ -84,18 +84,15 @@ def shape_detect(i, c, cnts, hrchy):
                     gchild_idx = hrchy[0][child_idx][2] # first grandchild
                     sel_i = i
                     total_area = 0
-                    passed = 0
 
                     while gchild_idx != -1:
                         gc_curr = cnts[gchild_idx]
                         gc_area = cv2.contourArea(gc_curr)
                         total_area += gc_area
-                        if gc_area > MIN_AREA * 0.7:
-                            passed += 1
-                            if gc_area > largest_gc_area:
-                                largest_gc = gc_curr
-                                largest_gc_area = gc_area
-                                sel_i = gchild_idx
+                        if gc_area > MIN_AREA and gc_area > largest_gc_area:
+                            largest_gc = gc_curr
+                            largest_gc_area = gc_area
+                            sel_i = gchild_idx
                         gchild_idx = hrchy[0][gchild_idx][0] # next sibling
 
                     if largest_gc is not None:
@@ -106,7 +103,7 @@ def shape_detect(i, c, cnts, hrchy):
                             return None
                         print(f"Contained shape for: {sel_i}")
                     # to not recognize fingerprint, QR and recycling
-                    elif total_area > MIN_AREA or passed >= 3:
+                    elif total_area > MIN_AREA:
                         return child_idx
         
         if sel_c is None:
@@ -178,7 +175,22 @@ try:
                         if solidity < 0.55 and extent < 0.40:
                             pred = "Star"
                         else:
-                            pred = "Arrow"
+                            # pred = "Arrow"
+                            x, y, w, h = cv2.boundingRect(c)
+                            bx = x + (w / 2.0)
+                            by = y + (h / 2.0)
+                            
+                            M = cv2.moments(c)
+                            if M["m00"] != 0:
+                                cx = M["m10"] / M["m00"]
+                                cy = M["m01"] / M["m00"]
+                                dx = cx - bx
+                                dy = cy - by
+                                
+                                if abs(dx) > abs(dy):
+                                    pred = "Arrow (RIGHT)" if dx > 0 else "Arrow (LEFT)"
+                                else:
+                                    pred = "Arrow (DOWN)" if dy > 0 else "Arrow (UP)"
                     elif corners == 4 and sel_area > 4000:
                         if extent < 0.80:
                             pred = "Trapezium"

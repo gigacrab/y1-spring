@@ -93,7 +93,7 @@ while True:
                         # ratio > 2.5 means the contour is at least 2.5x
                         # longer in one axis — a clear perpendicular line.
                         # Tune this threshold if needed.
-                        if longer / shorter > 2.5 and rw > rh:
+                        if longer / shorter > 2.5:
                             colour_is_perpendicular = True
                     # ─────────────────────────────────────────────────────────
                     break

@@ -121,7 +121,7 @@ while True:
 
         # ── Memory update: save black line side whenever both are visible ─────
         if colour_cx is not None and black_cx is not None:
-            black_line_side = "right" if colour_cx < black_cx else "left"
+            black_line_side = "left" if colour_cx < black_cx else "right"
             print(f"Memory updated: black line is to the {black_line_side}")
 
         # ── State transitions ─────────────────────────────────────────────────

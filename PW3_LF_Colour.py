@@ -54,6 +54,9 @@ while True:
         roi = frame[240:480, :]
 
         hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+        # Sample a 10x10 patch from the centre of the ROI
+        sample = hsv[110:120, 310:320]
+        print(f"HSV centre sample: {sample.mean(axis=(0,1)).astype(int)}")
         #red:
         red_lower = np.array([111, 49, 8])
         red_upper = np.array([131, 205, 164])

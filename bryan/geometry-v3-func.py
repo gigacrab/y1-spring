@@ -88,6 +88,65 @@ def shape_detect(i, c, cnts, hrchy):
         return sel_c, w_rot, h_rot, min_rect, area
 
 def check_special_in_group(cnts, hrchy, indices, min_area):
+    """
+    Given any list of contour indices, count characteristic features and
+    return a label if a special symbol pattern is detected, else None.
+    This works at any hierarchy depth — top-level, grandchildren, etc.
+    """
+    arc_count    = 0   # fingerprint: elongated open strokes
+    square_count = 0   # QR icon:     near-perfect solid squares
+    arrow_count  = 0   # recycle:     medium-polygon bent arrows
+
+    for i in indices:
+        c    = cnts[i]
+        area = cv2.contourArea(c)
+        if area < min_area * 0.3:
+            continue
+
+        rect = cv2.minAreaRect(c)
+        w, h = rect[1]
+        if w == 0 or h == 0:
+            continue
+
+        ar       = max(w, h) / min(w, h)
+        hull_a   = cv2.contourArea(cv2.convexHull(c))
+        solidity = area / hull_a if hull_a > 0 else 0
+        perimeter = cv2.arcLength(c, True)
+        if perimeter == 0:
+            continue
+            
+        corners   = len(cv2.approxPolyDP(c, 0.01 * perimeter, True))
+        has_child = hrchy[0][i][2] != -1
+        
+        # Calculate thinness to catch curved lines regardless of bounding box shape
+        thinness = area / (perimeter ** 2)
+
+        # Fingerprint arc: Thin line, complex curve (>8 corners), no child
+        if thinness < 0.035 and corners > 8 and not has_child:
+            arc_count += 1
+
+        # QR finder square: 4 corners, almost perfectly square, fully solid.
+        # cv2.contourArea doesn't subtract child holes, so the outer dark
+        # square's area is the full square area, giving solidity ~1.0.
+        if corners == 4 and ar < 1.15 and solidity > 0.9:
+            square_count += 1
+
+        # Recycle arrow: the bent body + arrowhead creates ~14 corners,
+        # the curve gives moderate AR, and partial fill gives medium solidity.
+        if 10 <= corners <= 18 and 1.4 <= ar <= 2.2 and 0.55 <= solidity <= 0.80:
+            arrow_count += 1
+
+    # Recycle must be checked before fingerprint: recycle arrows (AR ~1.75)
+    # also satisfy the arc condition (AR > 1.5), so order prevents false hits.
+    if arrow_count >= 3:
+        return "Recycle"
+    if arc_count >= 4:
+        return "Fingerprint"
+    if square_count >= 3:
+        return "QR Code"
+    return None
+'''
+def check_special_in_group(cnts, hrchy, indices, min_area):
     arc_count    = 0
     square_count = 0
     arrow_count  = 0
@@ -129,7 +188,7 @@ def check_special_in_group(cnts, hrchy, indices, min_area):
     if square_count >= 3:
         return "QR Code"
     return None
-
+'''
 picam2 = Picamera2()
 picam2.configure(picam2.create_video_configuration(main={"size": (640, 480)}))
 picam2.start()

@@ -115,16 +115,15 @@ while True:
                 black_line_side = "right" if color_cx < black_cx else "left"
 
         # ── Feature 2 – Detect a horizontal colour contour (90° turn) ─────────
-        # cv2.minAreaRect returns the tightest rotated rectangle around the contour.
-        # If its longer dimension is > ASPECT_THRESHOLD times the shorter one the
-        # contour is essentially a horizontal bar – the robot is looking straight
-        # down the barrel of a 90° turn.
+        # Use a standard upright bounding box (x, y, width, height)
+        # A 90-degree intersection will be much WIDER across the screen than it is TALL.
         color_is_horizontal = False
         if valid_color_cnt is not None:
-            _, (w, h), _ = cv2.minAreaRect(valid_color_cnt)
-            longer  = max(w, h)
-            shorter = min(w, h)
-            if shorter > 0 and (longer / shorter) > ASPECT_THRESHOLD:
+            x, y, w, h = cv2.boundingRect(valid_color_cnt)
+            
+            # Prevent zero-division/errors, and explicitly check if WIDTH > HEIGHT
+            # Also ensure the width is at least 150 pixels so tiny blobs don't trigger turns
+            if h > 0 and w > (h * 2.5) and w > 150:
                 color_is_horizontal = True
 
         # ── State-machine transitions ──────────────────────────────────────────

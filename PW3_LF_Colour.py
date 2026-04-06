@@ -59,7 +59,7 @@ while True:
         print(f"HSV centre sample: {sample.mean(axis=(0,1)).astype(int)}")
         #red:
         red_lower = np.array([111, 49, 8])
-        red_upper = np.array([131, 205, 164])
+        red_upper = np.array([131, 255, 220])
         red_mask = cv2.inRange(hsv, red_lower, red_upper)
         #yellow:
         yellow_lower = np.array([85, 14, 22])

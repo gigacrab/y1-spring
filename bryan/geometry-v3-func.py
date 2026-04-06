@@ -177,6 +177,14 @@ def shape_detect(i, c, cnts, hrchy):
                         return None
 
         if sel_c is None:
+            if child_idx != -1:
+                largest_child_area = 0
+                curr = child_idx
+                while curr != -1:
+                    largest_child_area = max(largest_child_area, cv2.contourArea(cnts[curr]))
+                    curr = hrchy[0][curr][0]
+                if largest_child_area > MIN_AREA:
+                    return None
             if not min_calc:
                 min_rect = cv2.minAreaRect(c)
                 w_rot, h_rot = min_rect[1]

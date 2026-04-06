@@ -185,15 +185,15 @@ try:
                         pred = "Major Segment"
                     elif corners == 8:
                         pred = "Octagon"
-
+                    elif corners == 12 and aspect_ratio < 1.1 and extent > 0.7:
+                        pred = "Plus"
                     else:
                         # Ellipse area ratio
                         (xc, yc), radius = cv2.minEnclosingCircle(sel_c)
                         circle_area = np.pi * radius * radius
                         ellipse_area_ratio = sel_area / circle_area if circle_area > 0 else 0
-                        if corners == 12 and aspect_ratio < 1.1:
-                            pred = "Plus"
-                        elif ellipse_area_ratio < 0.65 and extent > 0.75:
+
+                        if ellipse_area_ratio < 0.65 and extent > 0.75:
                             pred = "Press Button"
                         elif ellipse_area_ratio < 0.8:
                             pred = "3/4 Circle"

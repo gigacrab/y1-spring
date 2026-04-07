@@ -24,7 +24,7 @@ import movement
 
 # ── Import the detection function from your Object.py ────────────────────────
 # Make sure Object.py is in the same directory as this file.
-from Object import detect_object
+from detect_object import detect_object
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

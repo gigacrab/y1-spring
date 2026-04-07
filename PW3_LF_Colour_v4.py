@@ -239,7 +239,7 @@ while True:
             
             cv2.imshow("1. Color Mask", colour_mask)
             cv2.imshow("2. Tracking & Math", im2)
-            
+
             if cv2.waitKey(1) == 27: # Press ESC to quit
                 break
 

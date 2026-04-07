@@ -58,12 +58,12 @@ while True:
         sample = hsv[110:120, 310:320]
         print(f"HSV centre sample: {sample.mean(axis=(0,1)).astype(int)}")
         #red:
-        red_lower = np.array([111, 135, 180])
-        red_upper = np.array([131, 175, 220])
+        red_lower = np.array([111, 30, 180])
+        red_upper = np.array([131, 185, 230])
         red_mask = cv2.inRange(hsv, red_lower, red_upper)
         #yellow:
-        yellow_lower = np.array([85, 205, 220])
-        yellow_upper = np.array([105, 240, 255])
+        yellow_lower = np.array([85, 100, 205])
+        yellow_upper = np.array([105, 255, 255])
         yellow_mask = cv2.inRange(hsv, yellow_lower, yellow_upper)
 
         combined_colour_mask = cv2.bitwise_or(red_mask, yellow_mask)

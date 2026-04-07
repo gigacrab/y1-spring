@@ -175,7 +175,7 @@ def main():
     # Rate-limiter: don't send a new frame to the worker more than once per
     # this many seconds. The worker is slow — sending every frame wastes queue
     # bandwidth and causes old frames to queue behind new ones.
-    DETECTION_INTERVAL = 0.0   # seconds between frame submissions
+    DETECTION_INTERVAL = 0.5   # seconds between frame submissions
     last_sent_time     = 0.0
 
     frame_count = 0
@@ -197,8 +197,10 @@ def main():
             # This is the key to non-blocking communication: we NEVER call
             # result_q.get() without nowait, because that would freeze the motors.
             try:
-                latest_detection = result_q.get_nowait()
-                print(f"[Main] New detection: {latest_detection}")
+                raw_detection = result_q.get_nowait()
+                if raw_detection is not None:
+                    latest_detection = raw_detection
+                    print(f"[Main] New detection: {latest_detection}")
             except Exception:
                 pass  # No result ready yet — keep driving with the last known one.
 
@@ -212,9 +214,7 @@ def main():
                 try:
                     # put_nowait raises queue.Full if the worker is still busy.
                     # We catch it and drop the frame — never block.
-                    small_frame = cv2.resize(frame.copy(), (320, 240))
-                    frame_q.put_nowait(small_frame)
-                    '''frame_q.put_nowait(frame.copy())'''
+                    frame_q.put_nowait(roi.copy())
                     last_sent_time = now
                 except Exception:
                     # Worker is busy — drop this frame silently. The robot keeps going.

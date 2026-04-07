@@ -57,7 +57,7 @@ black_line_side = "right"  # Last-known side of the black line relative to the c
 SEARCH_SPEED    = 0.35     # PWM offset applied as a hard-turn during SEARCH state.
 
 # Feature 2 – 90° turn detection
-TURN_90_SPEED   = 0.65     # PWM offset applied as a hard-turn during TURN_90 state.
+TURN_90_SPEED   = 1     # PWM offset applied as a hard-turn during TURN_90 state.
 TURN_90_LOCKOUT = 0.5      # Seconds to keep turning before checking for re-acquisition.
 turn_90_start   = None     # Timestamp of when the current 90° turn began.
 turn_90_dir     = "right"  # Direction to turn during TURN_90 state.

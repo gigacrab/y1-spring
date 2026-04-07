@@ -15,10 +15,9 @@ def clamp(value, min_val, max_val):
     return value
 
 def getSign(n):
-    # Returns +1 for positive numbers, -1 for negative, 0 for zero.
     return (n > 0) - (n < 0)
 
-# ── Command-line argument parsing ─────────────────────────────────────────────
+# ── Command-line arguments ────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     if len(sys.argv) == 5:
@@ -37,13 +36,41 @@ picam2.configure(camera_config)
 picam2.start()
 time.sleep(2)
 
-# ── PID persistent state ──────────────────────────────────────────────────────
+# ── PID state ─────────────────────────────────────────────────────────────────
 
 total_error = 0
 last_error  = 0
 first       = True
 
-# ── State machine setup ───────────────────────────────────────────────────────
+# ── EMA direction memory ──────────────────────────────────────────────────────
+# Instead of using last_error (a single noisy frame) to decide which way to
+# search after losing a line, we maintain an Exponential Moving Average of the
+# error. This smooths out frame-to-frame noise and gives a direction that
+# reflects the robot's sustained trend over the past ~10–20 frames.
+#
+# Formula each frame: ema_error = EMA_ALPHA * error + (1-EMA_ALPHA) * ema_error
+# EMA_ALPHA = 0.25 means each new frame contributes 25% weight; history 75%.
+# Raising alpha makes it respond faster but retain less history.
+ema_error  = 0.0
+EMA_ALPHA  = 0.25
+
+# search_turn_sign is set to getSign(ema_error) whenever we enter SEARCH.
+# It tells the motor block which direction to sweep.
+search_turn_sign = 0
+
+# ── Adaptive corner speed ─────────────────────────────────────────────────────
+# At large errors (sharp corners), the robot automatically slows down, giving
+# the PID more time to pull it around the bend before it overshoots.
+#
+# effective_speed = base_speed * (1.0 - CORNER_BRAKE * abs(error))
+#   abs(error) = 0   (centred, straight) → full base_speed
+#   abs(error) = 1.0 (maximum corner)   → base_speed * (1 - CORNER_BRAKE)
+#
+# CORNER_BRAKE = 0.5 means the robot slows to 50% speed at the sharpest corner.
+# Raise this if the robot still overshoots. Lower it if it's too sluggish.
+CORNER_BRAKE = 0.5
+
+# ── State machine ─────────────────────────────────────────────────────────────
 
 STATE_FOLLOW_BLACK = "FOLLOW_BLACK"
 STATE_FOLLOW_COLOR = "FOLLOW_COLOR"
@@ -52,36 +79,14 @@ STATE_TURN_90      = "TURN_90"
 
 state = STATE_FOLLOW_BLACK
 
-# ── Search / turn direction memory ────────────────────────────────────────────
-# Instead of tracking which side the black line is on relative to the colour
-# line (which requires both to be visible simultaneously and is often wrong),
-# we capture the DIRECTION THE ROBOT WAS ALREADY STEERING at the moment the
-# line is lost. This is "dead-reckoning by last intent":
-#
-#   last_error > 0  →  line was LEFT of centre  →  robot was turning LEFT
-#   last_error < 0  →  line was RIGHT of centre →  robot was turning RIGHT
-#
-# search_turn_sign stores getSign(last_error) at the moment we enter SEARCH.
-# In the motor block: turn_pwm = -SEARCH_SPEED * search_turn_sign
-#   search_turn_sign = +1 → turn_pwm negative → left motor slows → turns LEFT  ✓
-#   search_turn_sign = -1 → turn_pwm positive → left motor speeds → turns RIGHT ✓
-#
-# This works identically for colour line endings AND black line intersections
-# because last_error is computed the same way regardless of which line is active.
-search_turn_sign = 0    # Captured at the moment of entering SEARCH or TURN_90.
-SEARCH_SPEED     = 0.35
-
-# ── 90° turn detection ────────────────────────────────────────────────────────
-
+SEARCH_SPEED    = 0.35
 TURN_90_SPEED   = 0.35
 TURN_90_LOCKOUT = 0.5
 turn_90_start   = None
-turn_90_dir     = "right"  # Set by pixel-count geometry when a turn is detected.
-
-# ── FOLLOW_BLACK dropout tolerance ───────────────────────────────────────────
+turn_90_dir     = "right"
 
 black_miss_count = 0
-BLACK_MISS_LIMIT = 20   # ~0.67 s at 30 fps before giving up and searching.
+BLACK_MISS_LIMIT = 20
 
 frame_count = 0
 
@@ -91,29 +96,51 @@ while True:
     try:
         time_marker = time.perf_counter()
 
-        # ── Image capture ─────────────────────────────────────────────────────
+        # ── Image capture and crop ────────────────────────────────────────────
         frame = picam2.capture_array()
         frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
-        # Crop to the bottom half — the robot only needs to see the floor
-        # immediately ahead. This also halves the work for every subsequent step.
-        roi = frame[240:480, :]
-        # HSV separates hue from brightness, making colour masks robust to
-        # changes in ambient light that would ruin BGR-based thresholds.
-        hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+        roi   = frame[240:480, :]   # Bottom half only — closer = more reliable.
+        hsv   = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
 
-        # ── Colour mask ───────────────────────────────────────────────────────
+        # ── Near-zone ROI for centroid (bottom third of the roi) ─────────────
+        # On sharp corners, the full contour becomes an L-shape and its centroid
+        # is pulled toward the inside of the bend, under-reporting how far the
+        # robot needs to turn. The near zone (what's directly under the wheels)
+        # is more immediate and accurate for the centroid X calculation.
+        # Detection still uses the full roi; only the centroid uses near_roi.
+        near_roi     = roi[160:240, :]    # Bottom 80 px of the 240px roi.
+        near_hsv     = cv2.cvtColor(near_roi, cv2.COLOR_BGR2HSV)
+        near_imgray  = cv2.cvtColor(near_roi, cv2.COLOR_BGR2GRAY)
+
+        # ── Colour masks ──────────────────────────────────────────────────────
         red_mask    = cv2.inRange(hsv, np.array([105, 30,  100]), np.array([140, 255, 255]))
         yellow_mask = cv2.inRange(hsv, np.array([ 85, 100, 180]), np.array([105, 255, 255]))
         colour_mask = cv2.bitwise_or(red_mask, yellow_mask)
 
-        # ── Black mask — always runs, no ret gate ─────────────────────────────
-        # Otsu's threshold value (ret) can legitimately exceed 180 on bright
-        # floors even when a black line is clearly present. The area filter
-        # below (7500–40000 px²) is the correct noise gate, not the ret value.
+        # Near-zone colour mask for centroid refinement.
+        nr_mask = cv2.bitwise_or(
+            cv2.inRange(near_hsv, np.array([105, 30,  100]), np.array([140, 255, 255])),
+            cv2.inRange(near_hsv, np.array([ 85, 100, 180]), np.array([105, 255, 255]))
+        )
+
+        # ── Greyscale / Otsu for black detection ──────────────────────────────
         imgray      = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
         ret, thresh = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
-        # ── Find best colour contour ──────────────────────────────────────────
+        _, near_thresh = cv2.threshold(
+            near_imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU
+        )
+
+        # ── Helper: compute centroid X from a binary mask (near zone) ─────────
+        # Returns the centroid X from the near-zone mask if enough pixels exist,
+        # otherwise falls back to the full-contour centroid passed in as backup.
+        def near_cx_or_fallback(near_mask, fallback_cx):
+            M = cv2.moments(near_mask)
+            if M['m00'] > 500:            # Enough pixels to trust the centroid.
+                return int(M['m10'] / M['m00'])
+            return fallback_cx            # Near zone is empty — use full centroid.
+
+        # ── Find best colour contour (full roi for detection) ─────────────────
         color_cnts, _   = cv2.findContours(colour_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         valid_color_cnt = None
         color_cx        = None
@@ -122,8 +149,10 @@ while True:
                 M = cv2.moments(cnt)
                 if M['m00'] != 0:
                     valid_color_cnt = cnt
-                    color_cx        = int(M['m10'] / M['m00'])
-            break   # Only the single largest valid contour is ever needed.
+                    full_cx         = int(M['m10'] / M['m00'])
+                    # Refine with near-zone centroid if possible.
+                    color_cx        = near_cx_or_fallback(nr_mask, full_cx)
+            break
 
         # ── Find best black contour ───────────────────────────────────────────
         black_cnts, _   = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
@@ -134,12 +163,11 @@ while True:
                 M = cv2.moments(cnt)
                 if M['m00'] != 0:
                     valid_black_cnt = cnt
-                    black_cx        = int(M['m10'] / M['m00'])
+                    full_cx         = int(M['m10'] / M['m00'])
+                    black_cx        = near_cx_or_fallback(near_thresh, full_cx)
             break
 
-        # ── Feature 2 – 90° horizontal contour detection ─────────────────────
-        # A 90° turn makes the colour contour a wide horizontal bar.
-        # boundingRect is sufficient: if width is >2.5× height, it's horizontal.
+        # ── 90° horizontal detection ──────────────────────────────────────────
         color_is_horizontal = False
         bbox = None
         if valid_color_cnt is not None:
@@ -152,8 +180,6 @@ while True:
 
         if state == STATE_TURN_90:
             elapsed_turn = time.perf_counter() - turn_90_start
-            # Lockout prevents re-detecting the same horizontal bar that triggered
-            # the turn and snapping back out of TURN_90 prematurely.
             if elapsed_turn > TURN_90_LOCKOUT:
                 if valid_color_cnt is not None and not color_is_horizontal:
                     state = STATE_FOLLOW_COLOR
@@ -167,23 +193,18 @@ while True:
                 state = STATE_FOLLOW_COLOR
                 print("SEARCH → FOLLOW_COLOR")
             elif valid_black_cnt is not None:
-                state = STATE_FOLLOW_BLACK
+                state            = STATE_FOLLOW_BLACK
                 black_miss_count = 0
                 print("SEARCH → FOLLOW_BLACK")
 
         else:
-            # Normal FOLLOW transitions.
             if color_is_horizontal:
-                # Pixel-count geometry tells us which way the colour line bends.
-                # More coloured pixels on the left → the turn goes left, etc.
-                left_px       = cv2.countNonZero(colour_mask[:, :320])
-                right_px      = cv2.countNonZero(colour_mask[:, 320:])
-                turn_90_dir   = "left" if left_px > right_px else "right"
-                # Also capture directional memory in case the turn leads into a
-                # SEARCH (i.e., colour line ends mid-turn).
-                search_turn_sign = getSign(last_error)
-                turn_90_start = time.perf_counter()
-                state         = STATE_TURN_90
+                left_px          = cv2.countNonZero(colour_mask[:, :320])
+                right_px         = cv2.countNonZero(colour_mask[:, 320:])
+                turn_90_dir      = "left" if left_px > right_px else "right"
+                search_turn_sign = getSign(ema_error)   # Save EMA direction too.
+                turn_90_start    = time.perf_counter()
+                state            = STATE_TURN_90
                 print(f"90° TURN → {turn_90_dir}  (L={left_px} R={right_px})")
 
             elif valid_color_cnt is not None:
@@ -194,23 +215,22 @@ while True:
                 black_miss_count = 0
 
             elif state == STATE_FOLLOW_COLOR:
-                # Colour line gone, no black line visible either.
-                # Capture the last steering direction before the line disappeared
-                # and sweep in that same direction.
-                search_turn_sign = getSign(last_error)
+                # Capture the EMA-smoothed direction before entering SEARCH.
+                # ema_error reflects the past ~10–20 frames of steering, not just
+                # the last frame, so it's a much more reliable direction signal.
+                search_turn_sign = getSign(ema_error)
                 state            = STATE_SEARCH
                 print(f"FOLLOW_COLOR → SEARCH  "
-                      f"(last_error={last_error:.3f}, sign={search_turn_sign})")
+                      f"(ema={ema_error:.3f}, sign={search_turn_sign})")
 
             elif state == STATE_FOLLOW_BLACK:
-                # Black line dropout — tolerate brief gaps before giving up.
                 black_miss_count += 1
                 if black_miss_count >= BLACK_MISS_LIMIT:
-                    search_turn_sign = getSign(last_error)
+                    search_turn_sign = getSign(ema_error)
                     black_miss_count = 0
                     state            = STATE_SEARCH
                     print(f"FOLLOW_BLACK → SEARCH after {BLACK_MISS_LIMIT} misses  "
-                          f"(last_error={last_error:.3f}, sign={search_turn_sign})")
+                          f"(ema={ema_error:.3f}, sign={search_turn_sign})")
 
         # ── Motor control ─────────────────────────────────────────────────────
 
@@ -221,7 +241,7 @@ while True:
             cx           = color_cx        if state == STATE_FOLLOW_COLOR else black_cx
 
             if line_contour is not None and cx is not None:
-                black_miss_count = 0  # Successful detection resets the dropout counter.
+                black_miss_count = 0
 
                 cv2.drawContours(im2, [line_contour], -1, (0, 255, 0), thickness=cv2.FILLED)
                 cv2.line(im2, (cx, 0), (cx, 240), (0, 255, 255), 3)
@@ -230,9 +250,12 @@ while True:
                 if elapsed_time <= 0:
                     elapsed_time = 0.0001
 
-                # Normalise error: +1 = line far left, -1 = line far right, 0 = centred.
                 error        = (320 - cx) / 320
                 total_error += error * elapsed_time
+
+                # Update the EMA every frame a line is visible.
+                # This is the core of the direction memory improvement.
+                ema_error = EMA_ALPHA * error + (1 - EMA_ALPHA) * ema_error
 
                 if not first:
                     diff_error = (error - last_error) / elapsed_time
@@ -243,28 +266,27 @@ while True:
                 pid        = kp * error + ki * total_error + kd * diff_error
                 last_error = error
 
-                left_pwm  = base_speed + pid
-                right_pwm = base_speed - pid
+                # Adaptive speed: scale down proportionally to how far off-centre
+                # the line is. On a straight (error≈0) → full speed.
+                # On a sharp corner (error≈1) → speed * (1 - CORNER_BRAKE).
+                effective_speed = base_speed * (1.0 - CORNER_BRAKE * abs(error))
+
+                left_pwm  = effective_speed + pid
+                right_pwm = effective_speed - pid
 
             else:
-                # Contour vanished between detection and here (noisy frame).
                 pid       = getSign(last_error) * 2
                 left_pwm  = base_speed + pid
                 right_pwm = base_speed - pid
 
         elif state == STATE_SEARCH:
-            # search_turn_sign = +1 means robot was turning left → keep turning left.
-            # Left turn requires: right motor > left motor → turn_pwm must be negative.
-            # Therefore: turn_pwm = -SEARCH_SPEED * search_turn_sign
-            #   sign=+1 → turn_pwm = -SEARCH_SPEED → left slows, right speeds → LEFT  ✓
-            #   sign=-1 → turn_pwm = +SEARCH_SPEED → left speeds, right slows → RIGHT ✓
+            # search_turn_sign = +1 → was turning left → keep turning left.
+            # Turning left = right motor faster = negative turn_pwm.
             turn_pwm  = -SEARCH_SPEED * search_turn_sign
             left_pwm  = base_speed + turn_pwm
             right_pwm = base_speed - turn_pwm
 
         elif state == STATE_TURN_90:
-            # turn_90_dir comes from pixel-count geometry (left_px vs right_px above).
-            # Same sign convention as SEARCH.
             turn_pwm  = -TURN_90_SPEED if turn_90_dir == "left" else TURN_90_SPEED
             left_pwm  = base_speed + turn_pwm
             right_pwm = base_speed - turn_pwm
@@ -275,7 +297,7 @@ while True:
 
         movement.move(clamp(left_pwm, -1, 1), clamp(right_pwm, -1, 1))
 
-        # ── Debug display (every 5th frame to protect PID timing) ────────────
+        # ── Debug display (throttled) ─────────────────────────────────────────
         frame_count += 1
         if frame_count % 5 == 0:
             if valid_color_cnt is not None and bbox is not None:
@@ -286,11 +308,13 @@ while True:
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 2)
 
             sample = hsv[110:120, 310:320]
-            print(f"HSV={sample.mean(axis=(0,1)).astype(int)}  "
-                  f"state={state}  err={last_error:.3f}  sign={search_turn_sign}")
+            print(f"HSV={sample.mean(axis=(0,1)).astype(int)}  state={state}  "
+                  f"ema={ema_error:.3f}  sign={search_turn_sign}")
 
             cv2.putText(im2, f"STATE: {state}", (10, 30),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+            cv2.putText(im2, f"EMA:{ema_error:.2f} spd:{base_speed*(1-CORNER_BRAKE*abs(last_error)):.2f}",
+                        (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 200, 255), 2)
             cv2.imshow("1. Color Mask", colour_mask)
             cv2.imshow("2. Tracking & Math", im2)
 
@@ -302,7 +326,6 @@ while True:
         print(f"Error has occurred – {e}")
         break
 
-# ── Cleanup ───────────────────────────────────────────────────────────────────
 movement.move(0, 0)
 movement.pi.stop()
 picam2.stop()

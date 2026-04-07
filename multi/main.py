@@ -98,7 +98,7 @@ if __name__ == "__main__": # what was ran with python
 
     processes = [
         mp.Process(target=camera_process, 
-                   args=(shm.name, lock, shape_event, stop_event)),
+                   args=(shm.name, lock, shape_event, line_event, stop_event)),
         mp.Process(target=shape_detection_process, 
                    args=(shm.name, lock, shape_event, result_q, stop_event)),
         mp.Process(target=line_following_process, 

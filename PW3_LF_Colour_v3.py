@@ -165,7 +165,7 @@ while True:
                     # → when colour ends, search RIGHT (left wheel faster, positive turn_pwm)
                     # → turn_pwm = -SEARCH_SPEED * colour_entry_sign → need sign = -1
                     # More pixels on the LEFT → robot entered from the left → sign = +1
-                    colour_entry_sign = -1 if entry_right_px > entry_left_px else 1
+                    colour_entry_sign = -1 if entry_left_px > entry_right_px else 1
                     print(f"=== COLOUR ENTRY ===")
                     print(f"  Left half pixels : {entry_left_px}")
                     print(f"  Right half pixels: {entry_right_px}")

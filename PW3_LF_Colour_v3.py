@@ -116,11 +116,18 @@ while True:
                     break
 
         # ── Geometry & Memory Updates ─────────────────────────────────────────
-        # Update Memory: Which side is the black line on?
-        if state == STATE_FOLLOW_BLACK:
-            if valid_color_cnt is not None and valid_black_cnt is not None:
-                if color_cx is not None and black_cx is not None:
-                    black_line_side = "left" if black_cx > color_cx else "right"
+        # CRITICAL NEW FIX: Use pixel counting, NOT centroids. 
+        # Centroids fail at the T-junctions because horizontal lines are centered.
+        if state == STATE_FOLLOW_BLACK and valid_color_cnt is not None:
+            left_black_px  = cv2.countNonZero(thresh[:, :320])
+            right_black_px = cv2.countNonZero(thresh[:, 320:])
+            
+            # If camera sees more black on the right, the physical loop is actually 
+            # on the left (because your camera's vision is mirrored).
+            if right_black_px > left_black_px:
+                black_line_side = "left"
+            else:
+                black_line_side = "right"
 
         # 90° Turn Geometry Check
         color_is_horizontal = False
@@ -156,7 +163,6 @@ while True:
                 state = STATE_FOLLOW_COLOR
 
             elif state == STATE_FOLLOW_COLOR:
-                # CRITICAL FIX 2: If we were following color and it vanished,
                 # FORCE a search to activate the blindfold. Do not instantly snap to black.
                 state = STATE_SEARCH
                 print(f"Color line ended. Forcing search -> Blindfold active. Memory: {black_line_side}")

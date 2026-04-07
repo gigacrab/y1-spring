@@ -117,9 +117,10 @@ while True:
 
         # ── Geometry & Memory Updates ─────────────────────────────────────────
         # Update Memory: Which side is the black line on?
-        if valid_color_cnt is not None and valid_black_cnt is not None:
-            if color_cx is not None and black_cx is not None:
-                black_line_side = "right" if black_cx > color_cx else "left"
+        if state == STATE_FOLLOW_BLACK:
+            if valid_color_cnt is not None and valid_black_cnt is not None:
+                if color_cx is not None and black_cx is not None:
+                    black_line_side = "left" if black_cx > color_cx else "right"
 
         # 90° Turn Geometry Check
         color_is_horizontal = False
@@ -154,12 +155,14 @@ while True:
             elif valid_color_cnt is not None:
                 state = STATE_FOLLOW_COLOR
 
+            elif state == STATE_FOLLOW_COLOR:
+                # CRITICAL FIX 2: If we were following color and it vanished,
+                # FORCE a search to activate the blindfold. Do not instantly snap to black.
+                state = STATE_SEARCH
+                print(f"Color line ended. Forcing search -> Blindfold active. Memory: {black_line_side}")
+
             elif valid_black_cnt is not None:
                 state = STATE_FOLLOW_BLACK
-
-            elif state == STATE_FOLLOW_COLOR:
-                # Color disappeared -> Search for black line based on memory
-                state = STATE_SEARCH
 
         # ✨ THE PID RESET FIX ✨
         # Clear the integral memory so past curvy turns don't ruin straight lines

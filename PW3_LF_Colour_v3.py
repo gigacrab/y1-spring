@@ -79,7 +79,15 @@ while True:
         # ── Black mask (now always computed – needed for Feature 1 memory) ────
         imgray        = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
         ret, thresh   = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-
+        if state == STATE_SEARCH:
+            if colour_entry_sign == 1:
+                # Entered from the left -> expects line on the left.
+                # Black out the entire RIGHT side of the image (columns 320 to end)
+                thresh[:, 320:] = 0  
+            elif colour_entry_sign == -1:
+                # Entered from the right -> expects line on the right.
+                # Black out the entire LEFT side of the image (columns 0 to 320)
+                thresh[:, :320] = 0
         # ── Find best colour contour ──────────────────────────────────────────
         color_cnts, _ = cv2.findContours(colour_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         valid_color_cnt = None

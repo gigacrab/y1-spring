@@ -175,7 +175,7 @@ def main():
     # Rate-limiter: don't send a new frame to the worker more than once per
     # this many seconds. The worker is slow — sending every frame wastes queue
     # bandwidth and causes old frames to queue behind new ones.
-    DETECTION_INTERVAL = 0.5   # seconds between frame submissions
+    DETECTION_INTERVAL = 0.1   # seconds between frame submissions
     last_sent_time     = 0.0
 
     frame_count = 0

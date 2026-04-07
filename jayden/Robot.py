@@ -212,9 +212,9 @@ def main():
                 try:
                     # put_nowait raises queue.Full if the worker is still busy.
                     # We catch it and drop the frame — never block.
-                    '''small_frame = cv2.resize(frame.copy(), (320, 240))
-                    frame_q.put_nowait(small_frame)'''
-                    frame_q.put_nowait(frame.copy())
+                    small_frame = cv2.resize(frame.copy(), (320, 240))
+                    frame_q.put_nowait(small_frame)
+                    '''frame_q.put_nowait(frame.copy())'''
                     last_sent_time = now
                 except Exception:
                     # Worker is busy — drop this frame silently. The robot keeps going.

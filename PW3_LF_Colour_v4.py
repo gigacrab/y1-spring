@@ -81,7 +81,7 @@ state = STATE_FOLLOW_BLACK
 
 SEARCH_SPEED    = 0.35
 TURN_90_SPEED   = 0.35
-TURN_90_LOCKOUT = 0.5
+TURN_90_LOCKOUT = 1
 turn_90_start   = None
 turn_90_dir     = "right"
 

@@ -282,12 +282,12 @@ while True:
         elif state == STATE_SEARCH:
             # Apply a fixed hard-turn offset toward the side where the black line
             # was last confirmed to be. Negative offset → robot turns right.
-            turn_pwm  = -SEARCH_SPEED if black_line_side == "right" else SEARCH_SPEED
+            turn_pwm  = SEARCH_SPEED if black_line_side == "right" else -SEARCH_SPEED
             left_pwm  = base_speed + turn_pwm
             right_pwm = base_speed - turn_pwm
 
         elif state == STATE_TURN_90:
-            turn_pwm  = -TURN_90_SPEED if turn_90_dir == "right" else TURN_90_SPEED
+            turn_pwm  = TURN_90_SPEED if turn_90_dir == "right" else -TURN_90_SPEED
             left_pwm  = base_speed + turn_pwm
             right_pwm = base_speed - turn_pwm
 

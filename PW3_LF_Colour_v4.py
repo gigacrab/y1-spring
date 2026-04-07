@@ -93,7 +93,7 @@ while True:
         # and everything else is black (0).
         red_mask    = cv2.inRange(hsv, np.array([105, 30,  100]), np.array([140, 255, 255]))
         # Same process for yellow.
-        yellow_mask = cv2.inRange(hsv, np.array([ 85, 100, 205]), np.array([105, 255, 255]))
+        yellow_mask = cv2.inRange(hsv, np.array([ 85, 100, 180]), np.array([105, 255, 255]))
         # Merge both colour masks. A pixel is "coloured" if it matched either red OR yellow.
         colour_mask = cv2.bitwise_or(red_mask, yellow_mask)
 

@@ -168,7 +168,7 @@ while True:
                 # Colour line just disappeared and no black line in sight either.
                 # Enter Search Mode using the remembered black_line_side.
                 state = STATE_SEARCH
-                print(f"FOLLOW_COLOR → SEARCH  (turning {black_line_side})")
+                print(f"FOLLOW_COLOR → SEARCH  (turning {colour_entry_sign})")
 
             # If state was FOLLOW_BLACK and both contours are gone, stay in
             # FOLLOW_BLACK.  The motor section below handles the fallback with

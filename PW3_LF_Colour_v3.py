@@ -231,13 +231,13 @@ while True:
         elif state == STATE_SEARCH:
             # Hard-turn toward the side where the black line was last seen.
             # SEARCH_SPEED is positive → right turn; negative → left turn.
-            turn_pwm  =  -SEARCH_SPEED * colour_entry_sign
+            turn_pwm  =  SEARCH_SPEED * colour_entry_sign
             left_pwm  = base_speed + turn_pwm
             right_pwm = base_speed - turn_pwm
 
         elif state == STATE_TURN_90:
             # Hard-turn in the direction the 90° geometry told us.
-            turn_pwm  =  -TURN_90_SPEED if turn_90_dir == "left" else TURN_90_SPEED
+            turn_pwm  =  TURN_90_SPEED if turn_90_dir == "left" else -TURN_90_SPEED
             left_pwm  = base_speed + turn_pwm
             right_pwm = base_speed - turn_pwm
 

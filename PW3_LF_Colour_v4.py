@@ -80,7 +80,7 @@ STATE_TURN_90      = "TURN_90"
 state = STATE_FOLLOW_BLACK
 
 SEARCH_SPEED    = 0.35
-TURN_90_SPEED   = 0.35
+TURN_90_SPEED   = 0.55
 TURN_90_LOCKOUT = 1
 turn_90_start   = None
 turn_90_dir     = "right"
@@ -288,8 +288,8 @@ while True:
 
         elif state == STATE_TURN_90:
             turn_pwm  = TURN_90_SPEED if turn_90_dir == "left" else -TURN_90_SPEED
-            left_pwm  = base_speed + turn_pwm + 50
-            right_pwm = base_speed - turn_pwm - 25
+            left_pwm  = base_speed + turn_pwm
+            right_pwm = base_speed - turn_pwm
 
         else:
             left_pwm  = base_speed

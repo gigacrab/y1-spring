@@ -166,7 +166,12 @@ while True:
                     # → turn_pwm = -SEARCH_SPEED * colour_entry_sign → need sign = -1
                     # More pixels on the LEFT → robot entered from the left → sign = +1
                     colour_entry_sign = -1 if entry_right_px > entry_left_px else 1
-                    
+                    print(f"=== COLOUR ENTRY ===")
+                    print(f"  Left half pixels : {entry_left_px}")
+                    print(f"  Right half pixels: {entry_right_px}")
+                    print(f"  Dominant side    : {'RIGHT' if entry_right_px > entry_left_px else 'LEFT'}")
+                    print(f"  colour_entry_sign: {colour_entry_sign}  (+1=search left, -1=search right)")
+                    print(f"  last_error at entry: {last_error:.4f}")
                     print(f"→ FOLLOW_COLOR  L={entry_left_px} R={entry_right_px}  "
                         f"entry_sign={colour_entry_sign}")
                 state = STATE_FOLLOW_COLOR

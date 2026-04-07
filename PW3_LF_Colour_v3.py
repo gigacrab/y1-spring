@@ -47,13 +47,13 @@ STATE_TURN_90      = "TURN_90"      # executing a 90-degree turn on the colour l
 # ── State machine variables ───────────────────────────────────────────────────
 state           = STATE_FOLLOW_BLACK
 
-# Feature 1 – direction memory
-colour_entry_sign = 0  # +1 = was steering left, -1 = was steering right, 0 = unknown
+# Feature 1 – side memory
+black_line_side = "right"   # which side the black line was on relative to the colour line
 SEARCH_SPEED    = 0.35      # hard-turn PWM offset while searching (tune if needed)
 
 # Feature 2 – 90° turn
 TURN_90_SPEED    = 0.65     # hard-turn PWM offset during the 90° manoeuvre
-TURN_90_LOCKOUT  = 1      # seconds to ignore re-acquisition (prevents instant exit)
+TURN_90_LOCKOUT  = 0.5      # seconds to ignore re-acquisition (prevents instant exit)
 turn_90_start    = None
 turn_90_dir      = "right"
 
@@ -79,15 +79,7 @@ while True:
         # ── Black mask (now always computed – needed for Feature 1 memory) ────
         imgray        = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
         ret, thresh   = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-        if state == STATE_SEARCH:
-            if colour_entry_sign == 1:
-                # Entered from the left -> expects line on the left.
-                # Black out the entire RIGHT side of the image (columns 320 to end)
-                thresh[:, 320:] = 0  
-            elif colour_entry_sign == -1:
-                # Entered from the right -> expects line on the right.
-                # Black out the entire LEFT side of the image (columns 0 to 320)
-                thresh[:, :320] = 0
+
         # ── Find best colour contour ──────────────────────────────────────────
         color_cnts, _ = cv2.findContours(colour_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         valid_color_cnt = None
@@ -112,6 +104,14 @@ while True:
                         valid_black_cnt = cnt
                         black_cx        = int(M['m10'] / M['m00'])
                     break
+
+        # ── Feature 1 – Update black-line-side memory ─────────────────────────
+        # Whenever both lines are visible, compare their centroids and record
+        # which side the black line sits on relative to the colour line.
+        # This memory is used by SEARCH mode if the colour line vanishes suddenly.
+        if valid_color_cnt is not None and valid_black_cnt is not None:
+            if color_cx is not None and black_cx is not None:
+                black_line_side = "right" if color_cx < black_cx else "left"
 
         # ── Feature 2 – Detect a horizontal colour contour (90° turn) ─────────
         # Use a standard upright bounding box (x, y, width, height)
@@ -165,24 +165,8 @@ while True:
                       f"(left_px={left_px}, right_px={right_px})")
 
             elif valid_color_cnt is not None:
-                if state != STATE_FOLLOW_COLOR:
-                    entry_left_px  = cv2.countNonZero(colour_mask[:, :320])
-                    entry_right_px = cv2.countNonZero(colour_mask[:, 320:])
-                    
-                    # More pixels on the RIGHT → robot entered from the right side
-                    # → when colour ends, search RIGHT (left wheel faster, positive turn_pwm)
-                    # → turn_pwm = -SEARCH_SPEED * colour_entry_sign → need sign = -1
-                    # More pixels on the LEFT → robot entered from the left → sign = +1
-                    colour_entry_sign = 1 if entry_left_px > entry_right_px else -1
-                    print(f"=== COLOUR ENTRY ===")
-                    print(f"  Left half pixels : {entry_left_px}")
-                    print(f"  Right half pixels: {entry_right_px}")
-                    print(f"  Dominant side    : {'RIGHT' if entry_right_px > entry_left_px else 'LEFT'}")
-                    print(f"  colour_entry_sign: {colour_entry_sign}  (+1=search left, -1=search right)")
-                    print(f"  last_error at entry: {last_error:.4f}")
-                    print(f"→ FOLLOW_COLOR  L={entry_left_px} R={entry_right_px}  "
-                        f"entry_sign={colour_entry_sign}")
                 state = STATE_FOLLOW_COLOR
+
             elif valid_black_cnt is not None:
                 state = STATE_FOLLOW_BLACK
 
@@ -190,7 +174,7 @@ while True:
                 # Colour line just disappeared and no black line in sight either.
                 # Enter Search Mode using the remembered black_line_side.
                 state = STATE_SEARCH
-                print(f"FOLLOW_COLOR → SEARCH  (turning {colour_entry_sign})")
+                print(f"FOLLOW_COLOR → SEARCH  (turning {black_line_side})")
 
             # If state was FOLLOW_BLACK and both contours are gone, stay in
             # FOLLOW_BLACK.  The motor section below handles the fallback with
@@ -239,13 +223,13 @@ while True:
         elif state == STATE_SEARCH:
             # Hard-turn toward the side where the black line was last seen.
             # SEARCH_SPEED is positive → right turn; negative → left turn.
-            turn_pwm  =  SEARCH_SPEED * colour_entry_sign
+            turn_pwm  =  -SEARCH_SPEED if black_line_side == "right" else SEARCH_SPEED
             left_pwm  = base_speed + turn_pwm
             right_pwm = base_speed - turn_pwm
 
         elif state == STATE_TURN_90:
             # Hard-turn in the direction the 90° geometry told us.
-            turn_pwm  =  TURN_90_SPEED if turn_90_dir == "left" else -TURN_90_SPEED
+            turn_pwm  =  -TURN_90_SPEED if turn_90_dir == "right" else TURN_90_SPEED
             left_pwm  = base_speed + turn_pwm
             right_pwm = base_speed - turn_pwm
 

@@ -52,8 +52,7 @@ black_line_side = "right"   # which side the black line was on relative to the c
 SEARCH_SPEED    = 0.35      # hard-turn PWM offset while searching (tune if needed)
 
 # Feature 2 – 90° turn
-ASPECT_THRESHOLD = 3.5      # width/height ratio above which a contour is "horizontal"
-TURN_90_SPEED    = 0.35     # hard-turn PWM offset during the 90° manoeuvre
+TURN_90_SPEED    = 0.65     # hard-turn PWM offset during the 90° manoeuvre
 TURN_90_LOCKOUT  = 0.5      # seconds to ignore re-acquisition (prevents instant exit)
 turn_90_start    = None
 turn_90_dir      = "right"

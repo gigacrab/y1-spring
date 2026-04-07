@@ -52,6 +52,7 @@ def stop():
 frame_count = 0
 
 def follow_line(frame):
+    global state, black_line_side, turn_90_start, turn_90_dir
     time_marker = time.perf_counter()
 
     frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)

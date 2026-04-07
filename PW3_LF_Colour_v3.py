@@ -120,7 +120,7 @@ while True:
         if state == STATE_FOLLOW_BLACK:
             if valid_color_cnt is not None and valid_black_cnt is not None:
                 if color_cx is not None and black_cx is not None:
-                    black_line_side = "right" if black_cx > color_cx else "left"
+                    black_line_side = "left" if black_cx > color_cx else "right"
 
         # 90° Turn Geometry Check
         color_is_horizontal = False

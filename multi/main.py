@@ -37,7 +37,10 @@ def line_follow_process(frame_q, result_q, stop_event):
     current_action = "follow"  # default state
 
     while not stop_event.is_set():
+        time_marker = time.perf_counter()
         frame = frame_q.get()
+        time_marker2 = time.perf_counter()
+        print(f"duration1 {time_marker2 - time_marker}")
 
         # check for new shape
         if not result_q.empty():
@@ -46,6 +49,7 @@ def line_follow_process(frame_q, result_q, stop_event):
 
         # always follow line regardless
         line_following.follow_line(frame)
+        print(f"duration2 {time.perf_counter() - time_marker2}")
 
     line_following.stop()
 

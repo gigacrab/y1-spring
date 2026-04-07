@@ -158,8 +158,17 @@ while True:
 
             elif valid_color_cnt is not None:
                 if state != STATE_FOLLOW_COLOR:
-                    colour_entry_sign = getSign(last_error)
-                    print(f"→ FOLLOW_COLOR entry_sign={colour_entry_sign} (last_error={last_error:.3f})")
+                    entry_left_px  = cv2.countNonZero(colour_mask[:, :320])
+                    entry_right_px = cv2.countNonZero(colour_mask[:, 320:])
+                    
+                    # More pixels on the RIGHT → robot entered from the right side
+                    # → when colour ends, search RIGHT (left wheel faster, positive turn_pwm)
+                    # → turn_pwm = -SEARCH_SPEED * colour_entry_sign → need sign = -1
+                    # More pixels on the LEFT → robot entered from the left → sign = +1
+                    colour_entry_sign = -1 if entry_right_px > entry_left_px else 1
+                    
+                    print(f"→ FOLLOW_COLOR  L={entry_left_px} R={entry_right_px}  "
+                        f"entry_sign={colour_entry_sign}")
                 state = STATE_FOLLOW_COLOR
             elif valid_black_cnt is not None:
                 state = STATE_FOLLOW_BLACK

@@ -79,13 +79,13 @@ while True:
         imgray      = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
         ret, thresh = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
-        # ✨ THE BLINDFOLD FIX ✨
+        # THE BLINDFOLD FIX
         # If searching, black out the side of the camera we DON'T want to look at.
         if state == STATE_SEARCH:
-            if black_line_side == "right":
+            if black_line_side == "left":
                 # We want the right side. Blindfold the left (columns 0 to 320).
                 thresh[:, :320] = 0
-            elif black_line_side == "left":
+            elif black_line_side == "right":
                 # We want the left side. Blindfold the right (columns 320 to end).
                 thresh[:, 320:] = 0
 
@@ -205,13 +205,13 @@ while True:
 
         elif state == STATE_SEARCH:
             # Sweeping turn to find the black line
-            turn_pwm  = SEARCH_SPEED if black_line_side == "right" else -SEARCH_SPEED
+            turn_pwm  = SEARCH_SPEED if black_line_side == "left" else -SEARCH_SPEED
             left_pwm  = base_speed + turn_pwm
             right_pwm = base_speed - turn_pwm
 
         elif state == STATE_TURN_90:
             # Hard 90-degree turn
-            turn_pwm  = TURN_90_SPEED if turn_90_dir == "right" else -TURN_90_SPEED
+            turn_pwm  = TURN_90_SPEED if turn_90_dir == "left" else -TURN_90_SPEED
             left_pwm  = base_speed + turn_pwm
             right_pwm = base_speed - turn_pwm
 

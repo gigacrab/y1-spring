@@ -282,12 +282,12 @@ while True:
         elif state == STATE_SEARCH:
             # search_turn_sign = +1 → was turning left → keep turning left.
             # Turning left = right motor faster = negative turn_pwm.
-            turn_pwm  = -SEARCH_SPEED * search_turn_sign
+            turn_pwm  = SEARCH_SPEED * search_turn_sign
             left_pwm  = base_speed + turn_pwm
             right_pwm = base_speed - turn_pwm
 
         elif state == STATE_TURN_90:
-            turn_pwm  = -TURN_90_SPEED if turn_90_dir == "left" else TURN_90_SPEED
+            turn_pwm  = TURN_90_SPEED if turn_90_dir == "left" else -TURN_90_SPEED
             left_pwm  = base_speed + turn_pwm
             right_pwm = base_speed - turn_pwm
 

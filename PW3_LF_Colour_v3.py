@@ -41,27 +41,29 @@ first       = True
 # ── State machine constants & variables ───────────────────────────────────────
 STATE_FOLLOW_BLACK = "FOLLOW_BLACK"
 STATE_FOLLOW_COLOR = "FOLLOW_COLOR"
-STATE_SEARCH       = "SEARCH"       # colour lost → sweep toward black_line_side
-STATE_TURN_90      = "TURN_90"      # executing a 90-degree turn on the colour line
+STATE_SEARCH       = "SEARCH"       
+STATE_TURN_90      = "TURN_90"      
 
 state      = STATE_FOLLOW_BLACK
-last_state = STATE_FOLLOW_BLACK     # Used to trigger the PID memory reset
+last_state = STATE_FOLLOW_BLACK     
 
 # ── Feature Settings ──────────────────────────────────────────────────────────
-black_line_side = "right"  # Memory of where the black line is relative to color
-SEARCH_SPEED    = 0.35     # Motor speed when sweeping for a lost line
+black_line_side = "right"  
+SEARCH_SPEED    = 0.35     
 
-TURN_90_SPEED   = 0.65     # Hard-turn PWM offset during the 90° manoeuvre
-TURN_90_LOCKOUT = 0.5      # Seconds to ignore re-acquisition (prevents double triggering)
+TURN_90_SPEED   = 0.65     
+TURN_90_LOCKOUT = 0.5      
 turn_90_start   = 0
 turn_90_dir     = "right"
 
+blindfold_until = 0  # NEW: Timer to keep the blindfold on through the whole turn
 frame_count = 0
 
 # ── Main Loop ─────────────────────────────────────────────────────────────────
 while True:
     try:
-        time_marker = time.perf_counter()
+        current_time = time.perf_counter()
+        time_marker  = current_time
 
         frame = picam2.capture_array()
         frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
@@ -70,27 +72,22 @@ while True:
         hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
 
         # ── Masks ─────────────────────────────────────────────────────────────
-        # Color Mask
         red_mask    = cv2.inRange(hsv, np.array([105, 30,  100]), np.array([140, 255, 255]))
         yellow_mask = cv2.inRange(hsv, np.array([ 85, 100, 180]), np.array([105, 255, 255]))
         colour_mask = cv2.bitwise_or(red_mask, yellow_mask)
 
-        # Black Mask
         imgray      = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
         ret, thresh = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
-        # THE BLINDFOLD FIX
-        # If searching, black out the side of the camera we DON'T want to look at.
-        if state == STATE_SEARCH:
+        # ✨ THE BLINDFOLD TIMER FIX ✨
+        # Keeps the blindfold on during SEARCH *and* for 1.5 seconds after color ends
+        if state == STATE_SEARCH or current_time < blindfold_until:
             if black_line_side == "left":
-                # We want the right side. Blindfold the left (columns 0 to 320).
-                thresh[:, :320] = 0
+                thresh[:, :320] = 0  # Black out left, keep right
             elif black_line_side == "right":
-                # We want the left side. Blindfold the right (columns 320 to end).
-                thresh[:, 320:] = 0
+                thresh[:, 320:] = 0  # Black out right, keep left
 
         # ── Contours & Centroids ──────────────────────────────────────────────
-        # Color Contours
         color_cnts, _ = cv2.findContours(colour_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         valid_color_cnt = None
         color_cx        = None
@@ -102,7 +99,6 @@ while True:
                     color_cx        = int(M['m10'] / M['m00'])
                 break
 
-        # Black Contours
         valid_black_cnt = None
         black_cx        = None
         if ret < 180:
@@ -116,20 +112,15 @@ while True:
                     break
 
         # ── Geometry & Memory Updates ─────────────────────────────────────────
-        # CRITICAL NEW FIX: Use pixel counting, NOT centroids. 
-        # Centroids fail at the T-junctions because horizontal lines are centered.
         if state == STATE_FOLLOW_BLACK and valid_color_cnt is not None:
             left_black_px  = cv2.countNonZero(thresh[:, :320])
             right_black_px = cv2.countNonZero(thresh[:, 320:])
             
-            # If camera sees more black on the right, the physical loop is actually 
-            # on the left (because your camera's vision is mirrored).
             if right_black_px > left_black_px:
                 black_line_side = "left"
             else:
                 black_line_side = "right"
 
-        # 90° Turn Geometry Check
         color_is_horizontal = False
         if valid_color_cnt is not None:
             x, y, w, h = cv2.boundingRect(valid_color_cnt)
@@ -138,7 +129,7 @@ while True:
 
         # ── State Machine Transitions ─────────────────────────────────────────
         if state == STATE_TURN_90:
-            elapsed_turn = time.perf_counter() - turn_90_start
+            elapsed_turn = current_time - turn_90_start
             if elapsed_turn > TURN_90_LOCKOUT:
                 if valid_color_cnt is not None and not color_is_horizontal:
                     state = STATE_FOLLOW_COLOR
@@ -151,27 +142,26 @@ while True:
             elif valid_black_cnt is not None:
                 state = STATE_FOLLOW_BLACK
 
-        else: # Normal FOLLOW states
+        else: 
             if color_is_horizontal:
                 left_px  = cv2.countNonZero(colour_mask[:, :320])
                 right_px = cv2.countNonZero(colour_mask[:, 320:])
                 turn_90_dir   = "left" if left_px > right_px else "right"
-                turn_90_start = time.perf_counter()
+                turn_90_start = current_time
                 state = STATE_TURN_90
 
             elif valid_color_cnt is not None:
                 state = STATE_FOLLOW_COLOR
 
             elif state == STATE_FOLLOW_COLOR:
-                # FORCE a search to activate the blindfold. Do not instantly snap to black.
+                # NEW: Color line ended! Trigger search and lock the blindfold for 1.5s
                 state = STATE_SEARCH
-                print(f"Color line ended. Forcing search -> Blindfold active. Memory: {black_line_side}")
+                blindfold_until = current_time + 1.5 
+                print(f"Color line ended. Memory: {black_line_side}. Blindfold locked for 1.5s!")
 
             elif valid_black_cnt is not None:
                 state = STATE_FOLLOW_BLACK
 
-        # ✨ THE PID RESET FIX ✨
-        # Clear the integral memory so past curvy turns don't ruin straight lines
         if state != last_state:
             total_error = 0
             last_error = 0
@@ -189,7 +179,7 @@ while True:
                 cv2.drawContours(im2, [line_contour], -1, (0, 255, 0), thickness=cv2.FILLED)
                 cv2.line(im2, (cx, 0), (cx, 240), (0, 255, 255), 3)
 
-                elapsed_time = max(time.perf_counter() - time_marker, 0.0001)
+                elapsed_time = max(current_time - time_marker, 0.0001)
 
                 error        = (320 - cx) / 320
                 total_error += error * elapsed_time
@@ -207,20 +197,18 @@ while True:
                 right_pwm = base_speed - pid
 
             else:
-                # Lost mid-frame fallback
                 pid       = getSign(last_error) * 2
                 left_pwm  = base_speed + pid
                 right_pwm = base_speed - pid
 
         elif state == STATE_SEARCH:
-            # Sweeping turn to find the black line
-            turn_pwm  = SEARCH_SPEED if black_line_side == "left" else -SEARCH_SPEED
+            # Sweeping turn (Adjust negative sign if physical spin is backwards)
+            turn_pwm  = -SEARCH_SPEED if black_line_side == "left" else SEARCH_SPEED
             left_pwm  = base_speed + turn_pwm
             right_pwm = base_speed - turn_pwm
 
         elif state == STATE_TURN_90:
-            # Hard 90-degree turn
-            turn_pwm  = TURN_90_SPEED if turn_90_dir == "left" else -TURN_90_SPEED
+            turn_pwm  = -TURN_90_SPEED if turn_90_dir == "left" else TURN_90_SPEED
             left_pwm  = base_speed + turn_pwm
             right_pwm = base_speed - turn_pwm
 
@@ -239,13 +227,16 @@ while True:
                 x, y, w, h = cv2.boundingRect(valid_color_cnt)
                 cv2.rectangle(im2, (x, y), (x + w, y + h), (255, 0, 255), 2)
             
+            # Displays if the blindfold is currently active
+            blind_status = "ON" if current_time < blindfold_until else "OFF"
+            
             cv2.putText(im2, f"STATE: {state}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
-            cv2.putText(im2, f"MEM: {black_line_side}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+            cv2.putText(im2, f"MEM: {black_line_side} | BLIND: {blind_status}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
             
             cv2.imshow("1. Color Mask", colour_mask)
             cv2.imshow("2. Tracking & Math", im2)
             
-            if cv2.waitKey(1) == 27: # Press ESC to quit
+            if cv2.waitKey(1) == 27: 
                 break
 
     except (KeyboardInterrupt, Exception) as e:

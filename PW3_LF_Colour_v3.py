@@ -47,9 +47,9 @@ STATE_TURN_90      = "TURN_90"      # executing a 90-degree turn on the colour l
 # ── State machine variables ───────────────────────────────────────────────────
 state           = STATE_FOLLOW_BLACK
 
-# Feature 1 – side memory
-black_line_side = "right"   # which side the black line was on relative to the colour line
-SEARCH_SPEED    = 0.65      # hard-turn PWM offset while searching (tune if needed)
+# Feature 1 – direction memory
+colour_entry_sign = 0  # +1 = was steering left, -1 = was steering right, 0 = unknown
+SEARCH_SPEED    = 0.35      # hard-turn PWM offset while searching (tune if needed)
 
 # Feature 2 – 90° turn
 TURN_90_SPEED    = 0.65     # hard-turn PWM offset during the 90° manoeuvre
@@ -105,14 +105,6 @@ while True:
                         black_cx        = int(M['m10'] / M['m00'])
                     break
 
-        # ── Feature 1 – Update black-line-side memory ─────────────────────────
-        # Whenever both lines are visible, compare their centroids and record
-        # which side the black line sits on relative to the colour line.
-        # This memory is used by SEARCH mode if the colour line vanishes suddenly.
-        if valid_color_cnt is not None and valid_black_cnt is not None:
-            if color_cx is not None and black_cx is not None:
-                black_line_side = "right" if color_cx < black_cx else "left"
-
         # ── Feature 2 – Detect a horizontal colour contour (90° turn) ─────────
         # Use a standard upright bounding box (x, y, width, height)
         # A 90-degree intersection will be much WIDER across the screen than it is TALL.
@@ -165,8 +157,10 @@ while True:
                       f"(left_px={left_px}, right_px={right_px})")
 
             elif valid_color_cnt is not None:
+                if state != STATE_FOLLOW_COLOR:
+                    colour_entry_sign = getSign(last_error)
+                    print(f"→ FOLLOW_COLOR entry_sign={colour_entry_sign} (last_error={last_error:.3f})")
                 state = STATE_FOLLOW_COLOR
-
             elif valid_black_cnt is not None:
                 state = STATE_FOLLOW_BLACK
 
@@ -223,13 +217,13 @@ while True:
         elif state == STATE_SEARCH:
             # Hard-turn toward the side where the black line was last seen.
             # SEARCH_SPEED is positive → right turn; negative → left turn.
-            turn_pwm  =  -SEARCH_SPEED if black_line_side == "right" else SEARCH_SPEED
+            turn_pwm  =  -SEARCH_SPEED * colour_entry_sign
             left_pwm  = base_speed + turn_pwm
             right_pwm = base_speed - turn_pwm
 
         elif state == STATE_TURN_90:
             # Hard-turn in the direction the 90° geometry told us.
-            turn_pwm  =  -TURN_90_SPEED if turn_90_dir == "right" else TURN_90_SPEED
+            turn_pwm  =  -TURN_90_SPEED if turn_90_dir == "left" else TURN_90_SPEED
             left_pwm  = base_speed + turn_pwm
             right_pwm = base_speed - turn_pwm
 

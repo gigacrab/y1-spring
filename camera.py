@@ -48,7 +48,7 @@ while True:
 
         
             
-    cv2.imshow("contours", im2)
+    cv2.imshow("contours", im)
     if cv2.waitKey(1) == 27:
         break
 

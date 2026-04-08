@@ -6,7 +6,7 @@ from picamera2 import Picamera2
 import time
 import numpy as np
 
-FRAME_SHAPE = (480, 640, 3)
+FRAME_SHAPE = (480, 640, 4)
 FRAME_DTYPE = np.uint8
 FRAME_NBYTES = int(np.prod(FRAME_SHAPE)) * np.dtype(FRAME_DTYPE).itemsize
 

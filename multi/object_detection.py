@@ -218,6 +218,7 @@ def detect_object(frame):
                     containers.append(child_idx)
                 else:
                     answer.append(pred)
+                    print(sel_area)
 
         # jumps to here if no containers, then continues for loop
 
@@ -230,6 +231,6 @@ def detect_object(frame):
         #print("Final verdict: No shapes")
         return None
     else:
-        print(f"Final verdict: {answer, sel_area}")
+        print(f"Final verdict: {answer}")
         return answer
    

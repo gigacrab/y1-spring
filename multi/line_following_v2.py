@@ -46,7 +46,7 @@ TURN_90_SPEED    = 0.65     # hard-turn PWM offset during the 90° manoeuvre
 TURN_90_LOCKOUT = 0.5      # Seconds to ignore re-acquisition (prevents double triggering)
 turn_90_start   = 0
 blind_turn_start = 0
-BLIND_TURN_TIME = 0.6
+BLIND_TURN_TIME = 1.0
 turn_90_dir     = "right"
 
 def stop():
@@ -207,6 +207,7 @@ def follow_line(frame):
 
             elapsed_time = max(current_time - last_time, 0.0001)
             last_time = current_time
+            
             error        = (320 - cx) / 320
             total_error += error * elapsed_time
 

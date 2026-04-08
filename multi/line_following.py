@@ -238,7 +238,7 @@ def follow_line(frame):
     frame_count += 1
     
     # Only draw and update the screen every 5 loops
-    '''if frame_count % 5 == 0: 
+    if frame_count % 5 == 0: 
         
         # Draw the purple debug box for the 90-degree turn math
         if valid_color_cnt is not None:
@@ -253,4 +253,4 @@ def follow_line(frame):
         
         # Show the windows
         cv2.imshow("1. Color Mask", colour_mask)
-        cv2.imshow("2. Tracking & Math", im2)'''
+        cv2.imshow("2. Tracking & Math", im2)

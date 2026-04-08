@@ -101,7 +101,8 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
 
                             # must add cooldown afterwards to avoid triggering this again
                         elif action == "360 Turn":
-                            pass # turn 360
+                            line_following.turn_360()
+                            cooldown_period = time.perf_counter()
                         elif action == "Stop":
                             line_following.stop_for(5)
                             cooldown_start = time.perf_counter()

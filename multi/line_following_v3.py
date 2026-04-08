@@ -117,7 +117,7 @@ def follow_line(frame):
     # Black Contours
     valid_black_cnt = None
     black_cx        = None
-    if ret < 130:
+    if ret < 160:
         black_cnts, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         for cnt in sorted(black_cnts, key=cv2.contourArea, reverse=True):
             if 7500 <= cv2.contourArea(cnt) <= 40000:

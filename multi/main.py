@@ -78,6 +78,7 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
             #print(f"duration1 {time_marker2 - time_marker}")
 
             # check for new shape
+            print(cooldown_start)
             if time.perf_counter() - cooldown_start > cooldown_period:
                 if clear:
                     result_q.get_nowait()
@@ -110,7 +111,7 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
                             line_following.stop_for(5)
                         else:
                             pass # follow branch
-                    cooldown_period = time.perf_counter()
+                    cooldown_start = time.perf_counter()
                     clear = True
             # always follow line regardless
             line_following.follow_line(frame) # we should pass left / right branch as parameter

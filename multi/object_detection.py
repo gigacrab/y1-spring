@@ -209,7 +209,7 @@ def detect_object(frame):
                         circle_area = np.pi * radius * radius
                         ellipse_area_ratio = sel_area / circle_area if circle_area > 0 else 0
                         
-                        if corners == 12 and aspect_ratio < 1.2 and ellipse_area_ratio > 0.9: 
+                        if corners == 12 and aspect_ratio < 1.2: 
                             pred = "Plus"
                         elif ellipse_area_ratio < 0.55 and inner_area_ratio < 0.6:
                             pred = "Press Button"

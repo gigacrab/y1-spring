@@ -1,5 +1,6 @@
 # problem - otsu follows danger direction
 # implement duplicate filtering for result queue
+# danger unstable, plus becomes 3/4
 
 import cv2
 import time

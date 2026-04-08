@@ -93,6 +93,7 @@ while True:
             face_names.append(name)
         
         print(face_names)
+        print(face_locations)
 
     process_this_frame = not process_this_frame
 

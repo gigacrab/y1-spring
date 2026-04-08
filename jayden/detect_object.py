@@ -120,7 +120,7 @@ def detect_object(frame):
     blur = cv2.GaussianBlur(gray, (5, 5), 0)
 
     thresh = cv2.adaptiveThreshold(
-        blur, 255,
+        gray, 255,
         cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
         cv2.THRESH_BINARY_INV,
         51, 5

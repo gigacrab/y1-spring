@@ -12,7 +12,7 @@ time.sleep(2)
 while True: 
     im = picam2.capture_array()
 
-    roi = im[360:480, :]
+    roi = im
 
     #cv2.imshow("raw", im)
     imgray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
@@ -48,7 +48,7 @@ while True:
 
         
             
-    cv2.imshow("contours", im2)
+    cv2.imshow("contours", im)
     if cv2.waitKey(1) == 27:
         break
 

@@ -1,10 +1,12 @@
 import object_detection
 import line_following_v3 as line_following
+import face_rec
 import multiprocessing as mp
 from multiprocessing import shared_memory
 from picamera2 import Picamera2
 import time
 import numpy as np
+import cv2
 
 FRAME_SHAPE = (480, 640, 4)
 FRAME_DTYPE = np.uint8
@@ -80,7 +82,13 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
 
                 if action != shape:
                     if action == "Biometrics":
-                        pass # do face recog
+                        stop = face_rec(frame)
+                        if not stop:
+                            continue         
+                        else:
+                            cv2.destroyWindow("Face Recognition")
+                        while cv2.waitKey(1) != ord('p'):
+                            pass
                     elif action == "360 Turn":
                         pass # turn 360
                     elif action == "Stop":

@@ -95,3 +95,8 @@ def recognize_face(frame):
     frame = cv2.cvtColor(frame, cv2.COLOR_RGBA2BGR)
     # Display the resulting image
     cv2.imshow('Face Recognition', frame)
+
+    if cv2.waitKey(1) == ord('q'):
+        return True
+    else:
+        return False

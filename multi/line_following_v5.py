@@ -43,7 +43,7 @@ TURN_90_SPEED   = 0.65     # Hard-turn PWM offset during the 90° manoeuvre
 TURN_90_LOCKOUT = 0.5      # Seconds to ignore re-acquisition (prevents double triggering)
 turn_90_start   = 0
 blind_turn_start = 0
-BLIND_TURN_TIME = 0.6
+BLIND_TURN_TIME = 1.0
 turn_90_dir     = "right"
 
 frame_count = 0
@@ -157,7 +157,7 @@ def follow_line(frame):
         (_, (rw, rh), _) = cv2.minAreaRect(valid_color_cnt)
         long_side  = max(rw, rh)
         short_side = min(rw, rh)
-        if short_side > 0 and long_side / short_side > 1.8 and short_side > 80:
+        if short_side > 0 and long_side / short_side > 2.5 and short_side > 80:
             color_is_horizontal = True
  
     # ── Black-line fork check (with confirmation counter) ─────────────────

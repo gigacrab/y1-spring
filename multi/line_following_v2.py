@@ -39,7 +39,7 @@ last_state      = STATE_FOLLOW_BLACK     # Used to trigger the PID memory reset
 
 # Feature 1 – side memory
 black_line_side = "right"   # which side the black line was on relative to the colour line
-SEARCH_SPEED    = 0.35      # hard-turn PWM offset while searching (tune if needed)
+SEARCH_SPEED    = 0.65      # hard-turn PWM offset while searching (tune if needed)
 
 # Feature 2 – 90° turn
 TURN_90_SPEED    = 0.65     # hard-turn PWM offset during the 90° manoeuvre

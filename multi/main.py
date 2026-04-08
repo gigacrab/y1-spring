@@ -61,6 +61,8 @@ def shape_detection_process(shm_name, lock, shape_event, result_q, stop_event):
 def line_following_process(shm_name, lock, line_event, result_q, stop_event):
     shm = shared_memory.SharedMemory(name=shm_name)
     frame_buf = np.ndarray(FRAME_SHAPE, dtype=FRAME_DTYPE, buffer=shm.buf)
+    cooldown_start = -2
+    cooldown_period = 2
 
     try:
         while not stop_event.is_set():
@@ -75,33 +77,36 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
             #print(f"duration1 {time_marker2 - time_marker}")
 
             # check for new shape
-            if not result_q.empty():
-                shape = result_q.get_nowait()
-                print(f"Detected: {shape}") # already handles shape detection
-                shape = shape[0]
-                action = decide_action(shape)
+            if time.perf_counter() - cooldown_start > cooldown_period:
+                if not result_q.empty():
+                    shape = result_q.get_nowait()
+                    print(f"Detected: {shape}") # already handles shape detection
+                    shape = shape[0]
+                    action = decide_action(shape)
 
-                if action != shape:
-                    if action == "Biometrics":
-                        line_following.stop()
-                        stop = False
-                        while not stop:
+                    if action != shape:
+                        if action == "Biometrics":
+                            line_following.stop()
+                            stop = False
+                            while not stop:
 
-                            stop = face_rec.recognize_face(frame)
-                            line_event.wait()
-                            line_event.clear()
-                            with lock:
-                                frame = frame_buf.copy()
-                            
-                        cv2.destroyWindow("Face Recognition")
+                                stop = face_rec.recognize_face(frame)
+                                line_event.wait()
+                                line_event.clear()
+                                with lock:
+                                    frame = frame_buf.copy()
+                                
+                            cv2.destroyWindow("Face Recognition")
+                            cooldown_start = time.perf_counter()
 
-                        # must add cooldown afterwards to avoid triggering this again
-                    elif action == "360 Turn":
-                        pass # turn 360
-                    elif action == "Stop":
-                        line_following.stop_for(5)
-                    else:
-                        pass # follow branch
+                            # must add cooldown afterwards to avoid triggering this again
+                        elif action == "360 Turn":
+                            pass # turn 360
+                        elif action == "Stop":
+                            line_following.stop_for(5)
+                            cooldown_start = time.perf_counter()
+                        else:
+                            pass # follow branch
 
             # always follow line regardless
             line_following.follow_line(frame) # we should pass left / right branch as parameter

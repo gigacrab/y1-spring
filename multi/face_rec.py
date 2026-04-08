@@ -32,14 +32,19 @@ bryan_face_encoding = face_recognition.face_encodings(bryan_image)[0]
 jayden_image = face_recognition.load_image_file("./multi/faces/jayden.jpeg")
 jayden_face_encoding = face_recognition.face_encodings(jayden_image)[0]
 
+hermawan_image = face_recognition.load_image_file("./multi/faces/dr-hermawan.jpeg")
+hermawan_face_encoding = face_recognition.face_encodings(jayden_image)[0]
+
 # Create arrays of known face encodings and their names
 known_face_encodings = [
     bryan_face_encoding,
-    jayden_face_encoding
+    jayden_face_encoding,
+    hermawan_face_encoding
 ]
 known_face_names = [
     "Bryan",
-    "Jayden"
+    "Jayden",
+    "Dr Hermawan"
 ]
 
 # Initialize some variables

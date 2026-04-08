@@ -52,8 +52,8 @@ frame_count = 0
 pending_turn = None
 horizontal_count = 0
 fork_count = 0
-HORIZONTAL_CONFIRM = 3
-FORK_CONFIRM = 3
+HORIZONTAL_CONFIRM = 2
+FORK_CONFIRM = 2
 
 def stop():
     movement.move(0, 0)

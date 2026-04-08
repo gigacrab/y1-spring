@@ -13,10 +13,10 @@ def clamp(value, min_val, max_val):
 def getSign(n):
     return (n > 0) - (n < 0)
 
-base_speed = 0.25
-kp = 3.0
-ki = 0.1
-kd = 0.1
+base_speed = 0.4
+kp = 1.0
+ki = 0.01
+kd = 0.2
 
 # ── PID state ─────────────────────────────────────────────────────────────────
 error       = 0

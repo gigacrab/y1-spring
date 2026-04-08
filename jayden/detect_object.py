@@ -123,7 +123,7 @@ def detect_object(frame):
         gray, 255,
         cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
         cv2.THRESH_BINARY_INV,
-        35, 3
+        35, 1
     )
 
     kernel = np.ones((3, 3), np.uint8)

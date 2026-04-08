@@ -113,6 +113,7 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
                             # must add cooldown afterwards to avoid triggering this again
                         elif action == "360 Turn":
                             line_following.turn_360()
+                            print("turning 360")
                             
                         elif action == "Stop":
                             line_following.stop_for(5)

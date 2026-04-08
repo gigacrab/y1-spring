@@ -246,8 +246,8 @@ try:
                 answer.append(pred)
             
             
-        cv2.imshow("Threshold", closed)
-        cv2.imshow("Geometry Debug", output)
+        #cv2.imshow("Threshold", closed)
+        #cv2.imshow("Geometry Debug", output)
             
         '''
         for i, c in enumerate(cnts):

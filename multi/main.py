@@ -84,17 +84,22 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
         shm.close()
         line_following.stop()
 
-'''def decide_action(shape):
+def decide_action(shape):
     return {
-        "Arrow":    "turn",
-        "Octagon":  "stop",
-        "Plus":     "choose_branch",
-        # etc.
-    }.get(shape, "follow")'''
+        "Arrow (LEFT)": "Left branch",
+        "Arrow (RIGHT)": "Right branch",
+        "Arrow (UP)": "Left branch",
+        "Arrow (DOWN)": "Right branch",
+        "Recycle": "360 Turn",
+        "Fingerprint": "Biometrics",
+        "QR Code": "Biometrics",
+        "Press Button": "Stop",
+        "Danger": "Stop",
+    }.get(shape, shape)
 
 if __name__ == "__main__": # what was ran with python
     shm = shared_memory.SharedMemory(create=True, size=FRAME_NBYTES)
-    result_q = mp.Queue(maxsize=5)
+    result_q = mp.Queue(maxsize=1)
 
     stop_event = mp.Event()
     shape_event = mp.Event()

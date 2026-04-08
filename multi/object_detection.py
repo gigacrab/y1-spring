@@ -224,7 +224,7 @@ def detect_object(frame):
                     containers.append(child_idx)
                 else:
                     answer.append(pred)
-                    print(sel_area)
+                    #print(sel_area)
 
         # jumps to here if no containers, then continues for loop
 

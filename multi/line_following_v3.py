@@ -90,7 +90,7 @@ def follow_line(frame):
     # Black Mask
     imgray      = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
     ret, thresh = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-
+    print(ret)
     # THE BLINDFOLD FIX
     # If searching, black out the side of the camera we DON'T want to look at.
     if state == STATE_SEARCH:

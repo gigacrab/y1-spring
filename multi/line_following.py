@@ -14,7 +14,7 @@ def getSign(n):
     return (n > 0) - (n < 0)
 
 base_speed = 0.3
-kp = 0.5
+kp = 0.65
 ki = 0.0625
 kd = 0.125
 

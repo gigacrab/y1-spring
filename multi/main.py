@@ -82,6 +82,7 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
 
                 if action != shape:
                     if action == "Biometrics":
+                        line_following.stop()
                         stop = face_rec(frame)
                         if not stop:
                             continue         
@@ -92,7 +93,7 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
                     elif action == "360 Turn":
                         pass # turn 360
                     elif action == "Stop":
-                        pass # stop
+                        line_following.stop_for(5)
                     else:
                         pass # follow branch
 
@@ -101,7 +102,7 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
             #print(f"duration2 {time.perf_counter() - time_marker2}")
     finally:
         shm.close()
-        line_following.stop()
+        line_following.stop_forever()
 
 def decide_action(shape):
     return {

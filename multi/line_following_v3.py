@@ -48,7 +48,14 @@ turn_90_dir     = "right"
 
 frame_count = 0
 
+def stop_for(period):
+    movement.move(0, 0)
+    time.sleep(period)
+
 def stop():
+    movement.move(0, 0)
+
+def stop_forever():
     movement.move(0, 0)
     movement.pi.stop()
     cv2.destroyAllWindows()

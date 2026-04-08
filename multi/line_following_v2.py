@@ -24,6 +24,7 @@ total_error = 0
 last_error  = 0
 diff_error  = 0
 first       = True
+last_time   = time.perf_counter()
 
 # ── State machine constants ───────────────────────────────────────────────────
 STATE_FOLLOW_BLACK = "FOLLOW_BLACK"
@@ -45,7 +46,7 @@ TURN_90_SPEED    = 0.65     # hard-turn PWM offset during the 90° manoeuvre
 TURN_90_LOCKOUT = 0.5      # Seconds to ignore re-acquisition (prevents double triggering)
 turn_90_start   = 0
 blind_turn_start = 0
-BLIND_TURN_TIME = 0.6
+BLIND_TURN_TIME = 1.0
 turn_90_dir     = "right"
 
 def stop():
@@ -56,8 +57,8 @@ def stop():
 frame_count = 0
 
 def follow_line(frame):
-    global state, last_state, black_line_side, turn_90_start, blind_turn_start, turn_90_dir, total_error, first, frame_count, last_error, diff_error
-    time_marker = time.perf_counter()
+    global state, last_state, black_line_side, turn_90_start, blind_turn_start, turn_90_dir, total_error, first, frame_count, last_error, diff_error, last_time
+    current_time = time.perf_counter()
 
     frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
     roi   = frame[240:480, :]
@@ -204,8 +205,9 @@ def follow_line(frame):
             cv2.drawContours(im2, [line_contour], -1, (0, 255, 0), thickness=cv2.FILLED)
             cv2.line(im2, (cx, 0), (cx, 240), (0, 255, 255), 3)
 
-            elapsed_time = max(time.perf_counter() - time_marker, 0.0001)
-
+            elapsed_time = max(current_time - last_time, 0.0001)
+            last_time = current_time
+            
             error        = (320 - cx) / 320
             total_error += error * elapsed_time
 

@@ -14,7 +14,7 @@ def clamp(value, min_val, max_val):
 def getSign(n):
     return (n > 0) - (n < 0)
 
-base_speed = 0.3
+base_speed = 0.35
 kp = 0.625
 ki = 0.01
 kd = 0.02
@@ -103,7 +103,7 @@ def follow_line(frame):
     # Black Contours
     valid_black_cnt = None
     black_cx        = None
-    if ret < 180:
+    if ret < 130:
         black_cnts, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         for cnt in sorted(black_cnts, key=cv2.contourArea, reverse=True):
             if 7500 <= cv2.contourArea(cnt) <= 40000:
@@ -216,11 +216,11 @@ def follow_line(frame):
     elif state == STATE_BLIND_TURN:
         # Sweeping turn to find the black line
         if black_line_side == "left":
-            left_pwm  = base_speed
-            right_pwm = -base_speed
+            left_pwm  = base_speed * 1.2
+            right_pwm = -base_speed * 1.2
         else:
-            left_pwm  = -base_speed
-            right_pwm = base_speed
+            left_pwm  = -base_speed * 1.2
+            right_pwm = base_speed * 1.2
 
     elif state == STATE_SEARCH:
         # Sweeping turn to find the black line

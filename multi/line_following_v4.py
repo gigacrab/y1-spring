@@ -50,10 +50,9 @@ frame_count = 0
 
 # ── Fork / Arrow navigation ──
 pending_turn = None
-horizontal_count = 0
+branch_memory = None
 fork_count = 0
-HORIZONTAL_CONFIRM = 3
-FORK_CONFIRM = 3
+FORK_CONFIRM = 5
 
 def stop():
     movement.move(0, 0)
@@ -76,7 +75,7 @@ def follow_line(frame):
     global state, black_line_side, turn_90_start, turn_90_dir, \
         total_error, first, frame_count, last_error, diff_error, \
         blind_turn_start, last_state, \
-        horizontal_count, pending_turn, fork_count
+        horizontal_count, pending_turn, fork_count, branch_memory
     
     time_marker = time.perf_counter()
 
@@ -195,16 +194,25 @@ def follow_line(frame):
     else: # Normal FOLLOW states
         if black_is_fork:
             if pending_turn is not None:
-                # Arrow sign was seen — use its direction and consume the memory
+                # 1. ENTRY: Arrow sign was seen — use it and SAVE it to memory
                 turn_90_dir  = pending_turn
+                branch_memory = pending_turn  # Save for the exit!
                 pending_turn = None
-                print(f"[Fork] Using arrow → turning {turn_90_dir}")
+                print(f"[Fork ENTRY] Using arrow → turning {turn_90_dir}. Memory saved.")
+                
+            elif branch_memory is not None:
+                # 2. EXIT: No arrow, but we have memory from the entry!
+                turn_90_dir = branch_memory
+                branch_memory = None          # Clear it so we don't turn forever
+                print(f"[Fork EXIT] Using memory → turning {turn_90_dir}.")
+                
             else:
-                # No arrow seen yet — fall back to pixel-count heuristic
+                # 3. NORMAL: No arrow, no memory — fall back to pixel-count
                 left_px  = cv2.countNonZero(thresh[:, :320])
                 right_px = cv2.countNonZero(thresh[:, 320:])
                 turn_90_dir = "left" if left_px > right_px else "right"
-                print(f"[Fork] No arrow — pixel fallback → turning {turn_90_dir}")
+                print(f"[Fork] No arrow/memory — pixel fallback → turning {turn_90_dir}")
+                
             turn_90_start = time.perf_counter()
             state = STATE_TURN_90
 

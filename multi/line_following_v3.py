@@ -60,6 +60,14 @@ def stop_forever():
     movement.pi.stop()
     cv2.destroyAllWindows()
 
+def turn_360():
+    movement.move(-0.5, 0.5)
+    time.sleep(2)
+    global last_error
+    if getSign(last_error) == -1:
+        last_error *= -1
+
+
 # ── Main Loop ─────────────────────────────────────────────────────────────────
 def follow_line(frame):
     global state, black_line_side, turn_90_start, turn_90_dir, \

@@ -82,7 +82,7 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
             #print(f"duration1 {time_marker2 - time_marker}")
 
             # check for new shape
-            print(f"time {cooldown_start}")
+            #print(f"time {cooldown_start}")
             if time.perf_counter() - cooldown_start > cooldown_period:
                 if clear:
                     try:

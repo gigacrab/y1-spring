@@ -87,6 +87,7 @@ def detect_shapes_in_container(i, c, cnts, hrchy):
                     gchild_idx = hrchy[0][child_idx][2] # first grandchild
                     sel_i = i
                     total_area = 0
+                    qr = 0
 
                     while gchild_idx != -1:
                         gc_curr = cnts[gchild_idx]
@@ -96,7 +97,12 @@ def detect_shapes_in_container(i, c, cnts, hrchy):
                             largest_gc = gc_curr
                             largest_gc_area = gc_area
                             sel_i = gchild_idx
+                        if gc_area > MIN_AREA * 0.7:
+                            qr += 1
                         gchild_idx = hrchy[0][gchild_idx][0] # next sibling
+
+                    if qr >= 3:
+                        return child_idx
 
                     if largest_gc is not None:
                         sel_c = largest_gc

@@ -54,7 +54,7 @@ def detect_symbols_in_container(i, cnts, hrchy):
         return "QR Code"
     return "No idea"
 
-def detect_shapes_in_container(i, c, cnts, hrchy):
+def detect_container(i, c, cnts, hrchy):
     area = cv2.contourArea(c)
     if area < MIN_AREA:
         return None
@@ -137,7 +137,7 @@ def detect_object(frame):
     # should already have hierarchy if a contour exists
     for i, c in enumerate(cnts):
         pred = "No idea"
-        result = detect_shapes_in_container(i, c, cnts, hrchy)
+        result = detect_container(i, c, cnts, hrchy)
 
         if result is not None: # found container
             if isinstance(result, (int, np.integer)): # no valid contours

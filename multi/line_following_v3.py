@@ -2,7 +2,6 @@ import cv2
 import time
 import numpy as np
 import movement
-import sys
 
 def clamp(value, min_val, max_val):
     if value > max_val:
@@ -164,8 +163,11 @@ def follow_line(frame):
 
         elif state == STATE_FOLLOW_COLOR:
             # FORCE a search to activate the blindfold. Do not instantly snap to black.
-            state = STATE_BLIND_TURN
-            blind_turn_start = time.perf_counter()
+            if valid_black_cnt is not None:
+                state = STATE_FOLLOW_BLACK
+            else:
+                state = STATE_BLIND_TURN
+                blind_turn_start = time.perf_counter()
             print(f"Color line ended. Blind turn → {black_line_side}")
 
         elif valid_black_cnt is not None:

@@ -134,8 +134,8 @@ def detect_object(frame):
     answer = []
     containers = []
 
-    cv2.imshow(frame, "frame")
-    cv2.imshow(closed, "close")
+    cv2.imshow("frame", frame)
+    cv2.imshow("close", closed)
 
     # should already have hierarchy if a contour exists
     for i, c in enumerate(cnts):

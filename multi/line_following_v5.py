@@ -40,7 +40,7 @@ black_line_side = "right"  # Memory of where the black line is relative to color
 SEARCH_SPEED    = 0.35     # Motor speed when sweeping for a lost line
 
 TURN_90_SPEED   = 0.65     # Hard-turn PWM offset during the 90° manoeuvre
-TURN_90_LOCKOUT = 1.0      # Seconds to ignore re-acquisition (prevents double triggering)
+TURN_90_LOCKOUT = 0.5      # Seconds to ignore re-acquisition (prevents double triggering)
 turn_90_start   = 0
 blind_turn_start = 0
 BLIND_TURN_TIME = 0.6
@@ -51,8 +51,6 @@ frame_count = 0
 # ── Fork / Arrow navigation ──
 pending_turn = None
 branch_memory = None
-horizontal_count = 0
-fork_override_active = False
 fork_count = 0
 FORK_CONFIRM = 5
 
@@ -74,11 +72,10 @@ def stop_for(seconds):
 
 def force_blind_turn(direction):
     """Instantly overrides the state machine to perform a blind turn."""
-    global state, black_line_side, blind_turn_start, fork_override_active, branch_memory
+    global state, black_line_side, blind_turn_start, branch_memory
     print(f"[OVERRIDE] Arrow detected! Forcing immediate blind turn: {direction}")
     black_line_side = direction
     blind_turn_start = time.perf_counter()
-    fork_override_active = True
     branch_memory = direction
     state = STATE_BLIND_TURN
 
@@ -192,10 +189,8 @@ def follow_line(frame):
     elif state == STATE_BLIND_TURN:
         elapsed_blind = time.perf_counter() - blind_turn_start
         if elapsed_blind > BLIND_TURN_TIME and valid_black_cnt is not None:
-            fork_override_active = False
             state = STATE_FOLLOW_BLACK
         elif elapsed_blind > 2.0:
-            fork_override_active = False
             state = STATE_SEARCH
 
     elif state == STATE_SEARCH:
@@ -211,8 +206,8 @@ def follow_line(frame):
             blind_turn_start = time.perf_counter()
             branch_memory    = None        # consume — only one exit turn per arrow
             state = STATE_BLIND_TURN
-
-        elif color_is_horizontal and not fork_override_active:
+            
+        if color_is_horizontal:
             left_px  = cv2.countNonZero(colour_mask[:, :320])
             right_px = cv2.countNonZero(colour_mask[:, 320:])
             turn_90_dir   = "left" if left_px > right_px else "right"
@@ -244,7 +239,6 @@ def follow_line(frame):
         horizontal_count = 0
         fork_count       = 0
         last_state = state
-        fork_override_active = False
 
     # ── Motor Control ─────────────────────────────────────────────────────
     im2 = np.zeros((240, 640, 3), dtype=np.uint8)

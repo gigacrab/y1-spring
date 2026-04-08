@@ -300,8 +300,8 @@ def follow_line(frame):
     elif state == STATE_TURN_90:
         # Hard 90-degree turn
         turn_pwm  = TURN_90_SPEED if turn_90_dir == "left" else -TURN_90_SPEED
-        left_pwm  = base_speed + turn_pwm
-        right_pwm = base_speed - turn_pwm
+        left_pwm  = base_speed + turn_pwm * 2
+        right_pwm = base_speed - turn_pwm * 2
 
     else:
         left_pwm  = base_speed

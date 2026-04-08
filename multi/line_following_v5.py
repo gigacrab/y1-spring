@@ -51,6 +51,8 @@ frame_count = 0
 # ── Fork / Arrow navigation ──
 pending_turn = None
 branch_memory = None
+horizontal_count = 0
+fork_override_active = False
 fork_count = 0
 FORK_CONFIRM = 5
 
@@ -72,11 +74,11 @@ def stop_for(seconds):
 
 def force_blind_turn(direction):
     """Instantly overrides the state machine to perform a blind turn."""
-    global state, black_line_side, blind_turn_start, branch_memory
+    global state, black_line_side, blind_turn_start, fork_override_active
     print(f"[OVERRIDE] Arrow detected! Forcing immediate blind turn: {direction}")
     black_line_side = direction
     blind_turn_start = time.perf_counter()
-    branch_memory = direction
+    fork_override_active = True
     state = STATE_BLIND_TURN
 
 # ── Main Loop ─────────────────────────────────────────────────────────────────
@@ -189,8 +191,10 @@ def follow_line(frame):
     elif state == STATE_BLIND_TURN:
         elapsed_blind = time.perf_counter() - blind_turn_start
         if elapsed_blind > BLIND_TURN_TIME and valid_black_cnt is not None:
+            fork_override_active = False
             state = STATE_FOLLOW_BLACK
         elif elapsed_blind > 2.0:
+            fork_override_active = False
             state = STATE_SEARCH
 
     elif state == STATE_SEARCH:
@@ -200,7 +204,7 @@ def follow_line(frame):
             state = STATE_FOLLOW_BLACK
 
     else: # Normal FOLLOW states
-        if color_is_horizontal:
+        if color_is_horizontal and not fork_override_active:
             left_px  = cv2.countNonZero(colour_mask[:, :320])
             right_px = cv2.countNonZero(colour_mask[:, 320:])
             turn_90_dir   = "left" if left_px > right_px else "right"
@@ -232,6 +236,7 @@ def follow_line(frame):
         horizontal_count = 0
         fork_count       = 0
         last_state = state
+        fork_override_active = False
 
     # ── Motor Control ─────────────────────────────────────────────────────
     im2 = np.zeros((240, 640, 3), dtype=np.uint8)

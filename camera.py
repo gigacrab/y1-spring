@@ -12,7 +12,7 @@ time.sleep(2)
 while True: 
     im = picam2.capture_array()
 
-    roi = im[360:480, :]
+    roi = im
 
     #cv2.imshow("raw", im)
     imgray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)

@@ -63,6 +63,7 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
     frame_buf = np.ndarray(FRAME_SHAPE, dtype=FRAME_DTYPE, buffer=shm.buf)
     cooldown_start = -2
     cooldown_period = 2
+    clear = False
 
     try:
         while not stop_event.is_set():
@@ -78,6 +79,9 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
 
             # check for new shape
             if time.perf_counter() - cooldown_start > cooldown_period:
+                if clear:
+                    result_q.get_nowait()
+                    clear = False
                 if not result_q.empty():
                     shape = result_q.get_nowait()
                     print(f"Detected: {shape}") # already handles shape detection
@@ -97,18 +101,17 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
                                     frame = frame_buf.copy()
                                 
                             cv2.destroyWindow("Face Recognition")
-                            cooldown_start = time.perf_counter()
 
                             # must add cooldown afterwards to avoid triggering this again
                         elif action == "360 Turn":
                             line_following.turn_360()
-                            cooldown_period = time.perf_counter()
+                            
                         elif action == "Stop":
                             line_following.stop_for(5)
-                            cooldown_start = time.perf_counter()
                         else:
                             pass # follow branch
-
+                    cooldown_period = time.perf_counter()
+                    clear = True
             # always follow line regardless
             line_following.follow_line(frame) # we should pass left / right branch as parameter
             #print(f"duration2 {time.perf_counter() - time_marker2}")

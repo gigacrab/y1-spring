@@ -114,7 +114,7 @@ while True:
         font = cv2.FONT_HERSHEY_DUPLEX
         cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
 
-    
+    cv2.cvtColor(frame, cv2.COLOR_RGBA2BGR)
     # Display the resulting image
     cv2.imshow('Video', frame)
 

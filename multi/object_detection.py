@@ -227,7 +227,7 @@ def detect_object(frame):
             answer.append(pred)
 
     if len(answer) == 0:
-        print("Final verdict: No shapes")
+        #print("Final verdict: No shapes")
         return None
     else:
         print(f"Final verdict: {answer}")

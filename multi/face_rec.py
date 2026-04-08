@@ -60,7 +60,7 @@ while True:
         # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
         rgb_small_frame = small_frame[:, :, ::-1]'''
         
-        rgb_small_frame = cv2.cvtColor(frame, cv2.RGBA2RGB)
+        rgb_small_frame = cv2.cvtColor(frame, cv2.COLOR_RGBA2RGB)
 
         # Find all the faces and face encodings in the current frame of video
         face_locations = face_recognition.face_locations(rgb_small_frame)

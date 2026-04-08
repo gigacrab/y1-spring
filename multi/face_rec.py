@@ -42,7 +42,8 @@ face_names = []
 process_this_frame = True
 
 def recognize_face(frame):
-
+    print("we doin face")
+    global process_this_frame, face_locations, face_encodings, face_names
     # Only process every other frame of video to save time
     if process_this_frame:
         # Resize frame of video to 1/4 size for faster face recognition processing

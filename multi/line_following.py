@@ -61,7 +61,7 @@ def follow_line(frame):
     hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
 
     sample = hsv[110:120, 310:320]
-    print(f"HSV centre sample: {sample.mean(axis=(0,1)).astype(int)}  state={state}")
+    #print(f"HSV centre sample: {sample.mean(axis=(0,1)).astype(int)}  state={state}")
 
     # ── Colour mask (unchanged from original) ─────────────────────────────
     red_mask    = cv2.inRange(hsv, np.array([105, 30,  100]), np.array([140, 255, 255]))

@@ -254,3 +254,4 @@ def follow_line(frame):
         # Show the windows
         cv2.imshow("1. Color Mask", colour_mask)
         cv2.imshow("2. Tracking & Math", im2)
+        cv2.waitKey(1)

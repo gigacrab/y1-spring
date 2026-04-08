@@ -221,11 +221,11 @@ while True:
         elif state == STATE_BLIND_TURN:
             # Sweeping turn to find the black line
             if black_line_side == "left":
-                left_pwm  = -base_speed
-                right_pwm = base_speed
-            else:
                 left_pwm  = base_speed
                 right_pwm = -base_speed
+            else:
+                left_pwm  = -base_speed
+                right_pwm = base_speed
 
         elif state == STATE_SEARCH:
             # Sweeping turn to find the black line

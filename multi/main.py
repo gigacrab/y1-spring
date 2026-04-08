@@ -1,5 +1,5 @@
 import object_detection
-import line_following_v4 as line_following
+import line_following_v5 as line_following
 import face_rec
 import multiprocessing as mp
 from multiprocessing import shared_memory
@@ -120,7 +120,7 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
 
                         elif action in ("Left branch", "Right branch"):
                             direction = "left" if action == "Left branch" else "right"
-                            line_following.pending_turn = direction
+                            line_following.force_blind_turn(direction)
 
                         else:
                             pass # follow branch

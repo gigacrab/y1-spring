@@ -43,7 +43,7 @@ TURN_90_SPEED   = 0.65     # Hard-turn PWM offset during the 90° manoeuvre
 TURN_90_LOCKOUT = 0.5      # Seconds to ignore re-acquisition (prevents double triggering)
 turn_90_start   = 0
 blind_turn_start = 0
-BLIND_TURN_TIME = 0.7      
+BLIND_TURN_TIME = 0.6
 turn_90_dir     = "right"
 
 frame_count = 0
@@ -53,7 +53,6 @@ pending_turn = None
 branch_memory = None
 fork_count = 0
 FORK_CONFIRM = 5
-fork_cooldown_end = 0
 
 def stop():
     movement.move(0, 0)
@@ -78,14 +77,14 @@ def force_blind_turn(direction):
     black_line_side = direction
     blind_turn_start = time.perf_counter()
     branch_memory = direction
-    state = STATE_BLIND_TURN
+    state = STATE_TURN_90
 
 # ── Main Loop ─────────────────────────────────────────────────────────────────
 def follow_line(frame):
     global state, black_line_side, turn_90_start, turn_90_dir, \
         total_error, first, frame_count, last_error, diff_error, \
         blind_turn_start, last_state, \
-        horizontal_count, pending_turn, fork_count, branch_memory, fork_cooldown_end
+        horizontal_count, pending_turn, fork_count, branch_memory
     
     time_marker = time.perf_counter()
 
@@ -165,16 +164,15 @@ def follow_line(frame):
     # A T-junction or fork makes the black line appear wide in the ROI,
     # just like the colour 90° check above.
     black_is_fork = False
-    if time.perf_counter() > fork_cooldown_end:
-        if valid_black_cnt is not None:
-            (_, (bw, bh), _) = cv2.minAreaRect(valid_black_cnt)
-            b_long  = max(bw, bh)
-            b_short = min(bw, bh)
-            if b_short > 0 and (b_long / b_short) > 2.5 and b_short > 80:
-                fork_count += 1
-                print(f"Fork-like contour detected (count={fork_count}): bw={bw:.1f}, bh={bh:.1f}, ratio={b_long/b_short:.2f}")
-            else:
-                fork_count = 0
+    if valid_black_cnt is not None:
+        (_, (bw, bh), _) = cv2.minAreaRect(valid_black_cnt)
+        b_long  = max(bw, bh)
+        b_short = min(bw, bh)
+        if b_short > 0 and (b_long / b_short) > 2.5 and b_short > 80:
+            fork_count += 1
+            print(f"Fork-like contour detected (count={fork_count}): bw={bw:.1f}, bh={bh:.1f}, ratio={b_long/b_short:.2f}")
+        else:
+            fork_count = 0
     else:
         fork_count = 0
     black_is_fork = (fork_count >= FORK_CONFIRM)
@@ -192,8 +190,6 @@ def follow_line(frame):
         elapsed_blind = time.perf_counter() - blind_turn_start
         if elapsed_blind > BLIND_TURN_TIME and valid_black_cnt is not None:
             state = STATE_FOLLOW_BLACK
-            fork_cooldown_end = time.perf_counter() + 0.5
-            print("[Blind Turn] Line found! Cooldown active.")
         elif elapsed_blind > 2.0:
             state = STATE_SEARCH
 
@@ -274,11 +270,11 @@ def follow_line(frame):
     elif state == STATE_BLIND_TURN:
         # Sweeping turn to find the black line
         if black_line_side == "left":
-            left_pwm  = base_speed * 1.5
-            right_pwm = -base_speed * 1.5
+            left_pwm  = base_speed * 1.2
+            right_pwm = -base_speed * 1.2
         else:
-            left_pwm  = -base_speed * 1.5
-            right_pwm = base_speed * 1.5
+            left_pwm  = -base_speed * 1.2
+            right_pwm = base_speed * 1.2
 
     elif state == STATE_SEARCH:
         # Sweeping turn to find the black line

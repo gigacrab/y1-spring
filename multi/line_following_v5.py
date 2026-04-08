@@ -165,8 +165,7 @@ def follow_line(frame):
     # A T-junction or fork makes the black line appear wide in the ROI,
     # just like the colour 90° check above.
     black_is_fork = False
-    if valid_black_cnt is not None:
-        if time.perf_counter() > fork_cooldown_end:
+    if time.perf_counter() > fork_cooldown_end:
         if valid_black_cnt is not None:
             (_, (bw, bh), _) = cv2.minAreaRect(valid_black_cnt)
             b_long  = max(bw, bh)

@@ -13,10 +13,10 @@ def clamp(value, min_val, max_val):
 def getSign(n):
     return (n > 0) - (n < 0)
 
-base_speed = 0.4
-kp = 1.0
-ki = 0.01
-kd = 0.2
+base_speed = 0.25
+kp = 3.0
+ki = 0.1
+kd = 0.1
 
 # ── PID state ─────────────────────────────────────────────────────────────────
 error       = 0
@@ -24,7 +24,6 @@ total_error = 0
 last_error  = 0
 diff_error  = 0
 first       = True
-last_time   = time.perf_counter()
 
 # ── State machine constants ───────────────────────────────────────────────────
 STATE_FOLLOW_BLACK = "FOLLOW_BLACK"
@@ -39,14 +38,14 @@ last_state      = STATE_FOLLOW_BLACK     # Used to trigger the PID memory reset
 
 # Feature 1 – side memory
 black_line_side = "right"   # which side the black line was on relative to the colour line
-SEARCH_SPEED    = 0.65      # hard-turn PWM offset while searching (tune if needed)
+SEARCH_SPEED    = 0.35      # hard-turn PWM offset while searching (tune if needed)
 
 # Feature 2 – 90° turn
 TURN_90_SPEED    = 0.65     # hard-turn PWM offset during the 90° manoeuvre
-TURN_90_LOCKOUT = 1.0      # Seconds to ignore re-acquisition (prevents double triggering)
+TURN_90_LOCKOUT = 0.5      # Seconds to ignore re-acquisition (prevents double triggering)
 turn_90_start   = 0
 blind_turn_start = 0
-BLIND_TURN_TIME = 1.0
+BLIND_TURN_TIME = 0.6
 turn_90_dir     = "right"
 
 def stop():
@@ -57,8 +56,8 @@ def stop():
 frame_count = 0
 
 def follow_line(frame):
-    global state, last_state, black_line_side, turn_90_start, blind_turn_start, turn_90_dir, total_error, first, frame_count, last_error, diff_error, last_time
-    current_time = time.perf_counter()
+    global state, last_state, black_line_side, turn_90_start, blind_turn_start, turn_90_dir, total_error, first, frame_count, last_error, diff_error
+    time_marker = time.perf_counter()
 
     frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
     roi   = frame[240:480, :]
@@ -186,7 +185,7 @@ def follow_line(frame):
             state = STATE_FOLLOW_BLACK
 
     # PID RESET
-    if state != last_state:
+     if state != last_state:
         total_error = 0
         last_error = 0
         first = True
@@ -205,8 +204,8 @@ def follow_line(frame):
             cv2.drawContours(im2, [line_contour], -1, (0, 255, 0), thickness=cv2.FILLED)
             cv2.line(im2, (cx, 0), (cx, 240), (0, 255, 255), 3)
 
-            elapsed_time = max(current_time - last_time, 0.0001)
-            last_time = current_time
+            elapsed_time = max(time.perf_counter() - time_marker, 0.0001)
+
             error        = (320 - cx) / 320
             total_error += error * elapsed_time
 
@@ -242,13 +241,13 @@ def follow_line(frame):
     elif state == STATE_SEARCH:
         # Hard-turn toward the side where the black line was last seen.
         # SEARCH_SPEED is positive → right turn; negative → left turn.
-        turn_pwm  = SEARCH_SPEED if black_line_side == "right" else -SEARCH_SPEED
+        turn_pwm  =  SEARCH_SPEED if black_line_side == "right" else -SEARCH_SPEED
         left_pwm  = base_speed + turn_pwm
         right_pwm = base_speed - turn_pwm
 
     elif state == STATE_TURN_90:
         # Hard-turn in the direction the 90° geometry told us.
-        turn_pwm  = TURN_90_SPEED if turn_90_dir == "right" else -TURN_90_SPEED
+        turn_pwm  =  TURN_90_SPEED if turn_90_dir == "right" else -TURN_90_SPEED
         left_pwm  = base_speed + turn_pwm
         right_pwm = base_speed - turn_pwm
 

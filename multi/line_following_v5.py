@@ -43,7 +43,7 @@ TURN_90_SPEED   = 0.65     # Hard-turn PWM offset during the 90° manoeuvre
 TURN_90_LOCKOUT = 0.5      # Seconds to ignore re-acquisition (prevents double triggering)
 turn_90_start   = 0
 blind_turn_start = 0
-BLIND_TURN_TIME = 0.6
+BLIND_TURN_TIME = 1.0
 turn_90_dir     = "right"
 
 frame_count = 0
@@ -274,11 +274,11 @@ def follow_line(frame):
     elif state == STATE_BLIND_TURN:
         # Sweeping turn to find the black line
         if black_line_side == "left":
-            left_pwm  = base_speed * 1.2
-            right_pwm = -base_speed * 1.2
+            left_pwm  = base_speed * 1.5
+            right_pwm = -base_speed * 1.5
         else:
-            left_pwm  = -base_speed * 1.2
-            right_pwm = base_speed * 1.2
+            left_pwm  = -base_speed * 1.5
+            right_pwm = base_speed * 1.5
 
     elif state == STATE_SEARCH:
         # Sweeping turn to find the black line

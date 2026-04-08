@@ -13,8 +13,8 @@ def clamp(value, min_val, max_val):
 def getSign(n):
     return (n > 0) - (n < 0)
 
-base_speed = 0.25
-kp = 0.625
+base_speed = 0.3
+kp = 0.5
 ki = 0.0625
 kd = 0.125
 

@@ -84,9 +84,10 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
                 if action != shape:
                     if action == "Biometrics":
                         line_following.stop()
-                        while cv2.waitKey(1) != ord('q'):
+                        stop = False
+                        while not stop:
 
-                            face_rec.recognize_face(frame)
+                            stop = face_rec.recognize_face(frame)
                             line_event.wait()
                             line_event.clear()
                             with lock:

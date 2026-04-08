@@ -138,8 +138,8 @@ try:
         kernel = np.ones((3, 3), np.uint8)
         closed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=4)
 
-        cv2.imshow(closed, "close")
-        cv2.imshow(frame, "frame")
+        cv2.imshow("close", closed)
+        cv2.imshow("frame", frame)
         cnts, hrchy = cv2.findContours(closed, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         total_c = len(cnts)

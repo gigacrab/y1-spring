@@ -1,5 +1,5 @@
 import object_detection
-import line_following
+import line_following_v2 as line_following
 import multiprocessing as mp
 from multiprocessing import shared_memory
 from picamera2 import Picamera2

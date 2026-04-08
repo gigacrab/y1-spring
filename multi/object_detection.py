@@ -136,6 +136,7 @@ def detect_object(frame):
 
     cv2.imshow("frame", frame)
     cv2.imshow("close", closed)
+    cv2.waitKey(1)
 
     # should already have hierarchy if a contour exists
     for i, c in enumerate(cnts):

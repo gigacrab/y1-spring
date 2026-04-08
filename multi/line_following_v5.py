@@ -28,19 +28,19 @@ first       = True
 # ── State machine constants & variables ───────────────────────────────────────
 STATE_FOLLOW_BLACK = "FOLLOW_BLACK"
 STATE_FOLLOW_COLOR = "FOLLOW_COLOR"
-STATE_SEARCH       = "SEARCH"
-STATE_TURN_90      = "TURN_90"
-STATE_BLIND_TURN   = "BLIND_TURN"
+STATE_SEARCH       = "SEARCH"       # colour lost → sweep toward black_line_side
+STATE_TURN_90      = "TURN_90"      # executing a 90-degree turn on the colour line
+STATE_BLIND_TURN     = "BLIND_TURN"     # blindfolded during the 90-degree turn, ignoring colour
 
 state      = STATE_FOLLOW_BLACK
-last_state = STATE_FOLLOW_BLACK
+last_state = STATE_FOLLOW_BLACK     # Used to trigger the PID memory reset
 
 # ── Feature Settings ──────────────────────────────────────────────────────────
-black_line_side = "right"
-SEARCH_SPEED    = 0.35
+black_line_side = "right"  # Memory of where the black line is relative to color
+SEARCH_SPEED    = 0.35     # Motor speed when sweeping for a lost line
 
-TURN_90_SPEED   = 0.65
-TURN_90_LOCKOUT = 0.5
+TURN_90_SPEED   = 0.65     # Hard-turn PWM offset during the 90° manoeuvre
+TURN_90_LOCKOUT = 0.5      # Seconds to ignore re-acquisition (prevents double triggering)
 turn_90_start   = 0
 blind_turn_start = 0
 BLIND_TURN_TIME = 0.6
@@ -48,10 +48,11 @@ turn_90_dir     = "right"
 
 frame_count = 0
 
-# ── Fork / Arrow navigation ───────────────────────────────────────────────────
-fork_count           = 0
-FORK_CONFIRM         = 5
-fork_override_active = False   # True = arrow set direction, block colour geometry
+# ── Fork / Arrow navigation ──
+pending_turn = None
+branch_memory = None
+fork_count = 0
+FORK_CONFIRM = 5
 
 def stop():
     movement.move(0, 0)
@@ -59,54 +60,61 @@ def stop():
     cv2.destroyAllWindows()
 
 def stop_forever():
+    """Called by main.py finally block to kill motors and clean up."""
     movement.move(0, 0)
     movement.pi.stop()
     cv2.destroyAllWindows()
-
+ 
 def stop_for(seconds):
+    """Halt motors for a fixed duration, then return so line following resumes."""
     movement.move(0, 0)
     time.sleep(seconds)
 
 def force_blind_turn(direction):
-    """
-    Called by main.py when an arrow sign is detected.
-    Remembers the direction so when the black horizontal bar is reached,
-    the robot turns that way — same mechanic as the colour turn but direction
-    comes from the sign, not pixel geometry.
-    """
-    global turn_90_dir, fork_override_active
-    print(f"[OVERRIDE] Arrow seen → will turn {direction} at black bar")
-    turn_90_dir          = direction
-    fork_override_active = True
+    """Instantly overrides the state machine to perform a blind turn."""
+    global state, black_line_side, blind_turn_start, branch_memory
+    print(f"[OVERRIDE] Arrow detected! Forcing immediate blind turn: {direction}")
+    black_line_side = direction
+    blind_turn_start = time.perf_counter()
+    branch_memory = direction
+    state = STATE_BLIND_TURN
 
 # ── Main Loop ─────────────────────────────────────────────────────────────────
 def follow_line(frame):
     global state, black_line_side, turn_90_start, turn_90_dir, \
         total_error, first, frame_count, last_error, diff_error, \
-        blind_turn_start, last_state, fork_count, fork_override_active
-
+        blind_turn_start, last_state, \
+        horizontal_count, pending_turn, fork_count, branch_memory
+    
     time_marker = time.perf_counter()
 
     frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
     roi   = frame[240:480, :]
-    hsv   = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+
+    hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
 
     # ── Masks ─────────────────────────────────────────────────────────────
-    red_mask    = cv2.inRange(hsv, np.array([105,  30, 100]), np.array([140, 255, 255]))
+    # Color Mask
+    red_mask    = cv2.inRange(hsv, np.array([105, 30,  100]), np.array([140, 255, 255]))
     yellow_mask = cv2.inRange(hsv, np.array([ 85, 100, 180]), np.array([105, 255, 255]))
     colour_mask = cv2.bitwise_or(red_mask, yellow_mask)
 
+    # Black Mask
     imgray      = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
     ret, thresh = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
-    # ── Blindfold during SEARCH ────────────────────────────────────────────
+    # THE BLINDFOLD FIX
+    # If searching, black out the side of the camera we DON'T want to look at.
     if state == STATE_SEARCH:
         if black_line_side == "left":
+            # We want the right side. Blindfold the left (columns 0 to 320).
             thresh[:, :320] = 0
         elif black_line_side == "right":
+            # We want the left side. Blindfold the right (columns 320 to end).
             thresh[:, 320:] = 0
 
-    # ── Contours ──────────────────────────────────────────────────────────
+    # ── Contours & Centroids ──────────────────────────────────────────────
+    # Color Contours
     color_cnts, _ = cv2.findContours(colour_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     valid_color_cnt = None
     color_cx        = None
@@ -118,6 +126,7 @@ def follow_line(frame):
                 color_cx        = int(M['m10'] / M['m00'])
             break
 
+    # Black Contours
     valid_black_cnt = None
     black_cx        = None
     if ret < 150:
@@ -130,11 +139,19 @@ def follow_line(frame):
                     black_cx        = int(M['m10'] / M['m00'])
                 break
 
-    # ── Side memory ───────────────────────────────────────────────────────
+    # ── Geometry & Memory Updates ─────────────────────────────────────────
+    # NEW - use where the red line appears to predict where black exits
     if state == STATE_FOLLOW_BLACK and valid_color_cnt is not None and color_cx is not None:
+        # Red appears on LEFT (cx < 320) → robot will exit red toward the RIGHT black arm
+        # Red appears on RIGHT (cx > 320) → robot will exit red toward the LEFT black arm
         black_line_side = "right" if color_cx < 320 else "left"
+        # Uncomment the next line if you want to verify it in the console during testing!
+        # print(f"Red line spotted at cx={color_cx}, predicting exit turn: {black_line_side}")
 
-    # ── Colour horizontal check ────────────────────────────────────────────
+    # ── Colour-line horizontal check (with confirmation counter) ──────────
+    # Uses minAreaRect so a slightly curved or diagonal line doesn't spike the width.
+    # Only triggers after HORIZONTAL_CONFIRM consecutive wide frames to filter
+    # the transient diagonal crossing at junctions.
     color_is_horizontal = False
     if valid_color_cnt is not None:
         (_, (rw, rh), _) = cv2.minAreaRect(valid_color_cnt)
@@ -142,29 +159,28 @@ def follow_line(frame):
         short_side = min(rw, rh)
         if short_side > 0 and long_side / short_side > 2.5 and short_side > 80:
             color_is_horizontal = True
-
-    # ── Black horizontal check (exact same logic as colour) ───────────────
-    # The black bar at a fork looks wide in the ROI, same as colour at a 90° turn.
-    # FORK_CONFIRM frames required to prevent false triggers on diagonal crossings.
-    black_is_horizontal = False
+ 
+    # ── Black-line fork check (with confirmation counter) ─────────────────
+    # A T-junction or fork makes the black line appear wide in the ROI,
+    # just like the colour 90° check above.
+    black_is_fork = False
     if valid_black_cnt is not None:
         (_, (bw, bh), _) = cv2.minAreaRect(valid_black_cnt)
         b_long  = max(bw, bh)
         b_short = min(bw, bh)
         if b_short > 0 and (b_long / b_short) > 2.5 and b_short > 80:
             fork_count += 1
-            print(f"[Fork] count={fork_count} ratio={b_long/b_short:.2f}")
+            print(f"Fork-like contour detected (count={fork_count}): bw={bw:.1f}, bh={bh:.1f}, ratio={b_long/b_short:.2f}")
         else:
             fork_count = 0
     else:
         fork_count = 0
-    black_is_horizontal = (fork_count >= FORK_CONFIRM)
+    black_is_fork = (fork_count >= FORK_CONFIRM)
 
     # ── State Machine Transitions ─────────────────────────────────────────
     if state == STATE_TURN_90:
         elapsed_turn = time.perf_counter() - turn_90_start
         if elapsed_turn > TURN_90_LOCKOUT:
-            fork_override_active = False   # turn done, re-enable colour geometry
             if valid_color_cnt is not None and not color_is_horizontal:
                 state = STATE_FOLLOW_COLOR
             elif valid_black_cnt is not None:
@@ -183,24 +199,8 @@ def follow_line(frame):
         elif valid_black_cnt is not None:
             state = STATE_FOLLOW_BLACK
 
-    else:  # Normal FOLLOW states
-        # ── Black bar hit → same as colour turn, direction from arrow ──────
-        if black_is_horizontal:
-            if not fork_override_active:
-                # No arrow seen — fall back to pixel count on black mask
-                left_px  = cv2.countNonZero(thresh[:, :320])
-                right_px = cv2.countNonZero(thresh[:, 320:])
-                turn_90_dir = "left" if left_px > right_px else "right"
-                print(f"[Fork] No arrow — pixel fallback → {turn_90_dir}")
-            else:
-                print(f"[Fork] Arrow override → {turn_90_dir}")
-            turn_90_start = time.perf_counter()
-            state = STATE_TURN_90
-
-        # ── Colour bar hit → only allowed if no arrow override pending ─────
-        # Prevents colour geometry from overwriting the arrow direction
-        # before the robot even reaches the black bar.
-        elif color_is_horizontal and not fork_override_active:
+    else: # Normal FOLLOW states
+        if color_is_horizontal:
             left_px  = cv2.countNonZero(colour_mask[:, :320])
             right_px = cv2.countNonZero(colour_mask[:, 320:])
             turn_90_dir   = "left" if left_px > right_px else "right"
@@ -211,6 +211,7 @@ def follow_line(frame):
             state = STATE_FOLLOW_COLOR
 
         elif state == STATE_FOLLOW_COLOR:
+            # FORCE a search to activate the blindfold. Do not instantly snap to black.
             if valid_black_cnt is not None:
                 state = STATE_FOLLOW_BLACK
             else:
@@ -221,15 +222,16 @@ def follow_line(frame):
         elif valid_black_cnt is not None:
             state = STATE_FOLLOW_BLACK
 
-    # ── PID Reset on state change ──────────────────────────────────────────
+    # ✨ THE PID RESET FIX ✨
+    # Clear the integral memory so past curvy turns don't ruin straight lines
     if state != last_state:
-        print(f"[STATE] {last_state} → {state}")
-        total_error          = 0
-        last_error           = 0
-        first                = True
-        fork_count           = 0
-        fork_override_active = False
-        last_state           = state
+        print(f"[STATE CHANGE] {last_state} ---> {state}")
+        total_error = 0
+        last_error = 0
+        first = True
+        horizontal_count = 0
+        fork_count       = 0
+        last_state = state
 
     # ── Motor Control ─────────────────────────────────────────────────────
     im2 = np.zeros((240, 640, 3), dtype=np.uint8)
@@ -260,25 +262,28 @@ def follow_line(frame):
             right_pwm = base_speed - pid
 
         else:
+            # Lost mid-frame fallback
             pid       = getSign(last_error) * 2
             left_pwm  = base_speed + pid
             right_pwm = base_speed - pid
 
     elif state == STATE_BLIND_TURN:
+        # Sweeping turn to find the black line
         if black_line_side == "left":
-            left_pwm  = -base_speed * 1.2
-            right_pwm =  base_speed * 1.2
-        else:
-            left_pwm  =  base_speed * 1.2
+            left_pwm  = base_speed * 1.2
             right_pwm = -base_speed * 1.2
+        else:
+            left_pwm  = -base_speed * 1.2
+            right_pwm = base_speed * 1.2
 
     elif state == STATE_SEARCH:
+        # Sweeping turn to find the black line
         turn_pwm  = SEARCH_SPEED if black_line_side == "left" else -SEARCH_SPEED
         left_pwm  = base_speed + turn_pwm
         right_pwm = base_speed - turn_pwm
 
     elif state == STATE_TURN_90:
-        # Identical output for both colour bar and black bar turns
+        # Hard 90-degree turn
         turn_pwm  = TURN_90_SPEED if turn_90_dir == "left" else -TURN_90_SPEED
         left_pwm  = base_speed + turn_pwm
         right_pwm = base_speed - turn_pwm
@@ -293,16 +298,16 @@ def follow_line(frame):
 
     # ── Debug Display ─────────────────────────────────────────────────────
     '''frame_count += 1
-    if frame_count % 5 == 0:
+    if frame_count % 5 == 0: 
         if valid_color_cnt is not None:
             x, y, w, h = cv2.boundingRect(valid_color_cnt)
             cv2.rectangle(im2, (x, y), (x + w, y + h), (255, 0, 255), 2)
-
+        
         cv2.putText(im2, f"STATE: {state}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
         cv2.putText(im2, f"MEM: {black_line_side}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
-        cv2.putText(im2, f"OVERRIDE: {fork_override_active} dir={turn_90_dir}", (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 200, 255), 2)
-
+        
         cv2.imshow("1. Color Mask", colour_mask)
         cv2.imshow("2. Tracking & Math", im2)
-        if cv2.waitKey(1) == 27:
-            pass'''
+
+        if cv2.waitKey(1) == 27: # Press ESC to quit
+            break'''

@@ -117,6 +117,11 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
                             
                         elif action == "Stop":
                             line_following.stop_for(5)
+
+                        elif action in ("Left branch", "Right branch"):
+                            direction = "left" if action == "Left branch" else "right"
+                            line_following.pending_turn = direction
+
                         else:
                             pass # follow branch
                         cooldown_start = time.perf_counter()

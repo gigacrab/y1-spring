@@ -83,7 +83,7 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
                 if action != shape:
                     if action == "Biometrics":
                         line_following.stop()
-                        stop = face_rec(frame)
+                        stop = face_rec.recognize_face(frame)
                         if not stop:
                             continue         
                         else:

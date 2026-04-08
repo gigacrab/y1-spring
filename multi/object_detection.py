@@ -70,7 +70,7 @@ def detect_shapes_in_container(i, c, cnts, hrchy):
             child_area = cv2.contourArea(cnts[child_idx])
             hollow_ratio = child_area / area if area > 0 else 0
 
-            if hollow_ratio > 0.85:
+            if hollow_ratio > 0.75:
                 print(f"Hollow container at: {i}")
 
                 min_rect = cv2.minAreaRect(c)
@@ -80,7 +80,7 @@ def detect_shapes_in_container(i, c, cnts, hrchy):
                 rect_area = w_rot * h_rot
                 extent = area / rect_area if rect_area > 0 else 0
 
-                if extent > 0.85: # parent is rectangle-like, confirms it's a container
+                if extent > 0.75: # parent is rectangle-like, confirms it's a container
                     # Find largest valid grandchild instead of assuming first
                     largest_gc = None
                     largest_gc_area = 0

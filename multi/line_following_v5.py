@@ -157,7 +157,7 @@ def follow_line(frame):
         (_, (rw, rh), _) = cv2.minAreaRect(valid_color_cnt)
         long_side  = max(rw, rh)
         short_side = min(rw, rh)
-        if short_side > 0 and long_side / short_side > 2.5 and short_side > 80:
+        if short_side > 0 and long_side / short_side > 1.8 and short_side > 80:
             color_is_horizontal = True
  
     # ── Black-line fork check (with confirmation counter) ─────────────────

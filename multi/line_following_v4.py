@@ -52,8 +52,8 @@ frame_count = 0
 pending_turn = None
 horizontal_count = 0
 fork_count = 0
-HORIZONTAL_CONFIRM = 2
-FORK_CONFIRM = 2
+HORIZONTAL_CONFIRM = 3
+FORK_CONFIRM = 3
 
 def stop():
     movement.move(0, 0)
@@ -193,7 +193,22 @@ def follow_line(frame):
             state = STATE_FOLLOW_BLACK
 
     else: # Normal FOLLOW states
-        if color_is_horizontal:
+        if black_is_fork:
+            if pending_turn is not None:
+                # Arrow sign was seen — use its direction and consume the memory
+                turn_90_dir  = pending_turn
+                pending_turn = None
+                print(f"[Fork] Using arrow → turning {turn_90_dir}")
+            else:
+                # No arrow seen yet — fall back to pixel-count heuristic
+                left_px  = cv2.countNonZero(thresh[:, :320])
+                right_px = cv2.countNonZero(thresh[:, 320:])
+                turn_90_dir = "left" if left_px > right_px else "right"
+                print(f"[Fork] No arrow — pixel fallback → turning {turn_90_dir}")
+            turn_90_start = time.perf_counter()
+            state = STATE_TURN_90
+
+        elif color_is_horizontal:
             left_px  = cv2.countNonZero(colour_mask[:, :320])
             right_px = cv2.countNonZero(colour_mask[:, 320:])
             turn_90_dir   = "left" if left_px > right_px else "right"
@@ -214,21 +229,6 @@ def follow_line(frame):
 
         elif valid_black_cnt is not None:
             state = STATE_FOLLOW_BLACK
-
-        elif black_is_fork:
-            if pending_turn is not None:
-                # Arrow sign was seen — use its direction and consume the memory
-                turn_90_dir  = pending_turn
-                pending_turn = None
-                print(f"[Fork] Using arrow → turning {turn_90_dir}")
-            else:
-                # No arrow seen yet — fall back to pixel-count heuristic
-                left_px  = cv2.countNonZero(thresh[:, :320])
-                right_px = cv2.countNonZero(thresh[:, 320:])
-                turn_90_dir = "left" if left_px > right_px else "right"
-                print(f"[Fork] No arrow — pixel fallback → turning {turn_90_dir}")
-            turn_90_start = time.perf_counter()
-            state = STATE_TURN_90
 
     # ✨ THE PID RESET FIX ✨
     # Clear the integral memory so past curvy turns don't ruin straight lines

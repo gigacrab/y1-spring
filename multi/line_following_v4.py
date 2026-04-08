@@ -205,7 +205,7 @@ def follow_line(frame):
                 print(f"[Fork EXIT] Using memory → turning {turn_90_dir}.")
                 
             turn_90_start = time.perf_counter()
-            state = STATE_TURN_90
+            state = STATE_BLIND_TURN
 
         elif color_is_horizontal:
             left_px  = cv2.countNonZero(colour_mask[:, :320])

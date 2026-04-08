@@ -136,7 +136,7 @@ try:
         )
 
         kernel = np.ones((3, 3), np.uint8)
-        closed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=4)
+        closed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
 
         cv2.imshow("close", closed)
         cv2.imshow("frame", frame)

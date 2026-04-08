@@ -78,6 +78,7 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
             if not result_q.empty():
                 shape = result_q.get_nowait()
                 print(f"Detected: {shape}") # already handles shape detection
+                shape = shape[0]
                 action = decide_action(shape)
 
                 if action != shape:

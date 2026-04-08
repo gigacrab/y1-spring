@@ -93,8 +93,6 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
                                 frame = frame_buf.copy()
                             
                         cv2.destroyWindow("Face Recognition")
-                        while cv2.waitKey(1) != ord('p'):
-                            pass
                     elif action == "360 Turn":
                         pass # turn 360
                     elif action == "Stop":

@@ -43,7 +43,7 @@ SEARCH_SPEED    = 0.65      # hard-turn PWM offset while searching (tune if need
 
 # Feature 2 – 90° turn
 TURN_90_SPEED    = 0.65     # hard-turn PWM offset during the 90° manoeuvre
-TURN_90_LOCKOUT = 2.0      # Seconds to ignore re-acquisition (prevents double triggering)
+TURN_90_LOCKOUT = 1.0      # Seconds to ignore re-acquisition (prevents double triggering)
 turn_90_start   = 0
 blind_turn_start = 0
 BLIND_TURN_TIME = 1.0

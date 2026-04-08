@@ -71,6 +71,7 @@ def follow_line(frame):
     # ── Black mask (now always computed – needed for Feature 1 memory) ────
     imgray        = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
     ret, thresh   = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    print(ret)
 
     # ── Find best colour contour ──────────────────────────────────────────
     color_cnts, _ = cv2.findContours(colour_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)

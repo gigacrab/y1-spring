@@ -161,6 +161,7 @@ def follow_line(frame):
         b_short = min(bw, bh)
         if b_short > 0 and (b_long / b_short) > 2.5 and b_short > 80:
             fork_count += 1
+            print(f"Fork-like contour detected (count={fork_count}): bw={bw:.1f}, bh={bh:.1f}, ratio={b_long/b_short:.2f}")
         else:
             fork_count = 0
     else:

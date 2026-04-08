@@ -4,7 +4,7 @@
 import cv2
 import numpy as np 
 
-MIN_AREA = 3000
+MIN_AREA = 3500
 MAX_ASPECT_RATIO = 1.6
 
 def stop():

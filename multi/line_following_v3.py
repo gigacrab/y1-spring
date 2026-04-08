@@ -216,11 +216,11 @@ def follow_line(frame):
     elif state == STATE_BLIND_TURN:
         # Sweeping turn to find the black line
         if black_line_side == "left":
-            left_pwm  = base_speed
-            right_pwm = -base_speed
+            left_pwm  = base_speed * 1.2
+            right_pwm = -base_speed * 1.2
         else:
-            left_pwm  = -base_speed
-            right_pwm = base_speed
+            left_pwm  = -base_speed * 1.2
+            right_pwm = base_speed * 1.2
 
     elif state == STATE_SEARCH:
         # Sweeping turn to find the black line

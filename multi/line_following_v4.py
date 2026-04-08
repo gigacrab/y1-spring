@@ -206,13 +206,6 @@ def follow_line(frame):
                 branch_memory = None          # Clear it so we don't turn forever
                 print(f"[Fork EXIT] Using memory → turning {turn_90_dir}.")
                 
-            else:
-                # 3. NORMAL: No arrow, no memory — fall back to pixel-count
-                left_px  = cv2.countNonZero(thresh[:, :320])
-                right_px = cv2.countNonZero(thresh[:, 320:])
-                turn_90_dir = "left" if left_px > right_px else "right"
-                print(f"[Fork] No arrow/memory — pixel fallback → turning {turn_90_dir}")
-                
             turn_90_start = time.perf_counter()
             state = STATE_TURN_90
 

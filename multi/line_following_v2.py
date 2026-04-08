@@ -185,7 +185,7 @@ def follow_line(frame):
             state = STATE_FOLLOW_BLACK
 
     # PID RESET
-     if state != last_state:
+    if state != last_state:
         total_error = 0
         last_error = 0
         first = True

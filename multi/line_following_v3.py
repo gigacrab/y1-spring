@@ -63,7 +63,7 @@ def stop_forever():
     cv2.destroyAllWindows()
 
 def turn_360():
-    movement.move(-0.5, 0.5)
+    movement.move(-1, 1)
     time.sleep(2)
     global last_error
     if getSign(last_error) == -1:

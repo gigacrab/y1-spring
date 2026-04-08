@@ -206,8 +206,8 @@ def follow_line(frame):
             blind_turn_start = time.perf_counter()
             branch_memory    = None        # consume — only one exit turn per arrow
             state = STATE_BLIND_TURN
-            
-        if color_is_horizontal:
+
+        elif color_is_horizontal:
             left_px  = cv2.countNonZero(colour_mask[:, :320])
             right_px = cv2.countNonZero(colour_mask[:, 320:])
             turn_90_dir   = "left" if left_px > right_px else "right"

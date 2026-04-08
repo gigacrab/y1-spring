@@ -75,10 +75,21 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
             # check for new shape
             if not result_q.empty():
                 shape = result_q.get_nowait()
-                print(f"Detected: {shape}")
+                print(f"Detected: {shape}") # already handles shape detection
+                action = decide_action(shape)
+
+                if action != shape:
+                    if action == "Biometrics":
+                        pass # do face recog
+                    elif action == "360 Turn":
+                        pass # turn 360
+                    elif action == "Stop":
+                        pass # stop
+                    else:
+                        pass # follow branch
 
             # always follow line regardless
-            line_following.follow_line(frame)
+            line_following.follow_line(frame) # we should pass left / right branch as parameter
             #print(f"duration2 {time.perf_counter() - time_marker2}")
     finally:
         shm.close()
@@ -88,8 +99,8 @@ def decide_action(shape):
     return {
         "Arrow (LEFT)": "Left branch",
         "Arrow (RIGHT)": "Right branch",
-        "Arrow (UP)": "Left branch",
-        "Arrow (DOWN)": "Right branch",
+        #"Arrow (UP)": "Up branch",
+        #"Arrow (DOWN)": "Down branch",
         "Recycle": "360 Turn",
         "Fingerprint": "Biometrics",
         "QR Code": "Biometrics",

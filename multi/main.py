@@ -16,6 +16,11 @@ def camera_process(shm_name, lock, shape_event, line_event, stop_event):
     
     picam2 = Picamera2()
     picam2.configure(picam2.create_video_configuration(main={"size": (640, 480)}))
+    picam2.set_controls({
+        "ExposureTime": 3000,      # microseconds — try 2000-5000
+        "AnalogueGain": 4.0,       # increase gain to compensate for less light
+        "AeEnable": False,          # disable auto exposure or it'll fight you
+    })
     picam2.start()
     time.sleep(2)
     

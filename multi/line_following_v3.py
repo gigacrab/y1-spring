@@ -3,6 +3,8 @@ import time
 import numpy as np
 import movement
 
+# changed ret from 130 to 100, exposure and analogue gain affects this value
+
 def clamp(value, min_val, max_val):
     if value > max_val:
         return max_val
@@ -117,7 +119,7 @@ def follow_line(frame):
     # Black Contours
     valid_black_cnt = None
     black_cx        = None
-    if ret < 170:
+    if ret < 100:
         black_cnts, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         for cnt in sorted(black_cnts, key=cv2.contourArea, reverse=True):
             if 7500 <= cv2.contourArea(cnt) <= 40000:

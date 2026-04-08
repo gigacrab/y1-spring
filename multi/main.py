@@ -8,6 +8,10 @@ import time
 import numpy as np
 import cv2
 
+# changed exposure time from 5000
+# changed analogue gain from 25.0
+
+
 FRAME_SHAPE = (480, 640, 4)
 FRAME_DTYPE = np.uint8
 FRAME_NBYTES = int(np.prod(FRAME_SHAPE)) * np.dtype(FRAME_DTYPE).itemsize
@@ -61,8 +65,8 @@ def shape_detection_process(shm_name, lock, shape_event, result_q, stop_event):
 def line_following_process(shm_name, lock, line_event, result_q, stop_event):
     shm = shared_memory.SharedMemory(name=shm_name)
     frame_buf = np.ndarray(FRAME_SHAPE, dtype=FRAME_DTYPE, buffer=shm.buf)
-    cooldown_start = -2
-    cooldown_period = 2000
+    cooldown_period = 2
+    cooldown_start = -cooldown_period
     clear = False
 
     try:
@@ -81,7 +85,10 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
             print(f"time {cooldown_start}")
             if time.perf_counter() - cooldown_start > cooldown_period:
                 if clear:
-                    result_q.get_nowait()
+                    try:
+                        item = result_q.get_nowait()
+                    except mp.queues.Empty:
+                        item = None
                     clear = False
                 if not result_q.empty():
                     shape = result_q.get_nowait()

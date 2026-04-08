@@ -86,7 +86,8 @@ while True:
                 name = known_face_names[best_match_index]
 
             face_names.append(name)
-            print(name)
+        
+        print(face_names)
 
     process_this_frame = not process_this_frame
 

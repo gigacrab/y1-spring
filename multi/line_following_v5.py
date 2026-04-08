@@ -40,7 +40,7 @@ black_line_side = "right"  # Memory of where the black line is relative to color
 SEARCH_SPEED    = 0.35     # Motor speed when sweeping for a lost line
 
 TURN_90_SPEED   = 0.65     # Hard-turn PWM offset during the 90° manoeuvre
-TURN_90_LOCKOUT = 0.5      # Seconds to ignore re-acquisition (prevents double triggering)
+TURN_90_LOCKOUT = 1.0      # Seconds to ignore re-acquisition (prevents double triggering)
 turn_90_start   = 0
 blind_turn_start = 0
 BLIND_TURN_TIME = 0.6

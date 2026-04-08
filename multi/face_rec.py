@@ -1,6 +1,8 @@
 import face_recognition
+from picamera2 import Picamera2
 import cv2
 import numpy as np
+import time
 
 # This is a demo of running face recognition on live video from your webcam. It's a little more complicated than the
 # other example, but it includes some basic performance tweaks to make things run a lot faster:
@@ -12,7 +14,15 @@ import numpy as np
 # specific demo. If you have trouble installing it, try any of the other demos that don't require it instead.
 
 # Get a reference to webcam #0 (the default one)
-video_capture = cv2.VideoCapture(0)
+picam2 = Picamera2()
+picam2.configure(picam2.create_video_configuration(main={"size": (640, 480)}))
+picam2.set_controls({
+    "ExposureTime": 5000,      # microseconds — try 2000-5000
+    "AnalogueGain": 25.0,       # increase gain to compensate for less light
+    "AeEnable": False,          # disable auto exposure or it'll fight you
+})
+picam2.start()
+time.sleep(2)
 
 # Load a sample picture and learn how to recognize it.
 bryan_image = face_recognition.load_image_file("./multi/faces/bryan.jpeg")
@@ -40,25 +50,29 @@ process_this_frame = True
 
 while True:
     # Grab a single frame of video
-    ret, frame = video_capture.read()
+    frame = picam2.capture_array()
 
     # Only process every other frame of video to save time
     if process_this_frame:
         # Resize frame of video to 1/4 size for faster face recognition processing
-        small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
+        '''small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
 
         # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
-        rgb_small_frame = small_frame[:, :, ::-1]
+        rgb_small_frame = small_frame[:, :, ::-1]'''
         
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_RGBA2RGB)
+
         # Find all the faces and face encodings in the current frame of video
-        face_locations = face_recognition.face_locations(rgb_small_frame)
-        face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
+        face_locations = face_recognition.face_locations(rgb_frame)
+        face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
 
         face_names = []
         for face_encoding in face_encodings:
             # See if the face is a match for the known face(s)
             matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
             name = "Unknown"
+
+            
 
             # # If a match was found in known_face_encodings, just use the first one.
             # if True in matches:
@@ -72,6 +86,8 @@ while True:
                 name = known_face_names[best_match_index]
 
             face_names.append(name)
+        
+        print(face_names)
 
     process_this_frame = not process_this_frame
 
@@ -92,6 +108,7 @@ while True:
         font = cv2.FONT_HERSHEY_DUPLEX
         cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
 
+    
     # Display the resulting image
     cv2.imshow('Video', frame)
 
@@ -100,5 +117,5 @@ while True:
         break
 
 # Release handle to the webcam
-video_capture.release()
+picam2.stop()
 cv2.destroyAllWindows()

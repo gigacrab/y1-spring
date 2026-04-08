@@ -193,18 +193,27 @@ def follow_line(frame):
         if black_is_fork:
             if pending_turn is not None:
                 # 1. ENTRY: Arrow sign was seen — use it and SAVE it to memory
-                turn_90_dir  = pending_turn
+                turn_dir = pending_turn
                 branch_memory = pending_turn  # Save for the exit!
                 pending_turn = None
-                print(f"[Fork ENTRY] Using arrow → turning {turn_90_dir}. Memory saved.")
+                print(f"[Fork ENTRY] Using arrow → blind turning {turn_dir}. Memory saved.")
                 
             elif branch_memory is not None:
                 # 2. EXIT: No arrow, but we have memory from the entry!
-                turn_90_dir = branch_memory
+                turn_dir = branch_memory
                 branch_memory = None          # Clear it so we don't turn forever
-                print(f"[Fork EXIT] Using memory → turning {turn_90_dir}.")
+                print(f"[Fork EXIT] Using memory → blind turning {turn_dir}.")
                 
-            turn_90_start = time.perf_counter()
+            else:
+                # 3. NORMAL: No arrow, no memory — fall back to pixel-count
+                left_px  = cv2.countNonZero(thresh[:, :320])
+                right_px = cv2.countNonZero(thresh[:, 320:])
+                turn_dir = "left" if left_px > right_px else "right"
+                print(f"[Fork] No arrow/memory — pixel fallback → blind turning {turn_dir}")
+                
+            # ── Trigger the Blind Turn ──
+            black_line_side = turn_dir              # Tell the blind turn which way to spin
+            blind_turn_start = time.perf_counter()  # Start the blind turn stopwatch
             state = STATE_BLIND_TURN
 
         elif color_is_horizontal:

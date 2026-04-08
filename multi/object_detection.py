@@ -40,7 +40,7 @@ def detect_symbols_in_container(i, cnts, hrchy):
                 if 12 <= corners <= 18 and 1.5 <= ar <= 2.0 and 0.45 <= extent <= 0.65:
                     arrow_count += 1
 
-            print(f"A:{area}, AR:{ar} E:{extent} corner:{corners}")
+            #print(f"A:{area}, AR:{ar} E:{extent} corner:{corners}")
 
         child_idx = hrchy[0][child_idx][0] # next sibling
         if child_idx == -1:

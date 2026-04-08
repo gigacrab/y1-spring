@@ -124,8 +124,11 @@ def follow_line(frame):
     # 90° Turn Geometry Check
     color_is_horizontal = False
     if valid_color_cnt is not None:
-        x, y, w, h = cv2.boundingRect(valid_color_cnt)
-        if h > 0 and w > (h * 2.5) and w > 150:
+        (_, (rw, rh), _) = cv2.minAreaRect(valid_color_cnt)
+        long_side  = max(rw, rh)
+        short_side = min(rw, rh)
+        # Also require short_side > 80 so a tiny blob can't accidentally pass
+        if short_side > 0 and long_side / short_side > 2.5 and short_side > 80:
             color_is_horizontal = True
 
     # ── State Machine Transitions ─────────────────────────────────────────

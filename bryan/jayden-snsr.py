@@ -132,11 +132,11 @@ try:
             gray, 255,
             cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
             cv2.THRESH_BINARY_INV,
-            51, 5
+            51, 3
         )
 
         kernel = np.ones((3, 3), np.uint8)
-        closed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
+        closed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=3)
 
         cv2.imshow("close", closed)
         cv2.imshow("frame", frame)

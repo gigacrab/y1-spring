@@ -62,7 +62,7 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
     shm = shared_memory.SharedMemory(name=shm_name)
     frame_buf = np.ndarray(FRAME_SHAPE, dtype=FRAME_DTYPE, buffer=shm.buf)
     cooldown_start = -2
-    cooldown_period = 2
+    cooldown_period = 2000
     clear = False
 
     try:
@@ -78,7 +78,7 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
             #print(f"duration1 {time_marker2 - time_marker}")
 
             # check for new shape
-            print(cooldown_start)
+            print(f"time {cooldown_start}")
             if time.perf_counter() - cooldown_start > cooldown_period:
                 if clear:
                     result_q.get_nowait()

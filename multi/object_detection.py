@@ -237,6 +237,6 @@ def detect_object(frame):
         #print("Final verdict: No shapes")
         return None
     else:
-        #print(f"Final verdict: {answer}")
+        print(f"Final verdict: {answer}")
         return answer
    

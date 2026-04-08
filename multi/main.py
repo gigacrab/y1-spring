@@ -57,15 +57,15 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
 
     try:
         while not stop_event.is_set():
-            #time_marker = time.perf_counter()
+            time_marker = time.perf_counter()
             
             line_event.wait()
             line_event.clear()
             with lock:
                 frame = frame_buf.copy()
             
-            #time_marker2 = time.perf_counter()
-            #print(f"duration1 {time_marker2 - time_marker}")
+            time_marker2 = time.perf_counter()
+            print(f"duration1 {time_marker2 - time_marker}")
 
             # check for new shape
             if not result_q.empty():
@@ -74,7 +74,7 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
 
             # always follow line regardless
             line_following.follow_line(frame)
-            #print(f"duration2 {time.perf_counter() - time_marker2}")
+            print(f"duration2 {time.perf_counter() - time_marker2}")
     finally:
         shm.close()
         line_following.stop()

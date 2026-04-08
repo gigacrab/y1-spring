@@ -65,7 +65,7 @@ def shape_detection_process(shm_name, lock, shape_event, result_q, stop_event):
 def line_following_process(shm_name, lock, line_event, result_q, stop_event):
     shm = shared_memory.SharedMemory(name=shm_name)
     frame_buf = np.ndarray(FRAME_SHAPE, dtype=FRAME_DTYPE, buffer=shm.buf)
-    cooldown_period = 2
+    cooldown_period = 4
     cooldown_start = -cooldown_period
     clear = False
 

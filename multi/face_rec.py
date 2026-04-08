@@ -12,7 +12,15 @@ import numpy as np
 # specific demo. If you have trouble installing it, try any of the other demos that don't require it instead.
 
 # Get a reference to webcam #0 (the default one)
-video_capture = cv2.VideoCapture(0)
+picam2 = Picamera2()
+picam2.configure(picam2.create_video_configuration(main={"size": (640, 480)}))
+picam2.set_controls({
+    "ExposureTime": 5000,      # microseconds — try 2000-5000
+    "AnalogueGain": 25.0,       # increase gain to compensate for less light
+    "AeEnable": False,          # disable auto exposure or it'll fight you
+})
+picam2.start()
+time.sleep(2)
 
 # Load a sample picture and learn how to recognize it.
 bryan_image = face_recognition.load_image_file("./multi/faces/bryan.jpeg")
@@ -40,7 +48,7 @@ process_this_frame = True
 
 while True:
     # Grab a single frame of video
-    ret, frame = video_capture.read()
+    frame = picam2.capture_array()
 
     # Only process every other frame of video to save time
     if process_this_frame:

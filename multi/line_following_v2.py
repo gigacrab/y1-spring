@@ -24,6 +24,7 @@ total_error = 0
 last_error  = 0
 diff_error  = 0
 first       = True
+last_time   = time.perf_counter()
 
 # ── State machine constants ───────────────────────────────────────────────────
 STATE_FOLLOW_BLACK = "FOLLOW_BLACK"
@@ -56,8 +57,8 @@ def stop():
 frame_count = 0
 
 def follow_line(frame):
-    global state, last_state, black_line_side, turn_90_start, blind_turn_start, turn_90_dir, total_error, first, frame_count, last_error, diff_error
-    time_marker = time.perf_counter()
+    global state, last_state, black_line_side, turn_90_start, blind_turn_start, turn_90_dir, total_error, first, frame_count, last_error, diff_error, last_time
+    current_time = time.perf_counter()
 
     frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
     roi   = frame[240:480, :]
@@ -185,7 +186,7 @@ def follow_line(frame):
             state = STATE_FOLLOW_BLACK
 
     # PID RESET
-     if state != last_state:
+    if state != last_state:
         total_error = 0
         last_error = 0
         first = True
@@ -204,8 +205,8 @@ def follow_line(frame):
             cv2.drawContours(im2, [line_contour], -1, (0, 255, 0), thickness=cv2.FILLED)
             cv2.line(im2, (cx, 0), (cx, 240), (0, 255, 255), 3)
 
-            elapsed_time = max(time.perf_counter() - time_marker, 0.0001)
-
+            elapsed_time = max(current_time - last_time, 0.0001)
+            last_time = current_time
             error        = (320 - cx) / 320
             total_error += error * elapsed_time
 

@@ -43,7 +43,7 @@ TURN_90_SPEED   = 0.65     # Hard-turn PWM offset during the 90° manoeuvre
 TURN_90_LOCKOUT = 0.5      # Seconds to ignore re-acquisition (prevents double triggering)
 turn_90_start   = 0
 blind_turn_start = 0
-BLIND_TURN_TIME = 1.0
+BLIND_TURN_TIME = 0.7      
 turn_90_dir     = "right"
 
 frame_count = 0
@@ -192,7 +192,7 @@ def follow_line(frame):
         elapsed_blind = time.perf_counter() - blind_turn_start
         if elapsed_blind > BLIND_TURN_TIME and valid_black_cnt is not None:
             state = STATE_FOLLOW_BLACK
-            fork_cooldown_end = time.perf_counter() + 1.5 
+            fork_cooldown_end = time.perf_counter() + 0.5
             print("[Blind Turn] Line found! Cooldown active.")
         elif elapsed_blind > 2.0:
             state = STATE_SEARCH

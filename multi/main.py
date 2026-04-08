@@ -84,14 +84,15 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
                 if action != shape:
                     if action == "Biometrics":
                         line_following.stop()
-                        print("start")
-                        stop = face_rec.recognize_face(frame)
-                        print("done")
-                        if not stop:
-                            continue         
-                        else:
-                            cv2.destroyWindow("Face Recognition")
-                        print("hello")
+                        while cv2.waitKey(1) != ord('q'):
+
+                            face_rec.recognize_face(frame)
+                            line_event.wait()
+                            line_event.clear()
+                            with lock:
+                                frame = frame_buf.copy()
+                            
+                        cv2.destroyWindow("Face Recognition")
                         while cv2.waitKey(1) != ord('p'):
                             pass
                     elif action == "360 Turn":

@@ -1,4 +1,5 @@
 # problem - otsu follows danger direction
+# implement duplicate filtering for result queue
 
 import cv2
 import time

@@ -43,10 +43,10 @@ SEARCH_SPEED    = 0.35      # hard-turn PWM offset while searching (tune if need
 
 # Feature 2 – 90° turn
 TURN_90_SPEED    = 0.65     # hard-turn PWM offset during the 90° manoeuvre
-TURN_90_LOCKOUT = 0.5      # Seconds to ignore re-acquisition (prevents double triggering)
+TURN_90_LOCKOUT = 1.0      # Seconds to ignore re-acquisition (prevents double triggering)
 turn_90_start   = 0
 blind_turn_start = 0
-BLIND_TURN_TIME = 0.6
+BLIND_TURN_TIME = 1.0
 turn_90_dir     = "right"
 
 def stop():
@@ -242,13 +242,13 @@ def follow_line(frame):
     elif state == STATE_SEARCH:
         # Hard-turn toward the side where the black line was last seen.
         # SEARCH_SPEED is positive → right turn; negative → left turn.
-        turn_pwm  =  SEARCH_SPEED if black_line_side == "right" else -SEARCH_SPEED
+        turn_pwm  = -SEARCH_SPEED if black_line_side == "right" else SEARCH_SPEED
         left_pwm  = base_speed + turn_pwm
         right_pwm = base_speed - turn_pwm
 
     elif state == STATE_TURN_90:
         # Hard-turn in the direction the 90° geometry told us.
-        turn_pwm  =  TURN_90_SPEED if turn_90_dir == "right" else -TURN_90_SPEED
+        turn_pwm  = -TURN_90_SPEED if turn_90_dir == "right" else +TURN_90_SPEED
         left_pwm  = base_speed + turn_pwm
         right_pwm = base_speed - turn_pwm
 

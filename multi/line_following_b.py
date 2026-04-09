@@ -127,7 +127,7 @@ def follow_line(frame):
                 black_cx = int(M['m10'] / M['m00'])
 
     color_sorted = sorted(color_cnts, key=cv2.contourArea, reverse=True)
-    if color_sorted and cv2.contourArea(color_sorted[0]) > 7500:
+    if color_sorted and cv2.contourArea(color_sorted[0]) > 2000:
         M = cv2.moments(color_sorted[0])
         if M['m00'] != 0:
             color_cx = int(M['m10'] / M['m00'])

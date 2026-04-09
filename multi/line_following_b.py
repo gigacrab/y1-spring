@@ -66,12 +66,12 @@ def shift(dir):
         movement.move(1, -1)
         arrow_follow = True
         arrow_error = 1
-        time.sleep(0.3)
+        time.sleep(0.25)
     elif dir.lower() == "right":
         movement.move(-1, 1)
         arrow_follow = True
         arrow_error = -1
-        time.sleep(0.3)
+        time.sleep(0.25)
 
 def calc_pid(cx, time_marker):
     global error, total_error, last_error, diff_error, first

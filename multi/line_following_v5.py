@@ -3,8 +3,6 @@ import time
 import numpy as np
 import movement
 
-# changed ret from 130 to 100, exposure and analogue gain affects this value
-
 def clamp(value, min_val, max_val):
     if value > max_val:
         return max_val
@@ -45,22 +43,33 @@ TURN_90_SPEED   = 0.65     # Hard-turn PWM offset during the 90° manoeuvre
 TURN_90_LOCKOUT = 0.5      # Seconds to ignore re-acquisition (prevents double triggering)
 turn_90_start   = 0
 blind_turn_start = 0
-BLIND_TURN_TIME = 0.6
+BLIND_TURN_TIME = 1.0
 turn_90_dir     = "right"
 
 frame_count = 0
 
-def stop_for(period):
-    movement.move(0, 0)
-    time.sleep(period)
+# ── Fork / Arrow navigation ──
+pending_turn = None
+branch_memory = None
+fork_count = 0
+horizontal_count  = 0
+fork_cooldown_end = 0.0
+last_time         = None
+FORK_CONFIRM = 5
 
 def stop():
     movement.move(0, 0)
 
 def stop_forever():
+    """Called by main.py finally block to kill motors and clean up."""
     movement.move(0, 0)
     movement.pi.stop()
     cv2.destroyAllWindows()
+ 
+def stop_for(seconds):
+    """Halt motors for a fixed duration, then return so line following resumes."""
+    movement.move(0, 0)
+    time.sleep(seconds)
 
 def turn_360():
     movement.move(-1, 1)
@@ -69,15 +78,23 @@ def turn_360():
     if getSign(last_error) == -1:
         last_error *= -1
 
+def force_blind_turn(direction):
+    """Instantly overrides the state machine to perform a blind turn."""
+    global state, black_line_side, blind_turn_start, branch_memory
+    print(f"[OVERRIDE] Arrow detected! Forcing immediate blind turn: {direction}")
+    black_line_side = direction
+    blind_turn_start = time.perf_counter()
+    branch_memory = direction
+    state = STATE_BLIND_TURN
 
 # ── Main Loop ─────────────────────────────────────────────────────────────────
 def follow_line(frame):
     global state, black_line_side, turn_90_start, turn_90_dir, \
         total_error, first, frame_count, last_error, diff_error, \
-        blind_turn_start, frame_count, last_state
+        blind_turn_start, last_state, error, \
+        horizontal_count, pending_turn, fork_count, branch_memory, \
+        fork_cooldown_end, last_time
     
-    time_marker = time.perf_counter()
-
     frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
     roi   = frame[240:480, :]
 
@@ -86,13 +103,13 @@ def follow_line(frame):
     # ── Masks ─────────────────────────────────────────────────────────────
     # Color Mask
     red_mask    = cv2.inRange(hsv, np.array([105, 30,  100]), np.array([140, 255, 255]))
-    yellow_mask = cv2.inRange(hsv, np.array([ 32, 100, 180]), np.array([52, 255, 255]))
+    yellow_mask = cv2.inRange(hsv, np.array([ 85, 100, 180]), np.array([105, 255, 255]))
     colour_mask = cv2.bitwise_or(red_mask, yellow_mask)
 
     # Black Mask
     imgray      = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
     ret, thresh = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-    #print(ret)
+
     # THE BLINDFOLD FIX
     # If searching, black out the side of the camera we DON'T want to look at.
     if state == STATE_SEARCH:
@@ -119,7 +136,7 @@ def follow_line(frame):
     # Black Contours
     valid_black_cnt = None
     black_cx        = None
-    if ret < 100:
+    if ret < 150:
         black_cnts, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         for cnt in sorted(black_cnts, key=cv2.contourArea, reverse=True):
             if 7500 <= cv2.contourArea(cnt) <= 40000:
@@ -138,15 +155,34 @@ def follow_line(frame):
         # Uncomment the next line if you want to verify it in the console during testing!
         # print(f"Red line spotted at cx={color_cx}, predicting exit turn: {black_line_side}")
 
-    # 90° Turn Geometry Check
+    # ── Colour-line horizontal check (with confirmation counter) ──────────
+    # Uses minAreaRect so a slightly curved or diagonal line doesn't spike the width.
+    # Only triggers after HORIZONTAL_CONFIRM consecutive wide frames to filter
+    # the transient diagonal crossing at junctions.
     color_is_horizontal = False
     if valid_color_cnt is not None:
         (_, (rw, rh), _) = cv2.minAreaRect(valid_color_cnt)
         long_side  = max(rw, rh)
         short_side = min(rw, rh)
-        # Also require short_side > 80 so a tiny blob can't accidentally pass
         if short_side > 0 and long_side / short_side > 2.5 and short_side > 80:
             color_is_horizontal = True
+ 
+    # ── Black-line fork check (with confirmation counter) ─────────────────
+    # A T-junction or fork makes the black line appear wide in the ROI,
+    # just like the colour 90° check above.
+    black_is_fork = False
+    if valid_black_cnt is not None:
+        (_, (bw, bh), _) = cv2.minAreaRect(valid_black_cnt)
+        b_long  = max(bw, bh)
+        b_short = min(bw, bh)
+        if b_short > 0 and (b_long / b_short) > 2.5 and b_short > 80:
+            fork_count += 1
+            print(f"Fork-like contour detected (count={fork_count}): bw={bw:.1f}, bh={bh:.1f}, ratio={b_long/b_short:.2f}")
+        else:
+            fork_count = 0
+    else:
+        fork_count = 0
+    black_is_fork = (fork_count >= FORK_CONFIRM) and (time.perf_counter() >= fork_cooldown_end)
 
     # ── State Machine Transitions ─────────────────────────────────────────
     if state == STATE_TURN_90:
@@ -161,6 +197,7 @@ def follow_line(frame):
         elapsed_blind = time.perf_counter() - blind_turn_start
         if elapsed_blind > BLIND_TURN_TIME and valid_black_cnt is not None:
             state = STATE_FOLLOW_BLACK
+            fork_cooldown_end = time.perf_counter() + 1.2
         elif elapsed_blind > 2.0:
             state = STATE_SEARCH
 
@@ -171,6 +208,23 @@ def follow_line(frame):
             state = STATE_FOLLOW_BLACK
 
     else: # Normal FOLLOW states
+        '''if black_is_fork and state == STATE_FOLLOW_BLACK:
+            if branch_memory is not None:
+                print(f"[Fork EXIT] Turning {branch_memory} onto exit leg")
+                black_line_side  = branch_memory
+                branch_memory    = None
+                blind_turn_start = time.perf_counter()
+                state            = STATE_BLIND_TURN
+            else:
+                # Pixel-vote fallback — no arrow, no memory
+                left_px  = cv2.countNonZero(thresh[:, :320])
+                right_px = cv2.countNonZero(thresh[:, 320:])
+                turn_dir = "left" if left_px > right_px else "right"
+                print(f"[Fork FALLBACK] Pixels (L:{left_px} R:{right_px}) → {turn_dir}")
+                black_line_side  = turn_dir
+                blind_turn_start = time.perf_counter()
+                state            = STATE_BLIND_TURN'''
+
         if color_is_horizontal:
             left_px  = cv2.countNonZero(colour_mask[:, :320])
             right_px = cv2.countNonZero(colour_mask[:, 320:])
@@ -182,13 +236,19 @@ def follow_line(frame):
             state = STATE_FOLLOW_COLOR
 
         elif state == STATE_FOLLOW_COLOR:
-            # FORCE a search to activate the blindfold. Do not instantly snap to black.
             if valid_black_cnt is not None:
-                state = STATE_FOLLOW_BLACK
+                if branch_memory is not None:                        # ADD
+                    black_line_side  = branch_memory                # ADD
+                    branch_memory    = None                         # ADD
+                    blind_turn_start = time.perf_counter()          # ADD
+                    state            = STATE_BLIND_TURN             # ADD
+                    print(f"[Color Exit] Memory consumed → {black_line_side}")  # ADD
+                else:
+                    state = STATE_FOLLOW_BLACK
             else:
                 state = STATE_BLIND_TURN
                 blind_turn_start = time.perf_counter()
-            print(f"Color line ended. Blind turn → {black_line_side}")
+            print(f"Color line ended → {state} (mem: {black_line_side})")
 
         elif valid_black_cnt is not None:
             state = STATE_FOLLOW_BLACK
@@ -196,9 +256,12 @@ def follow_line(frame):
     # ✨ THE PID RESET FIX ✨
     # Clear the integral memory so past curvy turns don't ruin straight lines
     if state != last_state:
+        print(f"[STATE CHANGE] {last_state} ---> {state}")
         total_error = 0
         last_error = 0
         first = True
+        horizontal_count = 0
+        fork_count       = 0
         last_state = state
 
     # ── Motor Control ─────────────────────────────────────────────────────
@@ -212,7 +275,12 @@ def follow_line(frame):
             cv2.drawContours(im2, [line_contour], -1, (0, 255, 0), thickness=cv2.FILLED)
             cv2.line(im2, (cx, 0), (cx, 240), (0, 255, 255), 3)
 
-            elapsed_time = max(time.perf_counter() - time_marker, 0.0001)
+            current_time = time.perf_counter()
+            if last_time is None:
+                elapsed_time = 0.033
+            else:
+                elapsed_time = max(current_time - last_time, 0.0001)
+            last_time = current_time
 
             error        = (320 - cx) / 320
             total_error += error * elapsed_time

@@ -52,12 +52,13 @@ frame_count = 0
 pending_turn = None
 branch_memory = None
 fork_count = 0
+horizontal_count  = 0
+fork_cooldown_end = 0.0
+last_time         = None
 FORK_CONFIRM = 5
 
 def stop():
     movement.move(0, 0)
-    movement.pi.stop()
-    cv2.destroyAllWindows()
 
 def stop_forever():
     """Called by main.py finally block to kill motors and clean up."""
@@ -69,6 +70,13 @@ def stop_for(seconds):
     """Halt motors for a fixed duration, then return so line following resumes."""
     movement.move(0, 0)
     time.sleep(seconds)
+
+def turn_360():
+    movement.move(-1, 1)
+    time.sleep(2)
+    global last_error
+    if getSign(last_error) == -1:
+        last_error *= -1
 
 def force_blind_turn(direction):
     """Instantly overrides the state machine to perform a blind turn."""
@@ -83,11 +91,10 @@ def force_blind_turn(direction):
 def follow_line(frame):
     global state, black_line_side, turn_90_start, turn_90_dir, \
         total_error, first, frame_count, last_error, diff_error, \
-        blind_turn_start, last_state, \
-        horizontal_count, pending_turn, fork_count, branch_memory
+        blind_turn_start, last_state, error, \
+        horizontal_count, pending_turn, fork_count, branch_memory, \
+        fork_cooldown_end, last_time
     
-    time_marker = time.perf_counter()
-
     frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
     roi   = frame[240:480, :]
 
@@ -175,7 +182,7 @@ def follow_line(frame):
             fork_count = 0
     else:
         fork_count = 0
-    black_is_fork = (fork_count >= FORK_CONFIRM)
+    black_is_fork = (fork_count >= FORK_CONFIRM) and (time.perf_counter() >= fork_cooldown_end)
 
     # ── State Machine Transitions ─────────────────────────────────────────
     if state == STATE_TURN_90:
@@ -190,6 +197,7 @@ def follow_line(frame):
         elapsed_blind = time.perf_counter() - blind_turn_start
         if elapsed_blind > BLIND_TURN_TIME and valid_black_cnt is not None:
             state = STATE_FOLLOW_BLACK
+            fork_cooldown_end = time.perf_counter() + 1.2
         elif elapsed_blind > 2.0:
             state = STATE_SEARCH
 
@@ -200,12 +208,22 @@ def follow_line(frame):
             state = STATE_FOLLOW_BLACK
 
     else: # Normal FOLLOW states
-        if black_is_fork and branch_memory is not None:
-            print(f"[Fork EXIT] Turning {branch_memory} onto exit leg")
-            black_line_side  = branch_memory
-            blind_turn_start = time.perf_counter()
-            branch_memory    = None        # consume — only one exit turn per arrow
-            state = STATE_BLIND_TURN
+        if black_is_fork and state == STATE_FOLLOW_BLACK:
+            if branch_memory is not None:
+                print(f"[Fork EXIT] Turning {branch_memory} onto exit leg")
+                black_line_side  = branch_memory
+                branch_memory    = None
+                blind_turn_start = time.perf_counter()
+                state            = STATE_BLIND_TURN
+            else:
+                # Pixel-vote fallback — no arrow, no memory
+                left_px  = cv2.countNonZero(thresh[:, :320])
+                right_px = cv2.countNonZero(thresh[:, 320:])
+                turn_dir = "left" if left_px > right_px else "right"
+                print(f"[Fork FALLBACK] Pixels (L:{left_px} R:{right_px}) → {turn_dir}")
+                black_line_side  = turn_dir
+                blind_turn_start = time.perf_counter()
+                state            = STATE_BLIND_TURN
 
         elif color_is_horizontal:
             left_px  = cv2.countNonZero(colour_mask[:, :320])
@@ -218,9 +236,15 @@ def follow_line(frame):
             state = STATE_FOLLOW_COLOR
 
         elif state == STATE_FOLLOW_COLOR:
-            # FORCE a search to activate the blindfold. Do not instantly snap to black.
             if valid_black_cnt is not None:
-                state = STATE_FOLLOW_BLACK
+                if branch_memory is not None:                        # ADD
+                    black_line_side  = branch_memory                # ADD
+                    branch_memory    = None                         # ADD
+                    blind_turn_start = time.perf_counter()          # ADD
+                    state            = STATE_BLIND_TURN             # ADD
+                    print(f"[Color Exit] Memory consumed → {black_line_side}")  # ADD
+                else:
+                    state = STATE_FOLLOW_BLACK
             else:
                 state = STATE_BLIND_TURN
                 blind_turn_start = time.perf_counter()
@@ -251,7 +275,12 @@ def follow_line(frame):
             cv2.drawContours(im2, [line_contour], -1, (0, 255, 0), thickness=cv2.FILLED)
             cv2.line(im2, (cx, 0), (cx, 240), (0, 255, 255), 3)
 
-            elapsed_time = max(time.perf_counter() - time_marker, 0.0001)
+            current_time = time.perf_counter()
+            if last_time is None:
+                elapsed_time = 0.033
+            else:
+                elapsed_time = max(current_time - last_time, 0.0001)
+            last_time = current_time
 
             error        = (320 - cx) / 320
             total_error += error * elapsed_time

@@ -27,7 +27,7 @@ first = True
 
 color_follow = False
 mask_black = False
-mask_cooldown = 10
+mask_cooldown = 2
 mask_start = 0
 color_error = 0
 
@@ -138,11 +138,12 @@ def follow_line(frame):
     if color_cx is not None: 
         pid = calc_pid(color_cx, time_marker)
         if not color_follow: # we take initial error so that we know where to turn at the end
-            color_error = getSign(last_error)
+            #color_error = -getSign(last_error)
             color_follow = True
     elif ret < ret_thresh and black_cx is not None: # ret condition just added for guard
         pid = calc_pid(black_cx, time_marker)
         if color_follow: # it just followed color earlier
+            color_error = getSign(last_error)
             # as a result, we temporarily mask the black contours
             # so that it can resume following the track
             mask_black = True

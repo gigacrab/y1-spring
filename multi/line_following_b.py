@@ -36,6 +36,9 @@ mask_start = 0
 color_error = 0
 black_error = 0
 
+arrow_follow = False
+arrow_error = 0
+
 ret_thresh = 120
 
 def stop():
@@ -58,12 +61,17 @@ def turn_360():
         last_error *= -1
 
 def shift(dir):
+    global arrow_follow
     if dir.lower() == "left":
         movement.move(1, -1)
-        time.sleep(0.2)
+        arrow_follow = True
+        arrow_error = 1
+        time.sleep(0.3)
     elif dir.lower() == "right":
         movement.move(-1, 1)
-        time.sleep(0.2)
+        arrow_follow = True
+        arrow_error = -1
+        time.sleep(0.3)
 
 def calc_pid(cx, time_marker):
     global error, total_error, last_error, diff_error, first
@@ -88,7 +96,8 @@ def calc_pid(cx, time_marker):
     return pid
 
 def follow_line(frame):
-    global color_follow, color_error, color_start, mask_black, mask_start, last_error, black_error
+    global color_follow, color_error, color_start, mask_black, \
+        mask_start, last_error, black_error, arrow_follow
     
     time_marker = time.perf_counter()
 
@@ -178,6 +187,10 @@ def follow_line(frame):
         if color_follow:
             last_error = color_error
             color_follow = False
+        if arrow_follow:
+            last_error = arrow_error
+            arrow_error = 0
+            arrow_follow = False
         pid = getSign(last_error) * 2            
 
     cv2.imshow("threshold", thresh)

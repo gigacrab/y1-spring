@@ -86,7 +86,7 @@ def follow_line(frame):
 
     hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
 
-    red_mask    = cv2.inRange(hsv, np.array([105, 30,  100]), np.array([140, 255, 255]))
+    red_mask    = cv2.inRange(hsv, np.array([90, 30,  100]), np.array([140, 255, 255]))
     yellow_mask = cv2.inRange(hsv, np.array([ 85, 100, 180]), np.array([105, 255, 255]))
     color_mask = cv2.bitwise_or(red_mask, yellow_mask)
 

@@ -61,7 +61,7 @@ def turn_360():
         last_error *= -1
 
 def shift(dir):
-    global arrow_follow
+    global arrow_follow, arrow_error
     if dir.lower() == "left":
         movement.move(1, -1)
         arrow_follow = True
@@ -97,7 +97,7 @@ def calc_pid(cx, time_marker):
 
 def follow_line(frame):
     global color_follow, color_error, color_start, mask_black, \
-        mask_start, last_error, black_error, arrow_follow
+        mask_start, last_error, black_error, arrow_follow, arrow_error
     
     time_marker = time.perf_counter()
 

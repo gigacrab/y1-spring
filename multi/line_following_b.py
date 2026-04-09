@@ -86,7 +86,7 @@ def calc_pid(cx, time_marker, ret):
 
     if not first:
         diff_error = (error - last_error) / elapsed_time
-        print(ret)
+        #print(ret)
     else:
         first = False
 

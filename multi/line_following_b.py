@@ -16,7 +16,7 @@ def clamp(value, min, max):
 def getSign(n):
     return (n > 0) - (n < 0)
 
-base_speed = 0.35
+base_speed = 0.3
 kp = 0.625
 ki = 0.01
 kd = 0.02
@@ -39,7 +39,7 @@ black_error = 0
 arrow_follow = False
 arrow_error = 0
 
-ret_thresh = 120
+ret_thresh = 140 # 120
 
 def stop():
     movement.move(0, 0)

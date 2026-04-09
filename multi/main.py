@@ -1,5 +1,5 @@
 import object_detection
-import line_following_v5 as line_following
+import line_following_v3 as line_following
 import face_rec
 import multiprocessing as mp
 from multiprocessing import shared_memory

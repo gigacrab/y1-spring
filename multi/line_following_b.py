@@ -88,7 +88,7 @@ def follow_line(frame):
 
     red_mask    = cv2.inRange(hsv, np.array([105, 30,  100]), np.array([140, 255, 255]))
     yellow_mask = cv2.inRange(hsv, np.array([ 85, 100, 180]), np.array([105, 255, 255]))
-    colour_mask = cv2.bitwise_or(red_mask, yellow_mask)
+    color_mask = cv2.bitwise_or(red_mask, yellow_mask)
 
     imgray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
     # we now try gaussian blur
@@ -101,6 +101,7 @@ def follow_line(frame):
     #_, thresh = cv2.threshold(imgray, 127, 255, cv2.THRESH_BINARY_INV)
     #cv2.imshow("thresh", thresh)
 
+    print(mask_black)
     if mask_black and time.perf_counter() - mask_start < mask_cooldown:
         if color_error == -1: # color was on the right
             # mask left side so that the bot continues going right
@@ -113,7 +114,7 @@ def follow_line(frame):
 
     # hierarchy -> [next, previous, first_child, parent]
     black_cnts, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-    color_cnts, _ = cv2.findContours(colour_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    color_cnts, _ = cv2.findContours(color_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     
     im2 = np.zeros((240, 640, 3), dtype=np.uint8)
 
@@ -154,6 +155,7 @@ def follow_line(frame):
         pid = getSign(last_error) * 2            
 
     cv2.imshow("threshold", thresh)
+    cv2.imshow("color", color_mask)
     cv2.waitKey(1)
 
     left_pwm = base_speed + pid

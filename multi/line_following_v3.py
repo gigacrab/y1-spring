@@ -92,7 +92,7 @@ def follow_line(frame):
     # Black Mask
     imgray      = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
     ret, thresh = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-    print(ret)
+    #print(ret)
     # THE BLINDFOLD FIX
     # If searching, black out the side of the camera we DON'T want to look at.
     if state == STATE_SEARCH:
@@ -119,7 +119,7 @@ def follow_line(frame):
     # Black Contours
     valid_black_cnt = None
     black_cx        = None
-    if ret < 150:
+    if ret < 100:
         black_cnts, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         for cnt in sorted(black_cnts, key=cv2.contourArea, reverse=True):
             if 7500 <= cv2.contourArea(cnt) <= 40000:

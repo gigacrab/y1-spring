@@ -182,7 +182,7 @@ def follow_line(frame):
                 mask_start = time.perf_counter()
             color_follow = False
     else:
-        print(f"we cannot find contours {getSign(last_error)}")
+        #print(f"we cannot find contours {getSign(last_error)}")
         # in case line is lost immediately after color follow ends
         if color_follow:
             last_error = color_error

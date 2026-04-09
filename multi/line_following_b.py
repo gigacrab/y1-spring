@@ -33,7 +33,7 @@ mask_cooldown = 2
 mask_start = 0
 color_error = 0
 
-ret_thresh = 100
+ret_thresh = 110
 
 def stop():
     movement.move(0, 0)

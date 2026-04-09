@@ -58,9 +58,9 @@ def turn_360():
         last_error *= -1
 
 def shift(dir):
-    if dir.lower == "left":
+    if dir.lower() == "left":
         movement.move(-1, 1)
-    elif dir.lower == "right":
+    elif dir.lower() == "right":
         movement.move(1, -1)
 
 def calc_pid(cx, time_marker):

@@ -55,6 +55,12 @@ def turn_360():
     if getSign(last_error) == -1:
         last_error *= -1
 
+def shift(dir):
+    if dir.lower == "left":
+        movement.move(-1, 1)
+    elif dir.lower == "right":
+        movement.move(1, -1)
+
 def calc_pid(cx, time_marker):
     global error, total_error, last_error, diff_error, first
 
@@ -145,13 +151,14 @@ def follow_line(frame):
         pid = calc_pid(color_cx, time_marker)
         if not color_follow: # we take initial error so that we know where to turn at the end
             #color_error = -getSign(last_error)
-            ext_left_x = color_target[color_target[:, :, 0].argmin()][0][0]
-            ext_right_x = color_target[color_target[:, :, 0].argmax()][0][0]
-            print(f"max = {ext_left_x, ext_right_x}")
+            
             black_error = last_error
             color_follow = True
     elif ret < ret_thresh and black_cx is not None: # ret condition just added for guard
         pid = calc_pid(black_cx, time_marker) * 2
+        # ext_left_x = black_target[black_target[:, :, 0].argmin()][0][0]
+        # ext_right_x = black_target[black_target[:, :, 0].argmax()][0][0]
+        # print(f"max = {ext_left_x, ext_right_x}")
         if color_follow: # it just followed color earlier
             
             color_error = getSign(last_error - black_error)

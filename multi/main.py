@@ -118,8 +118,8 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
                         elif action == "Stop":
                             line_following.stop_for(5)
 
-                        else:
-                            pass # follow branch
+                        else: # this is arrow
+                            line_following.shift(action)
                         cooldown_start = time.perf_counter()
                     clear = True
             # always follow line regardless
@@ -131,8 +131,8 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
 
 def decide_action(shape):
     return {
-        "Arrow (LEFT)": "Left branch",
-        "Arrow (RIGHT)": "Right branch",
+        "Arrow (LEFT)": "Left",
+        "Arrow (RIGHT)": "Right",
         #"Arrow (UP)": "Up branch",
         #"Arrow (DOWN)": "Down branch",
         "Recycle": "360 Turn",

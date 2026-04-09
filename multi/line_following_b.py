@@ -39,7 +39,7 @@ black_error = 0
 arrow_follow = False
 arrow_error = 0
 
-ret_thresh = 155 # 120
+ret_thresh = 150 # 120
 
 def stop():
     movement.move(0, 0)

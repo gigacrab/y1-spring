@@ -40,13 +40,11 @@ def stop():
     movement.move(0, 0)
 
 def stop_forever():
-    """Called by main.py finally block to kill motors and clean up."""
     movement.move(0, 0)
     movement.pi.stop()
     cv2.destroyAllWindows()
  
 def stop_for(seconds):
-    """Halt motors for a fixed duration, then return so line following resumes."""
     movement.move(0, 0)
     time.sleep(seconds)
 
@@ -104,9 +102,10 @@ def follow_line(frame):
     _, thresh = cv2.threshold(imgray, ret - 20, 255, cv2.THRESH_BINARY_INV)
     #_, thresh = cv2.threshold(imgray, 127, 255, cv2.THRESH_BINARY_INV)
     #cv2.imshow("thresh", thresh)
-    print(f"ret {ret}")
-    print(f"mask {mask_black}")
-    print(f"color {color_follow}")
+    
+    # print(f"ret {ret}")
+    # print(f"mask {mask_black}")
+    # print(f"color {color_follow}")
     if mask_black and time.perf_counter() - mask_start < mask_cooldown:
         print(f"error {color_error}")
         if color_error == -1: # color was on the right
@@ -124,18 +123,21 @@ def follow_line(frame):
     
     im2 = np.zeros((240, 640, 3), dtype=np.uint8)
 
+    black_target = color_target = None
     black_cx = color_cx = None
 
     if ret < ret_thresh:
         black_sorted = sorted(black_cnts, key=cv2.contourArea, reverse=True)
         if black_sorted and cv2.contourArea(black_sorted[0]) > 7500:
-            M = cv2.moments(black_sorted[0])
+            black_target = black_sorted[0]
+            M = cv2.moments(black_target)
             if M['m00'] != 0:
                 black_cx = int(M['m10'] / M['m00'])
 
     color_sorted = sorted(color_cnts, key=cv2.contourArea, reverse=True)
     if color_sorted and cv2.contourArea(color_sorted[0]) > 2000:
-        M = cv2.moments(color_sorted[0])
+        color_target = color_sorted[0]
+        M = cv2.moments(color_target)
         if M['m00'] != 0:
             color_cx = int(M['m10'] / M['m00'])
     
@@ -148,6 +150,9 @@ def follow_line(frame):
     elif ret < ret_thresh and black_cx is not None: # ret condition just added for guard
         pid = calc_pid(black_cx, time_marker) * 2
         if color_follow: # it just followed color earlier
+            ext_left_x = color_target[color_target[:, :, 0].argmin()][0][0]
+            ext_right_x = color_target[color_target[:, :, 0].argmax()][0][0]
+            print(f"max = {ext_left_x, ext_right_x}")
             color_error = getSign(last_error - black_error)
             # as a result, we temporarily mask the black contours
             # so that it can resume following the track

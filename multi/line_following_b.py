@@ -131,7 +131,7 @@ def follow_line(frame):
     black_cnts, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     color_cnts, _ = cv2.findContours(color_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     
-    im2 = np.zeros((240, 640, 3), dtype=np.uint8)
+    #im2 = np.zeros((240, 640, 3), dtype=np.uint8)
 
     black_target = color_target = None
     black_cx = color_cx = None

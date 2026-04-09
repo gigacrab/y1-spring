@@ -86,7 +86,7 @@ def calc_pid(cx, time_marker, ret):
 
     if not first:
         diff_error = (error - last_error) / elapsed_time
-        #print(ret)
+        print(ret)
     else:
         first = False
 
@@ -99,7 +99,7 @@ def calc_pid(cx, time_marker, ret):
 def follow_line(frame):
     global color_follow, color_error, color_start, mask_black, \
         mask_start, last_error, black_error, arrow_follow, arrow_error
-    ret = 0
+    
     time_marker = time.perf_counter()
 
     frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
@@ -118,12 +118,8 @@ def follow_line(frame):
     # 0 - values above this, assigned 255, the Otsu method adjusts according to lighting
     # however the Otsu method wasn't that good because it'd always find a region of threshold
     # also idc about the ret
-    thresh = cv2.adaptiveThreshold(
-        imgray, 255,
-        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-        cv2.THRESH_BINARY_INV,
-        121, 8
-    )
+    ret, _ = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    _, thresh = cv2.threshold(imgray, ret - 20, 255, cv2.THRESH_BINARY_INV)
     #_, thresh = cv2.threshold(imgray, 127, 255, cv2.THRESH_BINARY_INV) 
 
     #cv2.imshow("thresh", thresh)
@@ -199,9 +195,9 @@ def follow_line(frame):
             arrow_follow = False
         pid = getSign(last_error) * 2            
 
-    cv2.imshow("threshold", thresh)
-    cv2.imshow("color", color_mask)
-    cv2.waitKey(1)
+    # cv2.imshow("threshold", thresh)
+    # cv2.imshow("color", color_mask)
+    # cv2.waitKey(1)
 
     right_pwm = base_speed + pid
     left_pwm = base_speed - pid

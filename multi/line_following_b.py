@@ -155,7 +155,7 @@ def follow_line(frame):
             color_follow = False
         pid = getSign(last_error) * 2            
 
-    cv2.imshow("threshold", thresh)
+    cv2.imshow("threshold", roi)
     cv2.imshow("color", color_mask)
     cv2.waitKey(1)
 

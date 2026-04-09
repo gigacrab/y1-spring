@@ -100,7 +100,7 @@ def follow_line(frame):
     ret, thresh = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
     #_, thresh = cv2.threshold(imgray, 127, 255, cv2.THRESH_BINARY_INV)
     #cv2.imshow("thresh", thresh)
-
+    print(f"ret {ret}")
     print(f"mask {mask_black}")
     print(f"color {color_follow}")
     if mask_black and time.perf_counter() - mask_start < mask_cooldown:

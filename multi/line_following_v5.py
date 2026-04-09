@@ -208,7 +208,7 @@ def follow_line(frame):
             state = STATE_FOLLOW_BLACK
 
     else: # Normal FOLLOW states
-        if black_is_fork and state == STATE_FOLLOW_BLACK:
+        '''if black_is_fork and state == STATE_FOLLOW_BLACK:
             if branch_memory is not None:
                 print(f"[Fork EXIT] Turning {branch_memory} onto exit leg")
                 black_line_side  = branch_memory
@@ -223,9 +223,9 @@ def follow_line(frame):
                 print(f"[Fork FALLBACK] Pixels (L:{left_px} R:{right_px}) → {turn_dir}")
                 black_line_side  = turn_dir
                 blind_turn_start = time.perf_counter()
-                state            = STATE_BLIND_TURN
+                state            = STATE_BLIND_TURN'''
 
-        elif color_is_horizontal:
+        if color_is_horizontal:
             left_px  = cv2.countNonZero(colour_mask[:, :320])
             right_px = cv2.countNonZero(colour_mask[:, 320:])
             turn_90_dir   = "left" if left_px > right_px else "right"

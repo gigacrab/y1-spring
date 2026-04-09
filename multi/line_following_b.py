@@ -145,14 +145,15 @@ def follow_line(frame):
         pid = calc_pid(color_cx, time_marker)
         if not color_follow: # we take initial error so that we know where to turn at the end
             #color_error = -getSign(last_error)
+            ext_left_x = color_target[color_target[:, :, 0].argmin()][0][0]
+            ext_right_x = color_target[color_target[:, :, 0].argmax()][0][0]
+            print(f"max = {ext_left_x, ext_right_x}")
             black_error = last_error
             color_follow = True
     elif ret < ret_thresh and black_cx is not None: # ret condition just added for guard
         pid = calc_pid(black_cx, time_marker) * 2
         if color_follow: # it just followed color earlier
-            ext_left_x = color_target[color_target[:, :, 0].argmin()][0][0]
-            ext_right_x = color_target[color_target[:, :, 0].argmax()][0][0]
-            print(f"max = {ext_left_x, ext_right_x}")
+            
             color_error = getSign(last_error - black_error)
             # as a result, we temporarily mask the black contours
             # so that it can resume following the track
@@ -160,7 +161,7 @@ def follow_line(frame):
             mask_start = time.perf_counter()
             color_follow = False
     else:
-        print(f"we cannot find contours {getSign(last_error)}")
+        #print(f"we cannot find contours {getSign(last_error)}")
         # in case line is lost immediately after color follow ends
         if color_follow:
             last_error = color_error

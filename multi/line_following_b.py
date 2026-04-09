@@ -120,6 +120,7 @@ def follow_line(frame):
     ret, _ = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
     _, thresh = cv2.threshold(imgray, ret - 30, 255, cv2.THRESH_BINARY_INV)
     #_, thresh = cv2.threshold(imgray, 127, 255, cv2.THRESH_BINARY_INV)
+    print(ret)
     #cv2.imshow("thresh", thresh)
     
     # print(f"ret {ret}")

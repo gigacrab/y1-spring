@@ -145,7 +145,7 @@ def follow_line(frame):
             black_error = last_error
             color_follow = True
     elif ret < ret_thresh and black_cx is not None: # ret condition just added for guard
-        pid = calc_pid(black_cx, time_marker) * 1.5
+        pid = calc_pid(black_cx, time_marker) * 2
         if color_follow: # it just followed color earlier
             color_error = getSign(last_error - black_error)
             # as a result, we temporarily mask the black contours

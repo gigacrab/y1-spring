@@ -55,7 +55,7 @@ def stop_for(seconds):
 
 def turn_360():
     movement.move(1, -1)
-    time.sleep(2)
+    time.sleep(1.5)
     global last_error
     if getSign(last_error) == -1:
         last_error *= -1

@@ -96,7 +96,7 @@ def follow_line(frame):
         total_error, first, frame_count, last_error, diff_error, \
         blind_turn_start, last_state, error, \
         horizontal_count, pending_turn, fork_count, branch_memory, \
-        fork_cooldown_end, last_time
+        fork_cooldown_end, last_time, color_lost_count
     
     frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
     roi   = frame[240:480, :]

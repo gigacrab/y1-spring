@@ -114,7 +114,7 @@ def follow_line(frame):
         mask_black = False # set it to false once cooldown ends
 
     # hierarchy -> [next, previous, first_child, parent]
-    black_cnts, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    black_cnts, _ = cv2.findContours(roi, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     color_cnts, _ = cv2.findContours(color_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     
     im2 = np.zeros((240, 640, 3), dtype=np.uint8)

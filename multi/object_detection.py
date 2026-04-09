@@ -140,9 +140,9 @@ def detect_object(frame):
     answer = []
     containers = []
 
-    #cv2.imshow("frame", frame)
-    #cv2.imshow("close", closed)
-    #cv2.waitKey(1)
+    cv2.imshow("frame", frame)
+    cv2.imshow("close", closed)
+    cv2.waitKey(1)
 
     # should already have hierarchy if a contour exists
     for i, c in enumerate(cnts):

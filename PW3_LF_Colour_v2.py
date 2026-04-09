@@ -41,18 +41,18 @@ first       = True
 # ── State machine ─────────────────────────────────────────────────────────────
 STATE_FOLLOW_BLACK = "FOLLOW_BLACK"
 STATE_FOLLOW_COLOR = "FOLLOW_COLOR"
-STATE_RECOVERY     = "RECOVERY"   # colour ended → arc back toward black
+STATE_RECOVERY     = "RECOVERY"   # colour ended → blind turn back to black
+STATE_TURN_90      = "TURN_90"    # horizontal line detected → 90 deg turn
 
 state      = STATE_FOLLOW_BLACK
 last_state = STATE_FOLLOW_BLACK
 
 # ── Settings ──────────────────────────────────────────────────────────────────
 RECOVERY_SPEED = 0.5  # PWM offset applied during the recovery arc
+turn_timer     = 0    # Used to lock out the camera during a 90-degree turn
 
-# Remembers which direction the robot turned to get onto the colour line.
-# When colour ends we turn the SAME direction to arc back to the black line.
-# Initialised to "left" as a safe default; overwritten before first use.
-turn_memory = "left"
+# Remembers which direction the robot should turn blindly
+turn_memory = "right" # Initialized to a safe default
 
 frame_count = 0
 
@@ -100,27 +100,56 @@ while True:
                         black_cx = int(M['m10'] / M['m00'])
                     break
 
-        # ── Turn memory update ────────────────────────────────────────────────
-        # While still on the black line, keep watching where the colour appears.
-        # colour to the LEFT  (cx < 320) → robot will turn LEFT  to follow it
-        # colour to the RIGHT (cx > 320) → robot will turn RIGHT to follow it
-        # The last reading before the state switches is the one that matters.
-        if state == STATE_FOLLOW_BLACK and valid_color_cnt is not None:
-            turn_memory = "left" if color_cx < 320 else "right"
+        # ── Detect Horizontal Black Lines (Universal) ─────────────────────────
+        horizontal_turn_dir = None
+        if valid_black_cnt is not None and state == STATE_FOLLOW_BLACK:
+            x, y, w, h = cv2.boundingRect(valid_black_cnt)
+            # If the line is very wide (> 150 pixels)
+            if w > 150:
+                # Check which edge of the screen it touches (640 is max width)
+                if x < 30: 
+                    horizontal_turn_dir = "left"
+                elif (x + w) > 610:  
+                    horizontal_turn_dir = "right"
 
         # ── State transitions ─────────────────────────────────────────────────
-        if state == STATE_FOLLOW_BLACK:
-            if valid_color_cnt is not None:
+        if state == STATE_TURN_90:
+            # Stay blind to the line for 0.6 seconds while executing the turn
+            if time.perf_counter() - turn_timer > 0.6:
+                if valid_black_cnt is not None:
+                    state = STATE_FOLLOW_BLACK
+
+        elif state == STATE_FOLLOW_BLACK:
+            if horizontal_turn_dir is not None:
+                print(f"Horizontal line! Hard turning {horizontal_turn_dir}.")
+                turn_timer  = time.perf_counter()
+                turn_memory = horizontal_turn_dir 
+                state       = STATE_TURN_90
+                
+            elif valid_color_cnt is not None:
+                print("Color line detected. Switching to color tracking.")
                 state = STATE_FOLLOW_COLOR
 
         elif state == STATE_FOLLOW_COLOR:
-            if valid_color_cnt is None:
-                # Colour line ended. Switch to recovery arc.
-                print(f"Colour lost — recovering with turn: {turn_memory}")
+            if valid_color_cnt is not None:
+                # 🌟 EDGE DETECTION MEMORY 🌟
+                # While following colour, check if it hits the side of the screen
+                col_x, col_y, col_w, col_h = cv2.boundingRect(valid_color_cnt)
+                
+                if col_x <= 20: 
+                    # Colour touches left edge
+                    turn_memory = "left"
+                elif (col_x + col_w) >= 620: 
+                    # Colour touches right edge
+                    turn_memory = "right"
+            else:
+                # Colour line ended. Use the last known edge touch!
+                print(f"Colour lost — executing blind turn: {turn_memory}")
                 state = STATE_RECOVERY
 
         elif state == STATE_RECOVERY:
             if valid_black_cnt is not None:
+                print("Black line found! Resuming normal tracking.")
                 state = STATE_FOLLOW_BLACK
 
         # ── PID reset on state change ─────────────────────────────────────────
@@ -164,16 +193,23 @@ while True:
                 left_pwm  = base_speed + pid
                 right_pwm = base_speed - pid
 
-        elif state == STATE_RECOVERY:
-            # Turn the same way the robot turned to get onto the colour line.
-            # Larger left_pwm  → turns LEFT  (matches their PID convention)
-            # Larger right_pwm → turns RIGHT
+        elif state == STATE_TURN_90:
+            # Hard 90-degree turn offsets. Adjust based on your motor power.
             if turn_memory == "left":
-                left_pwm  = base_speed + RECOVERY_SPEED
-                right_pwm = base_speed - RECOVERY_SPEED
+                left_pwm  = base_speed - 0.4
+                right_pwm = base_speed + 0.4
             else:  # "right"
+                left_pwm  = base_speed + 0.4
+                right_pwm = base_speed - 0.4
+
+        elif state == STATE_RECOVERY:
+            # Blind turn recovery using the edge-detection memory
+            if turn_memory == "left":
                 left_pwm  = base_speed - RECOVERY_SPEED
                 right_pwm = base_speed + RECOVERY_SPEED
+            else:  # "right"
+                left_pwm  = base_speed + RECOVERY_SPEED
+                right_pwm = base_speed - RECOVERY_SPEED
 
         else:
             left_pwm  = base_speed
@@ -187,9 +223,17 @@ while True:
         # ── Debug display (every 5th frame to save CPU) ───────────────────────
         frame_count += 1
         if frame_count % 5 == 0:
+            # Draw the bounding box for debugging
+            if valid_black_cnt is not None:
+                x, y, w, h = cv2.boundingRect(valid_black_cnt)
+                cv2.rectangle(im2, (x, y), (x+w, y+h), (255, 0, 255), 2)
+            if valid_color_cnt is not None:
+                x, y, w, h = cv2.boundingRect(valid_color_cnt)
+                cv2.rectangle(im2, (x, y), (x+w, y+h), (0, 165, 255), 2) # Orange box for colour
+                
             cv2.putText(im2, f"STATE: {state}", (10, 30),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
-            cv2.putText(im2, f"MEMORY: turn {turn_memory}", (10, 60),
+            cv2.putText(im2, f"MEMORY: {turn_memory}", (10, 60),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
 
             cv2.imshow("1. Colour mask", colour_mask)

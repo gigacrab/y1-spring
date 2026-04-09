@@ -199,9 +199,9 @@ def follow_line(frame):
             arrow_follow = False
         pid = getSign(last_error) * 2            
 
-    # cv2.imshow("threshold", thresh)
-    # cv2.imshow("color", color_mask)
-    # cv2.waitKey(1)
+    cv2.imshow("threshold", thresh)
+    cv2.imshow("color", color_mask)
+    cv2.waitKey(1)
 
     right_pwm = base_speed + pid
     left_pwm = base_speed - pid

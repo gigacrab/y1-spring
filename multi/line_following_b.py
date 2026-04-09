@@ -51,7 +51,7 @@ def stop_for(seconds):
     time.sleep(seconds)
 
 def turn_360():
-    movement.move(-1, 1)
+    movement.move(1, -1)
     time.sleep(2)
     global last_error
     if getSign(last_error) == -1:
@@ -61,11 +61,9 @@ def shift(dir):
     if dir.lower() == "left":
         movement.move(1, -1)
         time.sleep(0.2)
-        print("helllllllllllllo")
     elif dir.lower() == "right":
         movement.move(-1, 1)
         time.sleep(0.2)
-        print("byeeeeeeeeee")
 
 def calc_pid(cx, time_marker):
     global error, total_error, last_error, diff_error, first
@@ -186,10 +184,10 @@ def follow_line(frame):
     cv2.imshow("color", color_mask)
     cv2.waitKey(1)
 
-    left_pwm = base_speed + pid
-    right_pwm = base_speed - pid
+    right_pwm = base_speed + pid
+    left_pwm = base_speed - pid
 
-    clamped_left_pwm = clamp(left_pwm, -1, 1)
     clamped_right_pwm = clamp(right_pwm, -1, 1)
+    clamped_left_pwm = clamp(left_pwm, -1, 1)
 
-    movement.move(clamped_left_pwm, clamped_right_pwm)
+    movement.move(clamped_right_pwm, clamped_left_pwm)

@@ -122,7 +122,7 @@ def follow_line(frame):
         imgray, 255,
         cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
         cv2.THRESH_BINARY_INV,
-        51, 8
+        91, 8
     )
     #_, thresh = cv2.threshold(imgray, 127, 255, cv2.THRESH_BINARY_INV) 
 

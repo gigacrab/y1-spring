@@ -99,7 +99,7 @@ def calc_pid(cx, time_marker, ret):
 def follow_line(frame):
     global color_follow, color_error, color_start, mask_black, \
         mask_start, last_error, black_error, arrow_follow, arrow_error
-    
+    ret = 0
     time_marker = time.perf_counter()
 
     frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)

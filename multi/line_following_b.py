@@ -119,7 +119,7 @@ def follow_line(frame):
     # however the Otsu method wasn't that good because it'd always find a region of threshold
     # also idc about the ret
     ret, _ = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-    _, thresh = cv2.threshold(imgray, ret - 20, 255, cv2.THRESH_BINARY_INV)
+    _, thresh = cv2.threshold(imgray, ret - 50, 255, cv2.THRESH_BINARY_INV)
     #_, thresh = cv2.threshold(imgray, 127, 255, cv2.THRESH_BINARY_INV) 
 
     #cv2.imshow("thresh", thresh)
@@ -147,13 +147,13 @@ def follow_line(frame):
     black_target = color_target = None
     black_cx = color_cx = None
 
-    if ret < ret_thresh:
-        black_sorted = sorted(black_cnts, key=cv2.contourArea, reverse=True)
-        if black_sorted and cv2.contourArea(black_sorted[0]) > 7500:
-            black_target = black_sorted[0]
-            M = cv2.moments(black_target)
-            if M['m00'] != 0:
-                black_cx = int(M['m10'] / M['m00'])
+    #if ret < ret_thresh:
+    black_sorted = sorted(black_cnts, key=cv2.contourArea, reverse=True)
+    if black_sorted and cv2.contourArea(black_sorted[0]) > 7500:
+        black_target = black_sorted[0]
+        M = cv2.moments(black_target)
+        if M['m00'] != 0:
+            black_cx = int(M['m10'] / M['m00'])
 
     color_sorted = sorted(color_cnts, key=cv2.contourArea, reverse=True)
     if color_sorted and cv2.contourArea(color_sorted[0]) > 2000:
@@ -170,7 +170,8 @@ def follow_line(frame):
             black_error = last_error
             color_start = time.perf_counter()
             color_follow = True
-    elif ret < ret_thresh and black_cx is not None: # ret condition just added for guard
+    #elif ret < ret_thresh and black_cx is not None: # ret condition just added for guard
+    elif black_cx is not None: 
         pid = calc_pid(black_cx, time_marker, ret) * 2
         # ext_left_x = black_target[black_target[:, :, 0].argmin()][0][0]
         # ext_right_x = black_target[black_target[:, :, 0].argmax()][0][0]

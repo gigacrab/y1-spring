@@ -56,6 +56,9 @@ horizontal_count  = 0
 fork_cooldown_end = 0.0
 last_time         = None
 FORK_CONFIRM = 3
+# Module level
+color_lost_count = 0
+COLOR_LOST_CONFIRM = 4
 
 def stop():
     movement.move(0, 0)
@@ -233,22 +236,26 @@ def follow_line(frame):
             state = STATE_TURN_90
 
         elif valid_color_cnt is not None:
+            color_lost_count = 0        # ADD
             state = STATE_FOLLOW_COLOR
 
         elif state == STATE_FOLLOW_COLOR:
-            if valid_black_cnt is not None:
-                if branch_memory is not None:                        # ADD
-                    black_line_side  = branch_memory                # ADD
-                    branch_memory    = None                         # ADD
-                    blind_turn_start = time.perf_counter()          # ADD
-                    state            = STATE_BLIND_TURN             # ADD
-                    print(f"[Color Exit] Memory consumed → {black_line_side}")  # ADD
+            color_lost_count += 1
+            if color_lost_count >= COLOR_LOST_CONFIRM:
+                color_lost_count = 0
+                if valid_black_cnt is not None:
+                    if branch_memory is not None:                        # ADD
+                        black_line_side  = branch_memory                # ADD
+                        branch_memory    = None                         # ADD
+                        blind_turn_start = time.perf_counter()          # ADD
+                        state            = STATE_BLIND_TURN             # ADD
+                        print(f"[Color Exit] Memory consumed → {black_line_side}")  # ADD
+                    else:
+                        state = STATE_FOLLOW_BLACK
                 else:
-                    state = STATE_FOLLOW_BLACK
-            else:
-                state = STATE_BLIND_TURN
-                blind_turn_start = time.perf_counter()
-            print(f"Color line ended → {state} (mem: {black_line_side})")
+                    state = STATE_BLIND_TURN
+                    blind_turn_start = time.perf_counter()
+                print(f"Color line ended → {state} (mem: {black_line_side})")
 
         elif valid_black_cnt is not None:
             state = STATE_FOLLOW_BLACK
@@ -262,6 +269,7 @@ def follow_line(frame):
         first = True
         horizontal_count = 0
         fork_count       = 0
+        color_lost_count = 0
         last_state = state
 
     # ── Motor Control ─────────────────────────────────────────────────────

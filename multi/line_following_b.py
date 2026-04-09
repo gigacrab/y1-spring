@@ -154,6 +154,7 @@ def follow_line(frame):
         pid = getSign(last_error) * 2            
 
     cv2.imshow("threshold", thresh)
+    cv2.waitKey(1)
 
     left_pwm = base_speed + pid
     right_pwm = base_speed - pid

@@ -104,6 +104,7 @@ def follow_line(frame):
     print(f"mask {mask_black}")
     print(f"color {color_follow}")
     if mask_black and time.perf_counter() - mask_start < mask_cooldown:
+        print(f"error {color_error}")
         if color_error == -1: # color was on the right
             # mask left side so that the bot continues going right
             thresh[:, :280] = [255, 0, 0]
@@ -137,7 +138,7 @@ def follow_line(frame):
     if color_cx is not None: 
         pid = calc_pid(color_cx, time_marker)
         if not color_follow: # we take initial error so that we know where to turn at the end
-            color_error = last_error
+            color_error = getSign(last_error)
             color_follow = True
     elif ret < ret_thresh and black_cx is not None: # ret condition just added for guard
         pid = calc_pid(black_cx, time_marker)

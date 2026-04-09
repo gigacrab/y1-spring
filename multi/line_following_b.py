@@ -101,7 +101,8 @@ def follow_line(frame):
     #_, thresh = cv2.threshold(imgray, 127, 255, cv2.THRESH_BINARY_INV)
     #cv2.imshow("thresh", thresh)
 
-    print(mask_black)
+    print(f"mask {mask_black}")
+    print(f"color {color_follow}")
     if mask_black and time.perf_counter() - mask_start < mask_cooldown:
         if color_error == -1: # color was on the right
             # mask left side so that the bot continues going right

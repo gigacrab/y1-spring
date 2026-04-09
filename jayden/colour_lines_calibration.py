@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from picamera2 import Picamera2
 import time
+import sys
 
 def click_to_get_hsv(event, x, y, flags, hsv_frame):
     if event == cv2.EVENT_LBUTTONDOWN:
@@ -26,12 +27,19 @@ def click_to_get_hsv(event, x, y, flags, hsv_frame):
         print(f"upper_color = np.array([{h_upper}, {s_upper}, {v_upper}])")
         print("="*40 + "\n")
 
+if __name__ == "__main__":
+    if len(sys.argv) == 3:
+        exposure = float(sys.argv[1])
+        gain = float(sys.argv[2])
+    else:
+        raise Exception("Didn't input appropriate variables")
+
 picam2 = Picamera2()
 camera_config = picam2.create_video_configuration(main={"size": (640, 480)})
 picam2.configure(camera_config)
 picam2.set_controls({
-        "ExposureTime": 2500,      # microseconds — try 2000-5000
-        "AnalogueGain": 13.0,       # increase gain to compensate for less light
+        "ExposureTime": exposure,      # microseconds — try 2000-5000
+        "AnalogueGain": gain,       # increase gain to compensate for less light
         "AeEnable": False,          # disable auto exposure or it'll fight you
     })
 picam2.start()

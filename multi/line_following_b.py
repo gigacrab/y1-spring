@@ -27,7 +27,7 @@ first = True
 
 color_follow = False
 mask_black = False
-mask_cooldown = 2
+mask_cooldown = 10
 mask_start = 0
 color_error = 0
 

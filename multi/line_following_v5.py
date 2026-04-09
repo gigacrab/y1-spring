@@ -55,7 +55,7 @@ fork_count = 0
 horizontal_count  = 0
 fork_cooldown_end = 0.0
 last_time         = None
-FORK_CONFIRM = 5
+FORK_CONFIRM = 3
 
 def stop():
     movement.move(0, 0)

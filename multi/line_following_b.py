@@ -153,7 +153,7 @@ def follow_line(frame):
             color_follow = False
         pid = getSign(last_error) * 2            
 
-    cv2.imshow(thresh, "threshold")
+    cv2.imshow("threshold", thresh)
 
     left_pwm = base_speed + pid
     right_pwm = base_speed - pid

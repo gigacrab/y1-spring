@@ -73,7 +73,7 @@ def shift(dir):
         arrow_error = -1
         time.sleep(0.25)
 
-def calc_pid(cx, time_marker):
+def calc_pid(cx, time_marker, ret):
     global error, total_error, last_error, diff_error, first
 
     elapsed_time = time.perf_counter() - time_marker
@@ -86,6 +86,7 @@ def calc_pid(cx, time_marker):
 
     if not first:
         diff_error = (error - last_error) / elapsed_time
+        print(ret)
     else:
         first = False
 
@@ -120,7 +121,7 @@ def follow_line(frame):
     ret, _ = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
     _, thresh = cv2.threshold(imgray, ret - 30, 255, cv2.THRESH_BINARY_INV)
     #_, thresh = cv2.threshold(imgray, 127, 255, cv2.THRESH_BINARY_INV) 
-    print(ret)
+
     #cv2.imshow("thresh", thresh)
     
     # print(f"ret {ret}")
@@ -162,7 +163,7 @@ def follow_line(frame):
             color_cx = int(M['m10'] / M['m00'])
     
     if color_cx is not None: 
-        pid = calc_pid(color_cx, time_marker)
+        pid = calc_pid(color_cx, time_marker, ret)
         if not color_follow: # we take initial error so that we know where to turn at the end
             #color_error = -getSign(last_error)
             
@@ -170,7 +171,7 @@ def follow_line(frame):
             color_start = time.perf_counter()
             color_follow = True
     elif ret < ret_thresh and black_cx is not None: # ret condition just added for guard
-        pid = calc_pid(black_cx, time_marker) * 2
+        pid = calc_pid(black_cx, time_marker, ret) * 2
         # ext_left_x = black_target[black_target[:, :, 0].argmin()][0][0]
         # ext_right_x = black_target[black_target[:, :, 0].argmax()][0][0]
         # print(f"max = {ext_left_x, ext_right_x}")
@@ -183,7 +184,7 @@ def follow_line(frame):
                 mask_start = time.perf_counter()
             color_follow = False
     else:
-        #print(f"we cannot find contours {getSign(last_error)}")
+        print(f"we cannot find contours {getSign(last_error)}")
         # in case line is lost immediately after color follow ends
         if color_follow:
             last_error = color_error

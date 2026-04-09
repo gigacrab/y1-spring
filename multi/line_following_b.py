@@ -100,7 +100,8 @@ def follow_line(frame):
     # 0 - values above this, assigned 255, the Otsu method adjusts according to lighting
     # however the Otsu method wasn't that good because it'd always find a region of threshold
     # also idc about the ret
-    ret, thresh = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    ret, _ = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    _, thresh = cv2.threshold(imgray, ret + 20, 255, cv2.THRESH_BINARY_INV)
     #_, thresh = cv2.threshold(imgray, 127, 255, cv2.THRESH_BINARY_INV)
     #cv2.imshow("thresh", thresh)
     print(f"ret {ret}")

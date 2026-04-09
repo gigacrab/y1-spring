@@ -189,10 +189,11 @@ def detect_object(frame):
                             dx = cx - bx
                             dy = cy - by
                             
-                            if abs(dx) > abs(dy):
-                                pred = "Arrow (RIGHT)" if dx > 0 else "Arrow (LEFT)"
-                            else:
-                                pred = "Arrow (DOWN)" if dy > 0 else "Arrow (UP)"
+                            pred = "Arrow (RIGHT)" if dx > 0 else "Arrow (LEFT)"
+                            # if abs(dx) > abs(dy):
+                            #     pred = "Arrow (RIGHT)" if dx > 0 else "Arrow (LEFT)"
+                            # else:
+                            #     pred = "Arrow (DOWN)" if dy > 0 else "Arrow (UP)"
                 elif corners == 4 and inner_area_ratio < 0.45:
                     if extent < 0.80:
                         pred = "Trapezium"

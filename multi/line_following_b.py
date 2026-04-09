@@ -3,6 +3,8 @@ import time
 import numpy as np
 import movement
 
+# tune ret, calibrated colours
+
 def clamp(value, min, max):
     if value > max:
         return max
@@ -31,7 +33,7 @@ mask_cooldown = 2
 mask_start = 0
 color_error = 0
 
-ret_thresh = 150
+ret_thresh = 100
 
 def stop():
     movement.move(0, 0)

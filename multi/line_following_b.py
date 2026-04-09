@@ -106,15 +106,15 @@ def follow_line(frame):
     if mask_black and time.perf_counter() - mask_start < mask_cooldown:
         if color_error == -1: # color was on the right
             # mask left side so that the bot continues going right
-            roi[:, :240] = 0
+            thresh[:, :280] = 0
         elif color_error == 1: # color was on the left
             # mask right side so that the bot continues going left
-            roi[:, 480:] = 0
+            thresh[:, 360:] = 0
     else:
         mask_black = False # set it to false once cooldown ends
 
     # hierarchy -> [next, previous, first_child, parent]
-    black_cnts, _ = cv2.findContours(roi, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    black_cnts, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     color_cnts, _ = cv2.findContours(color_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     
     im2 = np.zeros((240, 640, 3), dtype=np.uint8)

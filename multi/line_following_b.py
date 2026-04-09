@@ -59,11 +59,11 @@ def turn_360():
 
 def shift(dir):
     if dir.lower() == "left":
-        movement.move(-1, 1)
+        movement.move(1, -1)
         time.sleep(0.2)
         print("helllllllllllllo")
     elif dir.lower() == "right":
-        movement.move(1, -1)
+        movement.move(-1, 1)
         time.sleep(0.2)
         print("byeeeeeeeeee")
 

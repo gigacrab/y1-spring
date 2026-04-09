@@ -90,7 +90,7 @@ def calc_pid(cx, time_marker):
     return pid
 
 def follow_line(frame):
-    global color_follow, color_error, mask_black, mask_start, last_error, black_error
+    global color_follow, color_error, color_start, mask_black, mask_start, last_error, black_error
     
     time_marker = time.perf_counter()
 

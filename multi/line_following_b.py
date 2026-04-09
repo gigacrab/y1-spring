@@ -106,10 +106,10 @@ def follow_line(frame):
     if mask_black and time.perf_counter() - mask_start < mask_cooldown:
         if color_error == -1: # color was on the right
             # mask left side so that the bot continues going right
-            thresh[:, :280] = 0
+            thresh[:, :280] = [255, 0, 0]
         elif color_error == 1: # color was on the left
             # mask right side so that the bot continues going left
-            thresh[:, 360:] = 0
+            thresh[:, 360:] = [255, 0, 0]
     else:
         mask_black = False # set it to false once cooldown ends
 

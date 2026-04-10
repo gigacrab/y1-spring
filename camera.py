@@ -23,6 +23,7 @@ while True:
     color_mask = cv2.bitwise_or(red_mask1, red_mask2, yellow_mask)
 
     roi = frame
+    im = frame
 
     #cv2.imshow("raw", im)
     imgray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)

@@ -102,13 +102,13 @@ def follow_line(frame):
     
     time_marker = time.perf_counter()
 
-    frame = cv2.cvtColor(frame, cv2.COLOR_RGBA2BGR)
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
     roi = frame[240:480, :]
 
     hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
 
-    red_mask    = cv2.inRange(hsv, np.array([90, 30,  30]), np.array([140, 255, 255]))
-    yellow_mask = cv2.inRange(hsv, np.array([ 85, 100, 180]), np.array([105, 255, 255]))
+    yellow_mask   = cv2.inRange(hsv, np.array([89, 198, 137]), np.array([108, 255, 241]))
+    red_mask = cv2.inRange(hsv, np.array([ 111, 204, 122]), np.array([131, 255, 222]))
     color_mask = cv2.bitwise_or(red_mask, yellow_mask)
 
     imgray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)

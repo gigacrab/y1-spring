@@ -17,10 +17,10 @@ def click_to_get_hsv(event, x, y, flags, hsv_frame):
         h_upper = min(179, h + 10)
         
         s_lower = max(0, s - 50)
-        s_upper = min(255, s + 50) if s_lower < s_upper else max(255, s + 50)
+        s_upper = min(255, s + 50) 
         
         v_lower = max(0, v - 50)
-        v_upper = min(255, v + 50) if v_lower < v_upper else max(255, v + 50)
+        v_upper = min(255, v + 50)
         
         print("-" * 40)
         print("COPY AND PASTE THESE LINES INTO YOUR MAIN CODE:")

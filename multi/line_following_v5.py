@@ -105,9 +105,11 @@ def follow_line(frame):
 
     # ── Masks ─────────────────────────────────────────────────────────────
     # Color Mask
-    red_mask    = cv2.inRange(hsv, np.array([89, 198, 137]), np.array([140, 255, 255]))
-    yellow_mask = cv2.inRange(hsv, np.array([ 85, 100, 180]), np.array([105, 255, 255]))
-    colour_mask = cv2.bitwise_or(red_mask, yellow_mask)
+    red_mask    = cv2.inRange(hsv, np.array([89, 198, 137]), np.array([108, 255, 241]))
+    red_mask2    = cv2.inRange(hsv, np.array([89, 0, 137]), np.array([108, 49, 241]))
+    yellow_mask = cv2.inRange(hsv, np.array([ 111, 204, 122]), np.array([131, 255, 222]))
+    yellow_mask2 = cv2.inRange(hsv, np.array([ 111, 0, 122]), np.array([131, 48, 222]))
+    colour_mask = cv2.bitwise_or(red_mask, red_mask2, yellow_mask, yellow_mask2)
 
     # Black Mask
     imgray      = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)

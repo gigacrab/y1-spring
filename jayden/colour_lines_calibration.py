@@ -11,6 +11,7 @@ def click_to_get_hsv(event, x, y, flags, hsv_frame):
         print("\n" + "="*40)
         print(f"Clicked Pixel at (X:{x}, Y:{y})")
         print(f"Exact HSV Value: [{h}, {s}, {v}]")
+        print(f"Exact HSV Value: [{h/179}, {s/255*100}, {v/255*100}]")
         
         h_lower = max(0, h - 10)
         h_upper = min(179, h + 10)

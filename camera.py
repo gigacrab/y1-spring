@@ -22,7 +22,7 @@ while True:
     red_mask2 = cv2.inRange(hsv, np.array([0, 205, 173]), np.array([10, 255, 255]))
     color_mask = cv2.bitwise_or(red_mask1, red_mask2, yellow_mask)
 
-    roi = im
+    roi = frame
 
     #cv2.imshow("raw", im)
     imgray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)

@@ -4,7 +4,7 @@ import time
 import numpy as np
 
 picam2 = Picamera2()
-camera_config = picam2.create_video_configuration(main={"format": "RGB888", "size": (640, 480)})
+camera_config = picam2.create_video_configuration(main={ "size": (640, 480)})
 picam2.configure(camera_config)
 picam2.start()
 time.sleep(2)

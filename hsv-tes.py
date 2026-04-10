@@ -4,26 +4,15 @@ import time
 import numpy as np
 
 picam2 = Picamera2()
-camera_config = picam2.create_video_configuration(main={"format": "RGB888", "size": (640, 480)})
+camera_config = picam2.create_video_configuration(main={"size": (640, 480)})
 picam2.configure(camera_config)
 picam2.start()
 time.sleep(2)
 
 while True: 
-    frame = picam2.capture_array()
-    cv2.imshow("frame", frame)
+    im = picam2.capture_array()
 
-    frame = cv2.cvtColor(frame, cv2.COLOR_RGBA2BGR)
-
-    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-
-    yellow_mask = cv2.inRange(hsv, np.array([13, 205, 169]), np.array([33, 255, 255]))
-    red_mask1 = cv2.inRange(hsv, np.array([246, 205, 173]), np.array([255, 255, 255]))
-    red_mask2 = cv2.inRange(hsv, np.array([0, 205, 173]), np.array([10, 255, 255]))
-    color_mask = cv2.bitwise_or(red_mask1, red_mask2, yellow_mask)
-
-    roi = frame
-    im = frame
+    roi = im
 
     #cv2.imshow("raw", im)
     imgray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
@@ -59,7 +48,7 @@ while True:
 
         
             
-    #cv2.imshow("contours", im)
+    cv2.imshow("contours", im)
     if cv2.waitKey(1) == 27:
         break
 

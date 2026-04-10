@@ -7,16 +7,19 @@ import sys
 def click_to_get_hsv(event, x, y, flags, hsv_frame):
     if event == cv2.EVENT_LBUTTONDOWN:
         h, s, v = hsv_frame[y, x]
+        s = int(s)
+        v = int(v)
         
         print("\n" + "="*40)
         print(f"Clicked Pixel at (X:{x}, Y:{y})")
         print(f"Exact HSV Value: [{h}, {s}, {v}]")
+        print(f"Exact HSV Value: [{h/179*360}, {s/255*100}, {v/255*100}]")
         
         h_lower = max(0, h - 10)
         h_upper = min(179, h + 10)
         
         s_lower = max(0, s - 50)
-        s_upper = min(255, s + 50)
+        s_upper = min(255, s + 50) 
         
         v_lower = max(0, v - 50)
         v_upper = min(255, v + 50)
@@ -53,9 +56,7 @@ print("Press 'ESC' on your keyboard to quit.")
 try:
     while True:
         frame = picam2.capture_array()
-        imgray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        ret, _ = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-        #print(ret)
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGBA2BGR)
         hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         cv2.setMouseCallback('HSV Color Picker', click_to_get_hsv, hsv_frame)
         cv2.drawMarker(frame, (320, 240), (0, 255, 0), cv2.MARKER_CROSS, 20, 2)

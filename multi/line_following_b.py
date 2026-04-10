@@ -3,8 +3,6 @@ import time
 import numpy as np
 import movement
 
-# tune ret, calibrated colours
-
 def clamp(value, min, max):
     if value > max:
         return max
@@ -105,14 +103,15 @@ def follow_line(frame):
     
     time_marker = time.perf_counter()
 
-    frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
+    frame = cv2.cvtColor(frame, cv2.COLOR_RGBA2BGR)
     roi = frame[240:480, :]
 
     hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
 
-    yellow_mask   = cv2.inRange(hsv, np.array([89, 198, 137]), np.array([108, 255, 241]))
-    red_mask = cv2.inRange(hsv, np.array([ 111, 204, 45]), np.array([131, 255, 222]))
-    color_mask = cv2.bitwise_or(red_mask, yellow_mask)
+    yellow_mask = cv2.inRange(hsv, np.array([13, 205, 169]), np.array([33, 255, 255]))
+    red_mask1 = cv2.inRange(hsv, np.array([246, 205, 173]), np.array([255, 255, 255]))
+    red_mask2 = cv2.inRange(hsv, np.array([0, 205, 173]), np.array([10, 255, 255]))
+    color_mask = cv2.bitwise_or(red_mask1, red_mask2, yellow_mask)
 
     imgray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
     # we now try gaussian blur
@@ -156,7 +155,7 @@ def follow_line(frame):
     if black_sorted and cv2.contourArea(black_sorted[0]) > 7500:
         black_target = black_sorted[0]
         #print(f"black area {cv2.contourArea(black_target)}")
-        cv2.drawContours(thresh, black_target, -1, (0, 255, 0), thickness=cv2.FILLED)
+        cv2.drawContours(thresh, [black_target], -1, (0, 255, 0), thickness=cv2.FILLED)
         M = cv2.moments(black_target)
         if M['m00'] != 0:
             black_cx = int(M['m10'] / M['m00'])
@@ -165,7 +164,7 @@ def follow_line(frame):
     if color_sorted and cv2.contourArea(color_sorted[0]) > 2000:
         color_target = color_sorted[0]
         #print(f"color area {cv2.contourArea(color_target)}")
-        cv2.drawContours(thresh, color_target, -1, (0, 0, 255), thickness=cv2.FILLED)
+        cv2.drawContours(thresh, [color_target], -1, (0, 0, 255), thickness=cv2.FILLED)
         M = cv2.moments(color_target)
         if M['m00'] != 0:
             color_cx = int(M['m10'] / M['m00'])

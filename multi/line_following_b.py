@@ -153,7 +153,7 @@ def follow_line(frame):
     if black_sorted and cv2.contourArea(black_sorted[0]) > 7500:
         black_target = black_sorted[0]
         print(f"black area {cv2.contourArea(black_target)}")
-        #cv2.drawContours(thresh, black_target, -1, (0, 255, 0), thickness=cv2.FILLED)
+        cv2.drawContours(thresh, black_target, -1, (0, 255, 0), thickness=cv2.FILLED)
         M = cv2.moments(black_target)
         if M['m00'] != 0:
             black_cx = int(M['m10'] / M['m00'])
@@ -162,7 +162,7 @@ def follow_line(frame):
     if color_sorted and cv2.contourArea(color_sorted[0]) > 2000:
         color_target = color_sorted[0]
         print(f"color area {cv2.contourArea(color_target)}")
-        #cv2.drawContours(thresh, color_target, -1, (0, 0, 255), thickness=cv2.FILLED)
+        cv2.drawContours(thresh, color_target, -1, (0, 0, 255), thickness=cv2.FILLED)
         M = cv2.moments(color_target)
         if M['m00'] != 0:
             color_cx = int(M['m10'] / M['m00'])

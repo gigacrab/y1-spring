@@ -86,7 +86,7 @@ def calc_pid(cx, time_marker, ret):
 
     if not first:
         diff_error = (error - last_error) / elapsed_time
-        print(ret)
+        #print(ret)
     else:
         first = False
 
@@ -152,7 +152,7 @@ def follow_line(frame):
     black_sorted = sorted(black_cnts, key=cv2.contourArea, reverse=True)
     if black_sorted and cv2.contourArea(black_sorted[0]) > 7500:
         black_target = black_sorted[0]
-        print(f"black area {cv2.contourArea(black_target)}")
+        #print(f"black area {cv2.contourArea(black_target)}")
         cv2.drawContours(thresh, black_target, -1, (0, 255, 0), thickness=cv2.FILLED)
         M = cv2.moments(black_target)
         if M['m00'] != 0:
@@ -161,7 +161,7 @@ def follow_line(frame):
     color_sorted = sorted(color_cnts, key=cv2.contourArea, reverse=True)
     if color_sorted and cv2.contourArea(color_sorted[0]) > 2000:
         color_target = color_sorted[0]
-        print(f"color area {cv2.contourArea(color_target)}")
+        #print(f"color area {cv2.contourArea(color_target)}")
         cv2.drawContours(thresh, color_target, -1, (0, 0, 255), thickness=cv2.FILLED)
         M = cv2.moments(color_target)
         if M['m00'] != 0:

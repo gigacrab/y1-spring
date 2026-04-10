@@ -45,10 +45,7 @@ print("Press 'ESC' on your keyboard to quit.")
 try:
     while True:
         frame = picam2.capture_array()
-        imgray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        ret, _ = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-        print(ret)
-        hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        hsv_frame = cv2.cvtColor(frame, cv2.COLOR_RGBA2HSV)
         cv2.setMouseCallback('HSV Color Picker', click_to_get_hsv, hsv_frame)
         cv2.drawMarker(frame, (320, 240), (0, 255, 0), cv2.MARKER_CROSS, 20, 2)
         cv2.imshow('HSV Color Picker', frame)

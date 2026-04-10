@@ -3,8 +3,6 @@ import time
 import numpy as np
 import movement
 
-# tune ret, calibrated colours
-
 def clamp(value, min, max):
     if value > max:
         return max

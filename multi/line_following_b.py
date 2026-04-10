@@ -103,7 +103,7 @@ def follow_line(frame):
     
     time_marker = time.perf_counter()
 
-    frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
+    frame = cv2.cvtColor(frame, cv2.COLOR_RGBA2BGR)
     roi = frame[240:480, :]
 
     hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)

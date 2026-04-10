@@ -17,6 +17,7 @@ def click_to_get_hsv(event, x, y, flags, hsv_frame):
         h_upper = min(179, h + 10)
         
         s_lower = max(0, s - 50)
+        print(s + 50)
         s_upper = min(255, s + 50) 
         
         v_lower = max(0, v - 50)

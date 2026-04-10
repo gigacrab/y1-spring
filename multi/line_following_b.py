@@ -120,7 +120,7 @@ def follow_line(frame):
     # also idc about the ret
     ret, _ = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
     #otsu_offset = 50 
-    _, thresh = cv2.threshold(imgray, ret - 30, 255, cv2.THRESH_BINARY_INV)
+    _, thresh = cv2.threshold(imgray, ret - 20, 255, cv2.THRESH_BINARY_INV)
     #_, thresh = cv2.threshold(imgray, 127, 255, cv2.THRESH_BINARY_INV) 
 
     #cv2.imshow("thresh", thresh)

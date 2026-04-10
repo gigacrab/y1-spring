@@ -72,6 +72,9 @@ def shift(dir):
         arrow_follow = True
         arrow_error = -1
         time.sleep(0.3)
+    elif dir.lower() == "up":
+        movement.move(1, 1)
+        time.sleep(0.2)
 
 def calc_pid(cx, time_marker, ret):
     global error, total_error, last_error, diff_error, first

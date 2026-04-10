@@ -39,7 +39,7 @@ black_error = 0
 arrow_follow = False
 arrow_error = 0
 
-ret_thresh = 120 # 120
+#ret_thresh = 120 # 120
 
 def stop():
     movement.move(0, 0)
@@ -119,7 +119,8 @@ def follow_line(frame):
     # however the Otsu method wasn't that good because it'd always find a region of threshold
     # also idc about the ret
     ret, _ = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-    _, thresh = cv2.threshold(imgray, ret - 50, 255, cv2.THRESH_BINARY_INV)
+    otsu_offset = 90 
+    _, thresh = cv2.threshold(imgray, ret - otsu_offset, 255, cv2.THRESH_BINARY_INV)
     #_, thresh = cv2.threshold(imgray, 127, 255, cv2.THRESH_BINARY_INV) 
 
     #cv2.imshow("thresh", thresh)

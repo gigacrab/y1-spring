@@ -105,7 +105,7 @@ def follow_line(frame):
 
     # ── Masks ─────────────────────────────────────────────────────────────
     # Color Mask
-    red_mask    = cv2.inRange(hsv, np.array([105, 30,  100]), np.array([140, 255, 255]))
+    red_mask    = cv2.inRange(hsv, np.array([89, 198, 137]), np.array([140, 255, 255]))
     yellow_mask = cv2.inRange(hsv, np.array([ 85, 100, 180]), np.array([105, 255, 255]))
     colour_mask = cv2.bitwise_or(red_mask, yellow_mask)
 

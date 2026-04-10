@@ -108,9 +108,10 @@ def follow_line(frame):
 
     hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
 
-    yellow_mask   = cv2.inRange(hsv, np.array([89, 198, 137]), np.array([108, 255, 241]))
-    red_mask = cv2.inRange(hsv, np.array([ 111, 204, 45]), np.array([131, 255, 222]))
-    color_mask = cv2.bitwise_or(red_mask, yellow_mask)
+    yellow_mask = cv2.inRange(hsv, np.array([13, 205, 169]), np.array([33, 255, 255]))
+    red_mask1 = cv2.inRange(hsv, np.array([246, 205, 173]), np.array([255, 255, 255]))
+    red_mask2 = cv2.inRange(hsv, np.array([0, 205, 173]), np.array([10, 255, 255]))
+    color_mask = cv2.bitwise_or(red_mask1, red_mask2, yellow_mask)
 
     imgray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
     # we now try gaussian blur

@@ -37,7 +37,7 @@ black_error = 0
 arrow_follow = False
 arrow_error = 0
 
-ret_thresh = 120 # 120
+#ret_thresh = 120 # 120
 
 def stop():
     movement.move(0, 0)
@@ -70,6 +70,9 @@ def shift(dir):
         arrow_follow = True
         arrow_error = -1
         time.sleep(0.25)
+    elif dir.lower() == "up":
+        movement.move(1, 1)
+        time.sleep(0.2)
 
 def calc_pid(cx, time_marker, ret):
     global error, total_error, last_error, diff_error, first
@@ -84,7 +87,7 @@ def calc_pid(cx, time_marker, ret):
 
     if not first:
         diff_error = (error - last_error) / elapsed_time
-        print(ret)
+        #print(ret)
     else:
         first = False
 
@@ -105,8 +108,8 @@ def follow_line(frame):
 
     hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
 
-    red_mask    = cv2.inRange(hsv, np.array([90, 30,  30]), np.array([140, 255, 255]))
-    yellow_mask = cv2.inRange(hsv, np.array([ 85, 100, 180]), np.array([105, 255, 255]))
+    yellow_mask   = cv2.inRange(hsv, np.array([89, 198, 137]), np.array([108, 255, 241]))
+    red_mask = cv2.inRange(hsv, np.array([ 111, 204, 45]), np.array([131, 255, 222]))
     color_mask = cv2.bitwise_or(red_mask, yellow_mask)
 
     imgray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
@@ -117,7 +120,8 @@ def follow_line(frame):
     # however the Otsu method wasn't that good because it'd always find a region of threshold
     # also idc about the ret
     ret, _ = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-    _, thresh = cv2.threshold(imgray, ret - 50, 255, cv2.THRESH_BINARY_INV)
+    #otsu_offset = 50 
+    _, thresh = cv2.threshold(imgray, 60, 255, cv2.THRESH_BINARY_INV)
     #_, thresh = cv2.threshold(imgray, 127, 255, cv2.THRESH_BINARY_INV) 
 
     #cv2.imshow("thresh", thresh)
@@ -149,6 +153,8 @@ def follow_line(frame):
     black_sorted = sorted(black_cnts, key=cv2.contourArea, reverse=True)
     if black_sorted and cv2.contourArea(black_sorted[0]) > 7500:
         black_target = black_sorted[0]
+        #print(f"black area {cv2.contourArea(black_target)}")
+        cv2.drawContours(thresh, black_target, -1, (0, 255, 0), thickness=cv2.FILLED)
         M = cv2.moments(black_target)
         if M['m00'] != 0:
             black_cx = int(M['m10'] / M['m00'])
@@ -156,6 +162,8 @@ def follow_line(frame):
     color_sorted = sorted(color_cnts, key=cv2.contourArea, reverse=True)
     if color_sorted and cv2.contourArea(color_sorted[0]) > 2000:
         color_target = color_sorted[0]
+        #print(f"color area {cv2.contourArea(color_target)}")
+        cv2.drawContours(thresh, color_target, -1, (0, 0, 255), thickness=cv2.FILLED)
         M = cv2.moments(color_target)
         if M['m00'] != 0:
             color_cx = int(M['m10'] / M['m00'])
@@ -194,9 +202,9 @@ def follow_line(frame):
             arrow_follow = False
         pid = getSign(last_error) * 2            
 
-    # cv2.imshow("threshold", thresh)
-    # cv2.imshow("color", color_mask)
-    # cv2.waitKey(1)
+    cv2.imshow("threshold", thresh)
+    cv2.imshow("color", color_mask)
+    cv2.waitKey(1)
 
     right_pwm = base_speed + pid
     left_pwm = base_speed - pid

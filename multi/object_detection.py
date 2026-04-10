@@ -140,9 +140,9 @@ def detect_object(frame):
     answer = []
     containers = []
 
-    # cv2.imshow("frame", frame)
-    # cv2.imshow("close", closed)
-    # cv2.waitKey(1)
+    cv2.imshow("frame", frame)
+    cv2.imshow("close", closed)
+    cv2.waitKey(1)
 
     # should already have hierarchy if a contour exists
     for i, c in enumerate(cnts):
@@ -189,11 +189,11 @@ def detect_object(frame):
                             dx = cx - bx
                             dy = cy - by
                             
-                            pred = "Arrow (RIGHT)" if dx > 0 else "Arrow (LEFT)"
-                            # if abs(dx) > abs(dy):
-                            #     pred = "Arrow (RIGHT)" if dx > 0 else "Arrow (LEFT)"
-                            # else:
-                            #     pred = "Arrow (DOWN)" if dy > 0 else "Arrow (UP)"
+                            #pred = "Arrow (RIGHT)" if dx > 0 else "Arrow (LEFT)"
+                            if abs(dx) > abs(dy):
+                                pred = "Arrow (RIGHT)" if dx > 0 else "Arrow (LEFT)"
+                            else:
+                                pred = "Arrow (DOWN)" if dy > 0 else "Arrow (UP)"
                 elif corners == 4 and inner_area_ratio < 0.45:
                     if extent < 0.80:
                         pred = "Trapezium"

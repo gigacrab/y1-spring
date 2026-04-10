@@ -133,7 +133,7 @@ def decide_action(shape):
     return {
         "Arrow (LEFT)": "Left",
         "Arrow (RIGHT)": "Right",
-        #"Arrow (UP)": "Up branch",
+        "Arrow (UP)": "Up",
         #"Arrow (DOWN)": "Down branch",
         "Recycle": "360 Turn",
         "Fingerprint": "Biometrics",

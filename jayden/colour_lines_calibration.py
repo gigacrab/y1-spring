@@ -29,7 +29,7 @@ def click_to_get_hsv(event, x, y, flags, hsv_frame):
 
 if __name__ == "__main__":
     if len(sys.argv) == 3:
-        exposure = float(sys.argv[1])
+        exposure = int(sys.argv[1])
         gain = float(sys.argv[2])
     else:
         raise Exception("Didn't input appropriate variables")

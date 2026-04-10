@@ -131,7 +131,7 @@ def follow_line(frame):
     # print(f"mask {mask_black}")
     # print(f"color {color_follow}")
     if mask_black and time.perf_counter() - mask_start < mask_cooldown:
-        print(f"error {color_error}")
+        #print(f"error {color_error}")
         if color_error == -1: # color was on the right
             # mask left side so that the bot continues going right
             thresh[:, :240] = 0
@@ -149,6 +149,8 @@ def follow_line(frame):
 
     black_target = color_target = None
     black_cx = color_cx = None
+
+    cv2.drawContours(thresh, black_cnts, -1, (0, 0, 255), thickness=cv2.FILLED)
 
     #if ret < ret_thresh:
     black_sorted = sorted(black_cnts, key=cv2.contourArea, reverse=True)

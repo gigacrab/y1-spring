@@ -170,11 +170,12 @@ def follow_line(frame):
             color_cx = int(M['m10'] / M['m00'])
     
     if color_cx is not None: 
+        black_error = last_error
         pid = calc_pid(color_cx, time_marker, ret)
         if not color_follow: # we take initial error so that we know where to turn at the end
             #color_error = -getSign(last_error)
             
-            black_error = last_error
+            color_error = getSign(last_error - black_error)
             color_start = time.perf_counter()
             color_follow = True
     #elif ret < ret_thresh and black_cx is not None: # ret condition just added for guard
@@ -185,7 +186,6 @@ def follow_line(frame):
         # print(f"max = {ext_left_x, ext_right_x}")
         if color_follow: # it just followed color earlier
             if time.perf_counter() - color_start > color_period:
-                color_error = getSign(last_error - black_error)
                 # as a result, we temporarily mask the black contours
                 # so that it can resume following the track
                 mask_black = True

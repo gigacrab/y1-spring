@@ -34,10 +34,10 @@ def camera_process(shm_name, lock, shape_event, line_event, stop_event):
         while not stop_event.is_set():
             frame = picam2.capture_array()
             #timemarker = time.perf_counter()
-            with lock:
+            with lock: # Acquires the mutex lock for the shared memory region
                 np.copyto(frame_buf, frame)
             #print(f"putting: {time.perf_counter() - timemarker}")
-            shape_event.set()
+            shape_event.set() # Signals the shape detection process that a new frame is available
             line_event.set()
     
     finally:

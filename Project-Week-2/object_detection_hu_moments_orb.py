@@ -30,7 +30,7 @@ print(f"Starting with Adaptive Threshold Block Size: {block_size}")
 # ==========================================
 # 1. LOAD ORB TEMPLATES (Phase 2)
 # ==========================================
-png_path = '/home/jaydenbryan/Project/Symbols_png/'
+png_path = './Symbols_png/'
 template_files_png = {
     "Danger": "danger.png",
     "Fingerprint": "fingerprint.png",
@@ -63,7 +63,7 @@ for label, filename in template_files_png.items():
 # ==========================================
 # 2. LOAD HU MOMENTS DNA (Phase 1)
 # ==========================================
-npy_path = '/home/jaydenbryan/Project/Symbols_npy/'
+npy_path = './Symbols_npy/'
 template_files_npy = {
     "Arrow": "arrow.npy",
     "3/4 Circle": "circle34.npy",

@@ -33,8 +33,10 @@ def camera_process(shm_name, lock, shape_event, line_event, stop_event):
     try:
         while not stop_event.is_set():
             frame = picam2.capture_array()
+            #timemarker = time.perf_counter()
             with lock:
                 np.copyto(frame_buf, frame)
+            #print(f"putting: {time.perf_counter() - timemarker}")
             shape_event.set()
             line_event.set()
     
@@ -53,9 +55,9 @@ def shape_detection_process(shm_name, lock, shape_event, result_q, stop_event):
             shape_event.clear()
             with lock:
                 frame = frame_buf.copy()
-            
+            #timemarker = time.perf_counter()
             pred = object_detection.detect_object(frame)
-
+            #print(f"shape: {time.perf_counter() - timemarker}")
             if pred is not None and not result_q.full():
                 result_q.put(pred)
     finally:
@@ -75,9 +77,11 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
             
             line_event.wait()
             line_event.clear()
+            #timemarker1 = time.perf_counter()
             with lock:
                 frame = frame_buf.copy()
-            
+            #print(f"copying: {time.perf_counter() - timemarker1}")
+
             #time_marker2 = time.perf_counter()
             #print(f"duration1 {time_marker2 - time_marker}")
 
@@ -123,7 +127,9 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
                         cooldown_start = time.perf_counter()
                     clear = True
             # always follow line regardless
+            #timemarker2 = time.perf_counter()
             line_following.follow_line(frame) # we should pass left / right branch as parameter
+            #print(f"line: {time.perf_counter() - timemarker2}")
             #print(f"duration2 {time.perf_counter() - time_marker2}")
     finally:
         shm.close()

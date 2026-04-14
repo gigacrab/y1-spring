@@ -144,7 +144,7 @@ first = True
 
 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
 
-npy_path = '/home/jaydenbryan/Project/Symbols_npy/'
+npy_path = './Symbols_npy/'
 template_files_npy = {
     "Arrow": "arrow.npy",
     "3/4 Circle": "circle34.npy",

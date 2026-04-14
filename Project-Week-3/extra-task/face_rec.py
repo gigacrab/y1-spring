@@ -13,14 +13,14 @@ import numpy as np
 
 
 # Load a sample picture and learn how to recognize it.
-bryan_image = face_recognition.load_image_file("./multi/faces/bryan.jpeg")
+bryan_image = face_recognition.load_image_file("./extra-task/faces/bryan.jpeg")
 bryan_face_encoding = face_recognition.face_encodings(bryan_image)[0]
 
 # Load a second sample picture and learn how to recognize it.
-jayden_image = face_recognition.load_image_file("./multi/faces/jayden.jpeg")
+jayden_image = face_recognition.load_image_file("./extra-task/faces/jayden.jpeg")
 jayden_face_encoding = face_recognition.face_encodings(jayden_image)[0]
 
-hermawan_image = face_recognition.load_image_file("./multi/faces/dr-hermawan.jpeg")
+hermawan_image = face_recognition.load_image_file("./extra-task/faces/dr-hermawan.jpeg")
 hermawan_face_encoding = face_recognition.face_encodings(jayden_image)[0]
 
 # Create arrays of known face encodings and their names

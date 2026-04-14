@@ -170,7 +170,7 @@ def follow_line(frame):
             color_cx = int(M['m10'] / M['m00'])
     
     if color_cx is not None: 
-        black_error = last_error
+        if not color_follow: black_error = last_error
         pid = calc_pid(color_cx, time_marker)
         if not color_follow: # we take initial error so that we know where to turn at the end
             #color_error = -getSign(last_error)

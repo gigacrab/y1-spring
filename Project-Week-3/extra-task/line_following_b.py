@@ -74,7 +74,7 @@ def shift(dir):
         movement.move(1, 1)
         time.sleep(0.2)
 
-def calc_pid(cx, time_marker, ret):
+def calc_pid(cx, time_marker):
     global error, total_error, last_error, diff_error, first
 
     elapsed_time = time.perf_counter() - time_marker
@@ -171,7 +171,7 @@ def follow_line(frame):
     
     if color_cx is not None: 
         black_error = last_error
-        pid = calc_pid(color_cx, time_marker, ret)
+        pid = calc_pid(color_cx, time_marker)
         if not color_follow: # we take initial error so that we know where to turn at the end
             #color_error = -getSign(last_error)
             
@@ -180,7 +180,7 @@ def follow_line(frame):
             color_follow = True
     #elif ret < ret_thresh and black_cx is not None: # ret condition just added for guard
     elif black_cx is not None: 
-        pid = calc_pid(black_cx, time_marker, ret) * 2
+        pid = calc_pid(black_cx, time_marker)
         # ext_left_x = black_target[black_target[:, :, 0].argmin()][0][0]
         # ext_right_x = black_target[black_target[:, :, 0].argmax()][0][0]
         # print(f"max = {ext_left_x, ext_right_x}")

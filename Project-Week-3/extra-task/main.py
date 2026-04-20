@@ -34,10 +34,10 @@ def camera_process(shm_name, lock, shape_event, line_event, stop_event):
         while not stop_event.is_set():
             frame = picam2.capture_array()
             #timemarker = time.perf_counter()
-            with lock: # Acquires the mutex lock for the shared memory region
+            with lock:
                 np.copyto(frame_buf, frame)
             #print(f"putting: {time.perf_counter() - timemarker}")
-            shape_event.set() # Signals the shape detection process that a new frame is available
+            shape_event.set()
             line_event.set()
     
     finally:
@@ -112,7 +112,7 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
                                 with lock:
                                     frame = frame_buf.copy()
                                 
-                            cv2.destroyWindow("Face Recognition")
+                            cv2.destroyWindow("Facial Recognition")
 
                             # must add cooldown afterwards to avoid triggering this again
                         elif action == "360 Turn":

@@ -45,12 +45,12 @@ def camera_process(shm_name, lock, shape_event, line_event, stop_event):
         picam2.stop()
         picam2.close()
 
-def shape_detection_process(shm_name, lock, shape_event, result_q, stop_event):
+def object_detection_process(shm_name, lock, shape_event, result_q, stop_event):
     shm = shared_memory.SharedMemory(name=shm_name)
     frame_buf = np.ndarray(FRAME_SHAPE, dtype=FRAME_DTYPE, buffer=shm.buf)
     
     try:
-        while not stop_event.is_set():
+        while not stop_event.is_set():  
             shape_event.wait()
             shape_event.clear()
             with lock:
@@ -160,7 +160,7 @@ if __name__ == "__main__": # what was ran with python
     processes = [
         mp.Process(target=camera_process, 
                    args=(shm.name, lock, shape_event, line_event, stop_event)),
-        mp.Process(target=shape_detection_process, 
+        mp.Process(target=object_detection_process, 
                    args=(shm.name, lock, shape_event, result_q, stop_event)),
         mp.Process(target=line_following_process, 
                    args=(shm.name, lock, line_event, result_q, stop_event)),

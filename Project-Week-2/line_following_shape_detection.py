@@ -170,10 +170,12 @@ while True:
     try: 
         
         frame = picam2.capture_array()
+        cv2.imshow("Full view", frame)
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         # line following
         roi = frame[240:480, :]
+        cv2.imshow("ROI view", roi)
 
         imgray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
         # we now try gaussian blur

@@ -176,7 +176,7 @@ try:
             print(f"Prediction: {pred}")
             shapes.append(pred)
             
-            '''
+            
             box = cv2.boxPoints(min_rect)
             box = np.intp(box)
             cv2.drawContours(output, [sel_c], -1, (0, 255, 0), 2)
@@ -186,7 +186,7 @@ try:
                         
             cv2.imshow("Threshold", thresh)
             cv2.imshow("Geometry Debug", output)
-            '''
+            
 
             child_area_debug = cv2.contourArea(cnts[hrchy[0][i][2]]) if hrchy[0][i][2] != -1 else -1
             print(f"FPS:{fps:.2f} P:{hrchy[0][i]} C:{corners} AR:{aspect_ratio:.2f} S:{solidity:.2f} E:{extent:.2f} R:{ellipse_area_ratio:.2f} A:{area:.2f} AC:{child_area_debug}")        

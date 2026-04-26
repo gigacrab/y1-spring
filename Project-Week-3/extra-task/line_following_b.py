@@ -14,7 +14,7 @@ def clamp(value, min, max):
 def getSign(n):
     return (n > 0) - (n < 0)
 
-base_speed = 0.3
+base_speed = 0.35
 kp = 0.625
 ki = 0.01
 kd = 0.02
@@ -52,7 +52,7 @@ def stop_for(seconds):
     time.sleep(seconds)
 
 def turn_360():
-    movement.move(1, -1)
+    movement.move(0.78, -0.8)
     time.sleep(1.5)
     global last_error
     if getSign(last_error) == -1:

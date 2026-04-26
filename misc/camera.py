@@ -6,6 +6,11 @@ import numpy as np
 picam2 = Picamera2()
 camera_config = picam2.create_video_configuration(main={"format": "RGB888", "size": (640, 480)})
 picam2.configure(camera_config)
+picam2.set_controls({
+    "ExposureTime": 5000,      # microseconds — try 2000-5000
+    "AnalogueGain": 20.0,       # increase gain to compensate for less light
+    "AeEnable": False,          # disable auto exposure or it'll fight you
+})
 picam2.start()
 time.sleep(2)
 

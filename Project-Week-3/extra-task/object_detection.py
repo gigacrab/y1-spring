@@ -11,9 +11,9 @@ def stop():
     cv2.destroyAllWindows()
 
 def detect_symbols_in_container(i, cnts, hrchy):
-    arc_count    = 0
+    arc_count = 0
     square_count = 0
-    arrow_count  = 0
+    arrow_count = 0
 
     child_idx = hrchy[0][i][2] # first child of inner border
 
@@ -22,16 +22,16 @@ def detect_symbols_in_container(i, cnts, hrchy):
 
     # keep on checking next child
     while True:
-        c    = cnts[child_idx]
+        c = cnts[child_idx]
         area = cv2.contourArea(c)
         if area > MIN_AREA * 0.075:
             rect = cv2.minAreaRect(c)
             w_rot, h_rot = rect[1]
             if w_rot != 0 and h_rot != 0:
-                ar        = max(w_rot, h_rot) / min(w_rot, h_rot)
+                ar = max(w_rot, h_rot) / min(w_rot, h_rot)
                 rect_area = w_rot * h_rot
                 extent = area / rect_area if rect_area > 0 else 0
-                corners   = len(cv2.approxPolyDP(c, 0.01 * cv2.arcLength(c, True), True))
+                corners = len(cv2.approxPolyDP(c, 0.01 * cv2.arcLength(c, True), True))
 
                 if ar > 4 or ar > 1.8 and extent < 0.5:
                     arc_count += 1
@@ -54,7 +54,7 @@ def detect_symbols_in_container(i, cnts, hrchy):
         return "QR Code"
     return "No idea"
 
-def find_valid_container(i, c, cnts, hrchy):
+def detect_shapes_in_container(i, c, cnts, hrchy):
     area = cv2.contourArea(c)
     if area < MIN_AREA:
         return None
@@ -147,7 +147,7 @@ def detect_object(frame):
     # should already have hierarchy if a contour exists
     for i, c in enumerate(cnts):
         pred = "No idea"
-        result = find_valid_container(i, c, cnts, hrchy)
+        result = detect_shapes_in_container(i, c, cnts, hrchy)
 
         if result is not None: # found container
             if isinstance(result, (int, np.integer)): # no valid contours

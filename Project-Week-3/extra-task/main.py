@@ -134,9 +134,9 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
                         cooldown_start = time.perf_counter()
                     clear = True
             # always follow line regardless
-            #timemarker2 = time.perf_counter()
+            timemarker2 = time.perf_counter()
             line_following.follow_line(frame) # we should pass left / right branch as parameter
-            #print(f"line: {time.perf_counter() - timemarker2}")
+            print(f"line: {time.perf_counter() - timemarker2}")
             print(f"process(line): {time.perf_counter() - time_marker}")
     finally:
         shm.close()

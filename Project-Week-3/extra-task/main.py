@@ -57,7 +57,10 @@ def object_detection_process(shm_name, lock, shape_event, result_q, stop_event):
             shape_event.wait()
             shape_event.clear()
             with lock:
+                
+                timemarker = time.perf_counter()
                 frame = frame_buf.copy()
+                print(f"putting: {time.perf_counter() - timemarker}")
             #timemarker = time.perf_counter()
             pred = object_detection.detect_object(frame)
             #print(f"shape: {time.perf_counter() - timemarker}")

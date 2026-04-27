@@ -71,7 +71,7 @@ def detect_container(i, c, cnts, hrchy):
             hollow_ratio = child_area / area if area > 0 else 0
 
             if hollow_ratio > 0.85:
-                #print(f"Hollow container at: {i}")
+                print(f"Hollow container at: {i}")
 
                 min_rect = cv2.minAreaRect(c)
                 w_rot, h_rot = min_rect[1]
@@ -110,7 +110,7 @@ def detect_container(i, c, cnts, hrchy):
                         w_rot, h_rot = min_rect[1]
                         if w_rot == 0 or h_rot == 0:
                             return None
-                        #print(f"Contained shape for: {sel_i}")
+                        print(f"Contained shape for: {sel_i}")
                     # to not recognize fingerprint, QR and recycling
                     elif total_area > MIN_AREA:
                         return child_idx
@@ -140,10 +140,9 @@ def detect_object(frame):
     answer = []
     containers = []
 
-    # cv2.imshow("frame", frame)
-    # cv2.imshow("close", closed)
-    # output = frame
-    # cv2.waitKey(1)
+    cv2.imshow("frame", frame)
+    cv2.imshow("close", closed)
+    cv2.waitKey(1)
 
     # should already have hierarchy if a contour exists
     for i, c in enumerate(cnts):
@@ -225,19 +224,10 @@ def detect_object(frame):
                 if pred == "No idea":
                     containers.append(child_idx)
                 else:
-                    output = frame
-                    # box = cv2.boxPoints(min_rect)
-                    # box = np.intp(box)
-                    # cv2.drawContours(output, [sel_c], -1, (0, 255, 0), 2)
-                    # cv2.drawContours(output, [box], 0, (255, 0, 0), 2)
-                    # cv2.putText(output, f"{pred}",#f"C:{corners} AR:{aspect_ratio:.2f} S:{solidity:.2f} E:{extent:.2f} R:{ellipse_area_ratio:.2f} A:{area:.2f}",
-                    #             (int(min_rect[0][0]-min_rect[1][0]/2), int(min_rect[0][1]-10-min_rect[1][1]/2)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 2)
-    
                     answer.append(pred)
                     #print(sel_area)
 
         # jumps to here if no containers, then continues for loop
-    # cv2.imshow("Debug", output)
 
     for container in containers:
         pred = detect_symbols_in_container(container, cnts, hrchy)

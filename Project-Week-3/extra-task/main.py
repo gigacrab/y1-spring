@@ -32,11 +32,14 @@ def camera_process(shm_name, lock, shape_event, line_event, stop_event):
     
     try:
         while not stop_event.is_set():
+            timemarker = time.perf_counter()
             frame = picam2.capture_array()
-            #timemarker = time.perf_counter()
+            print(f"putting: {time.perf_counter() - timemarker}")
             with lock:
+                timemarker = time.perf_counter()
                 np.copyto(frame_buf, frame)
-            #print(f"putting: {time.perf_counter() - timemarker}")
+                print(f"putting: {time.perf_counter() - timemarker}")
+            
             shape_event.set()
             line_event.set()
     

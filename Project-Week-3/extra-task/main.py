@@ -50,7 +50,9 @@ def object_detection_process(shm_name, lock, shape_event, result_q, stop_event):
     frame_buf = np.ndarray(FRAME_SHAPE, dtype=FRAME_DTYPE, buffer=shm.buf)
     
     try:
+        
         while not stop_event.is_set():  
+            time_marker = time.perf_counter()
             shape_event.wait()
             shape_event.clear()
             with lock:
@@ -60,6 +62,7 @@ def object_detection_process(shm_name, lock, shape_event, result_q, stop_event):
             #print(f"shape: {time.perf_counter() - timemarker}")
             if pred is not None and not result_q.full():
                 result_q.put(pred)
+            print(f"obj detection: {time.perf_counter() - time_marker}")
     finally:
         shm.close()
         object_detection.stop()
@@ -73,7 +76,7 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
 
     try:
         while not stop_event.is_set():
-            #time_marker = time.perf_counter()
+            time_marker = time.perf_counter()
             
             line_event.wait()
             line_event.clear()
@@ -96,7 +99,7 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
                     clear = False
                 if not result_q.empty():
                     shape = result_q.get_nowait()
-                    print(f"Detected: {shape}") # already handles shape detection
+                    # print(f"Detected: {shape}") # already handles shape detection
                     shape = shape[0]
                     action = decide_action(shape)
 
@@ -117,7 +120,7 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
                             # must add cooldown afterwards to avoid triggering this again
                         elif action == "360 Turn":
                             line_following.turn_360()
-                            print("turning 360")
+                            # print("turning 360")
                             
                         elif action == "Stop":
                             line_following.stop_for(5)
@@ -130,7 +133,7 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
             #timemarker2 = time.perf_counter()
             line_following.follow_line(frame) # we should pass left / right branch as parameter
             #print(f"line: {time.perf_counter() - timemarker2}")
-            #print(f"duration2 {time.perf_counter() - time_marker2}")
+            print(f"line following: {time.perf_counter() - time_marker}")
     finally:
         shm.close()
         line_following.stop_forever()

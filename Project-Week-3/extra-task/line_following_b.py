@@ -131,7 +131,7 @@ def follow_line(frame):
     # print(f"mask {mask_black}")
     # print(f"color {color_follow}")
     if mask_black and time.perf_counter() - mask_start < mask_cooldown:
-        print(f"error {color_error}")
+        # print(f"error {color_error}")
         if color_error == -1: # color was on the right
             # mask left side so that the bot continues going right
             thresh[:, :240] = 0
@@ -192,7 +192,7 @@ def follow_line(frame):
                 mask_start = time.perf_counter()
             color_follow = False
     else:
-        print(f"we cannot find contours {getSign(last_error)}")
+        # print(f"we cannot find contours {getSign(last_error)}")
         # in case line is lost immediately after color follow ends
         if color_follow:
             last_error = color_error
@@ -203,9 +203,9 @@ def follow_line(frame):
             arrow_follow = False
         pid = getSign(last_error) * 2            
 
-    cv2.imshow("threshold", thresh)
-    cv2.imshow("color", color_mask)
-    cv2.waitKey(1)
+    # cv2.imshow("threshold", thresh)
+    # cv2.imshow("color", color_mask)
+    # cv2.waitKey(1)
 
     right_pwm = base_speed + pid
     left_pwm = base_speed - pid

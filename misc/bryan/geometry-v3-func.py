@@ -185,6 +185,7 @@ try:
                         (int(min_rect[0][0]-min_rect[1][0]/2), int(min_rect[0][1]-10-min_rect[1][1]/2)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 2)
                         
             cv2.imshow("Threshold", thresh)
+            cv2.imshow("Closed", closed)
             cv2.imshow("Geometry Debug", output)
             
 

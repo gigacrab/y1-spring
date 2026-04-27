@@ -32,13 +32,16 @@ def camera_process(shm_name, lock, shape_event, line_event, stop_event):
     
     try:
         while not stop_event.is_set():
+            timemarker1 = time.perf_counter()
             frame = picam2.capture_array()
-            #timemarker = time.perf_counter()
+            print(f"camera: {time.perf_counter() - timemarker1}")
             with lock:
+                timemarker = time.perf_counter()
                 np.copyto(frame_buf, frame)
-            #print(f"putting: {time.perf_counter() - timemarker}")
+                print(f"putting: {time.perf_counter() - timemarker}")
             shape_event.set()
             line_event.set()
+            print(f"camera(process): {time.perf_counter() - timemarker1}")
     
     finally:
         shm.close()
@@ -56,13 +59,15 @@ def object_detection_process(shm_name, lock, shape_event, result_q, stop_event):
             shape_event.wait()
             shape_event.clear()
             with lock:
+                time_marker1 = time.perf_counter()
                 frame = frame_buf.copy()
-            #timemarker = time.perf_counter()
+                print(f"copying(obj): {time.perf_counter() - time_marker1}")
+            timemarker = time.perf_counter()
             pred = object_detection.detect_object(frame)
-            #print(f"shape: {time.perf_counter() - timemarker}")
+            print(f"obj: {time.perf_counter() - timemarker}")
             if pred is not None and not result_q.full():
                 result_q.put(pred)
-            print(f"obj detection: {time.perf_counter() - time_marker}")
+            print(f"process(obj): {time.perf_counter() - time_marker}")
     finally:
         shm.close()
         object_detection.stop()
@@ -80,13 +85,12 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
             
             line_event.wait()
             line_event.clear()
-            #timemarker1 = time.perf_counter()
+            
             with lock:
+                timemarker1 = time.perf_counter()
                 frame = frame_buf.copy()
-            #print(f"copying: {time.perf_counter() - timemarker1}")
+                print(f"copying(line): {time.perf_counter() - timemarker1}")
 
-            #time_marker2 = time.perf_counter()
-            #print(f"duration1 {time_marker2 - time_marker}")
 
             # check for new shape
             #print(f"time {cooldown_start}")
@@ -133,7 +137,7 @@ def line_following_process(shm_name, lock, line_event, result_q, stop_event):
             #timemarker2 = time.perf_counter()
             line_following.follow_line(frame) # we should pass left / right branch as parameter
             #print(f"line: {time.perf_counter() - timemarker2}")
-            print(f"line following: {time.perf_counter() - time_marker}")
+            print(f"process(line): {time.perf_counter() - time_marker}")
     finally:
         shm.close()
         line_following.stop_forever()
